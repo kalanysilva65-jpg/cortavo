@@ -11,6 +11,7 @@
 // derruba nada; só é remarcada pra próxima rodada (enquanto o agendamento não passa).
 const prisma = require('../config/db');
 const whatsapp = require('./whatsapp');
+const demo = require('./demo');
 const { telefoneCanonicoBR } = require('../utils/telefone');
 
 const INTERVALO_MS = 5 * 60 * 1000; // roda a cada 5 min
@@ -65,12 +66,15 @@ async function dispararDevidos() {
   rodando = true;
   try {
     const cfg = await configPorBarbearia();
+    // Demonstração (spec 03): regra fixa, ninguém real recebe lembrete.
+    const demos = await demo.idsDemo();
     const agora = new Date();
     for (const [barbeariaId, c] of cfg) {
       // Isola a barbearia: um erro aqui (ex.: falha de banco ao ler os
       // agendamentos) NÃO pode abortar a rodada e deixar as OUTRAS sem lembrete.
       try {
         if (c.lembretes_ativos !== '1') continue;
+        if (demos.has(barbeariaId)) continue;
         if (!c.whatsapp_phone_number_id || !c.whatsapp_token) continue; // sem WhatsApp conectado, não há como enviar
         const templateNome = c.lembrete_template_nome || TEMPLATE_PADRAO; // pré-programado se o dono não digitou um nome
         const antecedencia = parseInt(c.lembrete_antecedencia_min, 10) || ANTECEDENCIA_PADRAO;
