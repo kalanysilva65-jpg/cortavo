@@ -51,6 +51,61 @@
   </form>
 </div>
 
+<!-- Teste grátis e vaga de fundador (fase 2.7, spec 05). Sem pagamento dentro do app. -->
+<div class="card mb-16" id="teste">
+  <h2>Teste grátis e fundador</h2>
+  <% var fmtD = function (d) { return d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '-'; }; %>
+  <p class="texto-secundario">
+    Situação: <span class="selo-plano"><%= { ativa: 'Ativa', teste: 'Em teste', pausada_teste: 'Pausada (fim do teste)', pausada_atraso: 'Pausada (atraso)' }[barbearia.situacaoCortavo] || 'Ativa' %></span>
+    <% if (barbearia.testeInicio) { %> · início <%= fmtD(barbearia.testeInicio) %> · fim <%= fmtD(barbearia.testeFim) %><% } %>
+  </p>
+  <% if (teste.emTeste) { %>
+    <p class="mt-16"><strong><%= teste.diasRestantes > 0 ? 'Faltam ' + teste.diasRestantes + ' dia(s).' : teste.diasRestantes === 0 ? 'Último dia do teste.' : 'O teste acabou sem pagamento registrado.' %></strong>
+      <% if (barbearia.testeRespostas) { %><span class="texto-sutil"> · secretária no teste: <%= barbearia.testeRespostas %> de 250 respostas</span><% } %></p>
+    <% if (barbearia.testeProrrogado) { %>
+      <p class="texto-sutil">Já prorrogado uma vez. Motivo: <%= barbearia.testeProrrogacaoMotivo %></p>
+    <% } else { %>
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/prorrogar" class="form mt-16">
+        <div class="grid-2">
+          <div class="campo">
+            <label for="dias">Prorrogar (uma única vez)</label>
+            <select id="dias" name="dias"><% for (var d = 1; d <= teste.prorrogacaoMax; d++) { %><option value="<%= d %>"><%= d %> dia(s)</option><% } %></select>
+          </div>
+          <div class="campo">
+            <label for="motivo">Motivo (vai para a auditoria)</label>
+            <input id="motivo" name="motivo" maxlength="500" required />
+          </div>
+        </div>
+        <button class="btn btn-secundario btn-sm mt-16" type="submit">Prorrogar teste</button>
+      </form>
+    <% } %>
+    <div class="flex gap-8 mt-16" style="flex-wrap:wrap">
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/segurar" class="inline">
+        <input type="hidden" name="segurar" value="<%= barbearia.testeSegurarPausa ? 'false' : 'true' %>" />
+        <button class="btn btn-secundario btn-sm" type="submit"><%= barbearia.testeSegurarPausa ? (teste.diasRestantes < 0 ? 'Soltar pausa (avisa e pausa amanhã)' : 'Soltar pausa automática') : 'Segurar pausa' %></button>
+      </form>
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/pago" class="inline"
+            onsubmit="return confirm('Registrar que esta barbearia pagou? O teste vira assinatura e não haverá pausa.')">
+        <button class="btn btn-primario btn-sm" type="submit">Registrar pagamento</button>
+      </form>
+    </div>
+    <% if (barbearia.testeSegurarPausa) { %><p class="texto-sutil mt-16">Pausa automática segurada: a rotina não vai pausar esta barbearia.</p><% } %>
+  <% } %>
+  <p class="mt-16">
+    Vaga de fundador: <strong><%= barbearia.fundador === 'confirmada' ? 'confirmada' : barbearia.fundador === 'reservada' ? 'reservada' : 'sem vaga' %></strong>
+    <span class="texto-sutil"> · vagas usadas: <%= vagasFundador.usadas %> de <%= vagasFundador.total %></span>
+  </p>
+  <% if (!barbearia.fundador && vagasFundador.livres <= 0) { %>
+    <div class="alerta alerta-aviso mt-16">As 5 vagas de fundador já estão reservadas.</div>
+  <% } else { %>
+    <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/fundador" class="inline"
+          <% if (barbearia.fundador === 'confirmada') { %>onsubmit="return confirm('Esta barbearia já é fundadora confirmada (pagou com desconto). Liberar a vaga mesmo assim?')"<% } %>>
+      <input type="hidden" name="reservar" value="<%= barbearia.fundador ? 'false' : 'true' %>" />
+      <button class="btn btn-secundario btn-sm" type="submit"><%= barbearia.fundador ? 'Liberar vaga de fundador' : 'Reservar vaga de fundador' %></button>
+    </form>
+  <% } %>
+</div>
+
 <!-- Dados da barbearia -->
 <div class="card mb-16">
   <h2>Dados da barbearia</h2>

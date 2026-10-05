@@ -279,4 +279,10 @@ app.listen(PORT, '0.0.0.0', () => {
   } catch (e) {
     console.log('[lembretes] não foi possível iniciar o agendador:', (e && e.message) || e);
   }
+  // Rotina diária do teste grátis (fase 2.6): aviso no 12º dia e pausa no 16º.
+  try {
+    require('./services/testeGratis').iniciarAgendador();
+  } catch (e) {
+    console.log('[teste-gratis] não foi possível iniciar a rotina:', (e && e.message) || e);
+  }
 });

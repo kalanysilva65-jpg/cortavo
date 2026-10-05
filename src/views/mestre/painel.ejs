@@ -27,6 +27,35 @@
   <% if (bk.teste) { %><span class="texto-secundario"> · teste de restauração OK em <%= fmtBk(bk.teste.quando) %></span><% } %>
 </div>
 
+<!-- Fase 2.7: testes ativos e vagas de fundador (spec 05). -->
+<div class="card">
+  <div class="flex gap-8" style="justify-content:space-between;flex-wrap:wrap;align-items:baseline">
+    <h2>Testes ativos (<%= testesAtivos.length %>)</h2>
+    <span class="selo-plano<%= vagasFundador.livres <= 0 ? ' selo-plano--aviso' : '' %>">Vagas de fundador: <%= vagasFundador.usadas %> de <%= vagasFundador.total %></span>
+  </div>
+  <% if (vagasFundador.livres <= 0) { %><p class="texto-sutil">As 5 vagas estão reservadas: novos testes entram sem desconto de fundador.</p><% } %>
+  <% if (!testesAtivos.length) { %>
+    <p class="texto-secundario mt-16">Nenhuma barbearia em teste.</p>
+  <% } else { %>
+    <div class="tabela-rolagem">
+      <table class="tabela mt-16">
+        <thead><tr><th>Barbearia</th><th>Plano</th><th class="col-valor">Dias restantes</th><th>Fundador</th><th></th></tr></thead>
+        <tbody>
+          <% testesAtivos.forEach(function (t) { %>
+            <tr>
+              <td><a href="/mestre/barbearias/<%= t.id %>#teste" class="link-cliente"><%= t.nome %></a></td>
+              <td><span class="selo-plano"><%= planoDe(t.planoCortavo).nome %></span></td>
+              <td class="col-valor"><strong><%= t.diasRestantes >= 0 ? t.diasRestantes : 'acabou' %></strong></td>
+              <td><span class="texto-sutil"><%= t.fundador ? 'vaga reservada' : '-' %></span></td>
+              <td><span class="texto-sutil"><%= t.testeSegurarPausa ? 'pausa segurada' : (t.diasRestantes < 0 ? 'Pausa amanhã' : t.diasRestantes <= 2 ? 'avisar o dono' : '') %></span></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
 <!-- Busca + filtro de status (paginação server-side) -->
 <div class="card">
   <form method="GET" action="/mestre" class="flex gap-8" style="flex-wrap:wrap;align-items:flex-end">

@@ -33,6 +33,15 @@
     <span class="texto-sutil">Dá para trocar depois no detalhe da barbearia.</span>
   </div>
 
+  <% var emTesteMarcado = !valores || valores.emTeste === '1' || valores.emTeste === 'on'; %>
+  <div class="campo mt-16">
+    <label><input type="checkbox" name="emTeste" value="1" <%= emTesteMarcado ? 'checked' : '' %> /> Em teste grátis (14 dias, sem cartão)</label>
+    <% if (typeof vagasFundador !== 'undefined' && vagasFundador) { %>
+      <span class="texto-sutil">Vagas de fundador: <%= vagasFundador.usadas %> de <%= vagasFundador.total %>.
+        <%= vagasFundador.livres > 0 ? 'Ao começar o teste, uma vaga fica reservada.' : 'As 5 vagas estão reservadas: esta barbearia fica sem desconto de fundador.' %></span>
+    <% } %>
+  </div>
+
   <h2 class="mt-16">Admin da barbearia</h2>
   <div class="grid-2 mt-16">
     <div class="campo">

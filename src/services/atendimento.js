@@ -18,6 +18,7 @@ const notificacoes = require('./notificacoes');
 const pausa = require('./pausa');
 const demo = require('./demo');
 const planoCortavo = require('./planoCortavo');
+const testeGratis = require('./testeGratis');
 const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
@@ -179,6 +180,15 @@ async function estadoTeto(barbeariaId) {
   const plano = await planoCortavo.planoDaBarbearia(barbeariaId);
   const teto = planoCortavo.resolverTeto(plano, 'secretaria', await lerConfig(barbeariaId, 'secretaria_teto_mes', ''), TETO_PADRAO);
   const uso = await prisma.usoIA.findUnique({ where: { barbeariaId_competencia: { barbeariaId, competencia } } });
+  // Fase 2.6 (spec 05 regra 4 / spec 07 regra 3): no teste do + IA vale o
+  // total do TESTE (250), num contador separado do mensal.
+  const doTeste = await testeGratis.tetoSecretariaTeste(barbeariaId, plano.chave);
+  if (doTeste) {
+    // Correção Sergio 2: desligado (teto 0) continua desligado no teste, e um
+    // teto menor que 250 vale. A pausa do dono (secretaria_pausada) é checada antes.
+    const tetoTeste = teto === 0 ? 0 : Math.min(doTeste.teto, teto);
+    return { competencia, teto: tetoTeste, respostas: doTeste.respostas, atingido: doTeste.respostas >= tetoTeste, desligado: tetoTeste === 0, avisado: uso ? uso.avisadoTeto : false, teste: true };
+  }
   const respostas = uso ? uso.respostas : 0;
   return { competencia, teto, respostas, atingido: respostas >= teto, desligado: teto === 0, avisado: uso ? uso.avisadoTeto : false };
 }
@@ -188,6 +198,12 @@ async function estadoTetoCopiloto(barbeariaId) {
   const plano = await planoCortavo.planoDaBarbearia(barbeariaId);
   const teto = planoCortavo.resolverTeto(plano, 'assistente', await lerConfig(barbeariaId, 'copiloto_teto_mes', ''), TETO_COPILOTO_PADRAO);
   const uso = await prisma.usoIA.findUnique({ where: { barbeariaId_competencia: { barbeariaId, competencia } } });
+  // No teste: 50 consultas no período do teste (contador próprio); desligado continua desligado.
+  const doTeste = teto > 0 ? await testeGratis.tetoAssistenteTeste(barbeariaId) : null;
+  if (doTeste) {
+    const t = Math.min(doTeste.teto, teto);
+    return { competencia, teto: t, consultas: doTeste.consultas, atingido: doTeste.consultas >= t, desligado: false, teste: true };
+  }
   const consultas = uso ? uso.copilotoConsultas : 0;
   return { competencia, teto, consultas, atingido: consultas >= teto, desligado: teto === 0 };
 }
@@ -213,6 +229,8 @@ async function registrarUso(barbeariaId, competencia, usage) {
     create: { barbeariaId, competencia, respostas: 1, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0, tokensEntradaCru: usage?.inputCru || 0 },
     update: { respostas: { increment: 1 }, tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 }, tokensEntradaCru: { increment: usage?.inputCru || 0 } },
   });
+  // Contador do teste (só conta se a barbearia estiver em teste).
+  await testeGratis.contarRespostaTeste(barbeariaId);
   // Modelo REAL usado pela secretária (para o custo por modelo).
   await registrarUsoModelo(barbeariaId, competencia, 'whatsapp', secretaria.MODELO, usage);
 }
@@ -238,6 +256,7 @@ async function registrarUsoCopiloto(barbeariaId, usage) {
   });
   // Modelo REAL do copiloto (mesma lógica de env do services/ia.js).
   const modeloCop = process.env.IA_MODELO_COPILOTO || process.env.IA_MODELO || 'claude-haiku-4-5';
+  await testeGratis.contarConsultaTeste(barbeariaId); // assistente no teste (fase 2.6)
   await registrarUsoModelo(barbeariaId, competencia, 'copiloto', modeloCop, usage);
 }
 
