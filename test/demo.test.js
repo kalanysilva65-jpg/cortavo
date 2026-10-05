@@ -175,3 +175,30 @@ test('limpeza da demo: sem --confirmar certo não apaga; slug que não é demo �
   assert.equal((await limparDemo({ prisma, agora, slug: 'navalha', executar: true, confirmar: 'navalha', log: () => {} })).motivo, 'nao-demo');
   assert.equal(ags.length, 5);
 });
+
+// ---------- Vitrine (critério 5) ----------
+test('vitrine: 3 barbeiros, telefones (00), movimento crescendo e semana cheia', () => {
+  const v = carregar('deploy/vitrine-marketing.js');
+  assert.equal(v.BARBEIROS.length, 3);
+  for (let i = 0; i < 18; i++) assert.match(v.telefoneFicticio(i), /^\(00\) 9\d{4}-\d{4}$/);
+  const { historico, futuros } = v.gerarPlano(new Date('2026-10-05T10:00:00'));
+  const porSemana = [1, 2, 3, 4, 5, 6].map((s) => historico.filter((e) => e.semana === s).length);
+  for (let i = 1; i < porSemana.length; i++) assert.ok(porSemana[i] > porSemana[i - 1], 'semana ' + (i + 1) + ' cresce: ' + porSemana);
+  assert.ok(futuros.length >= 3 * 12 * 5 * 0.6, 'agenda da semana cheia: ' + futuros.length);
+  assert.equal(v.SLUG, 'vitrine');
+});
+
+test('app do cliente: demo e vitrine ficam fora da lista de barbearias', async () => {
+  let filtro;
+  const ctrl = carregar('src/controllers/appClienteController.js', {
+    prisma: prismaFalso({
+      barbearia: { findMany: async (args) => { filtro = args.where; return []; } },
+      horarioTrabalho: { findMany: async () => [] },
+    }),
+  });
+  const nomeHome = Object.keys(ctrl).find((k) => /home|inicio|listar/i.test(k));
+  assert.ok(nomeHome, 'função da home encontrada: ' + Object.keys(ctrl));
+  const { reqFalso, resFalso } = require('./helpers/ambiente');
+  try { await ctrl[nomeHome](reqFalso(), resFalso()); } catch (_) { /* só importa o filtro */ }
+  assert.deepEqual(filtro.slug, { notIn: ['demo', 'vitrine'] });
+});

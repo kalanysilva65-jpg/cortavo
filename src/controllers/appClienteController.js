@@ -41,7 +41,8 @@ async function home(req, res) {
       ativo: true,
       // A "Barbearia Demonstração" (dados fictícios) tem agendamento público
       // aberto pelo subdomínio, mas NÃO entra na lista de barbearias reais.
-      slug: { not: 'demo' },
+      // A vitrine de marketing (spec 03) também fica de fora.
+      slug: { notIn: ['demo', 'vitrine'] },
       ...(termo ? { nome: { contains: termo } } : {}),
     },
     orderBy: { nome: 'asc' },
