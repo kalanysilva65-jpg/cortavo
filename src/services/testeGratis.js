@@ -68,8 +68,20 @@ async function vagasFundador() {
 
 // Reserva a vaga de fundador da barbearia, contando e gravando NA MESMA
 // transação (correção Sergio 1): dois pedidos ao mesmo tempo nunca passam de 5.
-// No SQLite a transação de escrita é serializada. Devolve true se reservou.
+// No SQLite (modo WAL) só um escritor por vez: um segundo pedido simultâneo é
+// REJEITADO (SQLITE_BUSY / erro da transação), não enfileirado. Esse caso vira
+// "sem vaga" (R1 da Vera): a barbearia é criada sem vaga e a tela avisa, sem 500.
+// Devolve true se reservou.
 async function reservarFundador(barbeariaId, agora = new Date()) {
+  try {
+    return await reservarFundadorTx(barbeariaId, agora);
+  } catch (e) {
+    console.error('[teste-gratis] reserva de vaga de fundador falhou (concorrência?), tratada como sem vaga:', e.message);
+    return false;
+  }
+}
+
+function reservarFundadorTx(barbeariaId, agora) {
   return prisma.$transaction(async (tx) => {
     const usadas = await tx.barbearia.count({ where: { fundador: { in: ['reservada', 'confirmada'] } } });
     if (usadas >= VAGAS_FUNDADOR) return false;

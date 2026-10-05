@@ -501,3 +501,24 @@ test('Vera: assistente no teste tem 50 consultas no período (contador próprio,
   banco[0].situacaoCortavo = 'ativa';
   assert.equal(await tg.tetoAssistenteTeste(7), null, 'depois do teste vale o mensal');
 });
+
+
+test('Vera R1: reserva de vaga rejeitada pelo banco (SQLITE_BUSY) não dá 500: cria sem vaga e avisa', async () => {
+  const banco = [];
+  const criadas = [];
+  const prisma = bancoFalso(banco);
+  prisma.$transaction = async () => { const e = new Error('SQLITE_BUSY: database is locked'); e.code = 'P2034'; throw e; };
+  prisma.barbearia.create = async ({ data }) => { const b = { id: 1, fundador: null, ...data }; banco.push(b); criadas.push(b); return b; };
+  prisma.barbearia.findUnique = async () => null;
+  prisma.usuario.create = async () => ({});
+  prisma.configuracao = { upsert: async () => ({}) };
+  const m = carregar('src/controllers/mestreController.js', { prisma, stubs: { 'src/services/auditoria.js': { registrar: async () => {} } } });
+  const req = reqFalso({ body: { nome: 'Corrida', slug: 'corrida', adminNome: 'A', adminEmail: 'a@exemplo.test', adminSenha: 'x'.repeat(8), plano: 'barbearia', emTeste: '1' } });
+  const res = resFalso();
+  await m.criarBarbearia(req, res);
+  assert.equal(res.redirecionou, '/mestre/barbearias/1');
+  assert.equal(criadas[0].situacaoCortavo, 'teste');
+  assert.equal(banco[0].fundador, null);
+  assert.equal(req.session.flash.tipo, 'aviso');
+  assert.match(req.session.flash.texto, /vagas de fundador/);
+});
