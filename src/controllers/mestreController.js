@@ -90,6 +90,17 @@ async function painel(req, res) {
     skip: (paginaAtual - 1) * POR_PAGINA,
     take: POR_PAGINA,
   });
+  // Aviso de barbeiros (fase 2.4): conta só os ATIVOS, igual ao detalhe.
+  const ativosPorBarbearia = new Map();
+  if (barbearias.length) {
+    const grupos = await prisma.usuario.groupBy({
+      by: ['barbeariaId'],
+      where: { barbeariaId: { in: barbearias.map((x) => x.id) }, ativo: true },
+      _count: { _all: true },
+    });
+    for (const g of grupos) ativosPorBarbearia.set(g.barbeariaId, g._count._all);
+  }
+  for (const x of barbearias) x.barbeirosAtivos = ativosPorBarbearia.get(x.id) || 0;
 
   res.render('mestre/painel', {
     layout: 'layouts/mestre',

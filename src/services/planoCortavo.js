@@ -57,15 +57,29 @@ function chaveValida(chave) {
 // Plano a partir do valor gravado. Valor desconhecido/vazio = Personalizado
 // (nunca bloqueia por engano uma barbearia que já usa o app).
 function planoDe(chave) {
+  if (chave != null && chave !== '' && !chaveValida(chave)) {
+    // Só entra por fora do app (a troca usa lista fechada): avisa no log.
+    console.warn('[plano-cortavo] valor desconhecido no banco, tratado como Personalizado:', JSON.stringify(String(chave).slice(0, 40)));
+  }
   return PLANOS[chaveValida(chave) ? chave : CHAVE_PADRAO];
 }
+
+// Usado só quando a LEITURA do plano falha (correção M2 do Sérgio): para a IA,
+// fecha (secretária e assistente com teto 0, sem gastar). As telas não usam
+// isto: leem o plano da barbearia já carregada e continuam abertas.
+const PLANO_FALHA_LEITURA = Object.freeze({
+  ...PLANOS.personalizado,
+  tetos: { secretaria: 0, assistente: 0, lembretesRef: null, barbeirosRef: null },
+  erroLeitura: true,
+});
 
 async function planoDaBarbearia(barbeariaId) {
   let b = null;
   try {
     b = await prisma.barbearia.findUnique({ where: { id: barbeariaId }, select: { planoCortavo: true } });
   } catch (e) {
-    console.error('[plano-cortavo] leitura falhou:', e.message);
+    console.error('[plano-cortavo] leitura falhou, IA bloqueada nesta chamada:', e.message);
+    return PLANO_FALHA_LEITURA;
   }
   return planoDe(b && b.planoCortavo);
 }
@@ -75,8 +89,11 @@ function libera(plano, funcao) {
 }
 
 // Qual função do plano cobre um caminho relativo a /painel (ex.: "/estoque/3").
+// Sem diferenciar maiúsculas: o Express casa /painel/ESTOQUE com /estoque
+// (correção M1 do Sérgio).
 function funcaoDoCaminho(caminho) {
-  return FUNCOES.find((f) => f.prefixos.some((p) => caminho === p || caminho.startsWith(p + '/'))) || null;
+  const c = String(caminho || '').toLowerCase();
+  return FUNCOES.find((f) => f.prefixos.some((p) => c === p || c.startsWith(p + '/'))) || null;
 }
 
 // Plano mais barato que libera a função (para o texto do cadeado).

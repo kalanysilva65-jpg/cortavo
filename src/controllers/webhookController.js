@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const atendimento = require('../services/atendimento');
 const whatsapp = require('../services/whatsapp');
 const transcricao = require('../services/transcricao');
+const planoCortavo = require('../services/planoCortavo');
 const waMidia = require('../services/waMidia');
 
 // GET: a Meta manda hub.mode/hub.verify_token/hub.challenge. Se o token bate com
@@ -132,7 +133,10 @@ async function processarMensagem(barbeariaId, msg, nomeContato) {
   const infoMidia = { arquivo, mime, nome: dado.filename || null };
 
   if (tipo === 'audio') {
-    const texto = midia ? await transcricao.transcrever(midia.buffer, mime) : null;
+    // Correção B1 do Sérgio: transcrever custa; só quando o plano tem secretária.
+    // Sem ela, o áudio fica em Conversas sem texto para a equipe ouvir.
+    const comSecretaria = planoCortavo.temSecretaria(await planoCortavo.planoDaBarbearia(barbeariaId));
+    const texto = midia && comSecretaria ? await transcricao.transcrever(midia.buffer, mime) : null;
     if (texto) console.log('[webhook] áudio transcrito:', JSON.stringify(texto.slice(0, 80)));
     // Sem transcrição o áudio fica na caixa de entrada pra alguém ouvir.
     return atendimento.receberMensagemCliente(barbeariaId, { ...base, tipo, midia: infoMidia, texto: texto || '' });
@@ -140,4 +144,4 @@ async function processarMensagem(barbeariaId, msg, nomeContato) {
   return atendimento.receberMensagemCliente(barbeariaId, { ...base, tipo, midia: infoMidia, texto: dado.caption || '' });
 }
 
-module.exports = { verificar, receber };
+module.exports = { verificar, receber, processarMensagem }; // processarMensagem exportada para teste

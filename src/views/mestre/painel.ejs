@@ -71,7 +71,7 @@
             <tr>
               <td><a href="/mestre/barbearias/<%= barb.id %>" class="link-cliente"><%= barb.nome %></a></td>
               <td><span class="texto-sutil"><%= barb.slug %></span></td>
-              <% var pl = planoDe(barb.planoCortavo); var av = avisoBarbeiros(pl, barb._count.usuarios, barb.nome); %>
+              <% var pl = planoDe(barb.planoCortavo); var av = avisoBarbeiros(pl, barb.barbeirosAtivos, barb.nome); %>
               <td>
                 <span class="selo-plano<%= av ? ' selo-plano--aviso' : '' %>"><%= pl.nome %></span>
                 <% if (av) { %><div class="texto-sutil" style="margin-top:4px"><%= av %></div><% } %>

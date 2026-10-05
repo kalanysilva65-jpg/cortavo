@@ -3,6 +3,7 @@
 // cliente, faturamento do dia + barras da semana, produtividade (ocupação),
 // retenção e novos clientes. Tudo escopado pela barbearia do contexto.
 const prisma = require('../config/db');
+const planoCortavo = require('../services/planoCortavo');
 const { paraHome: metasDaHome } = require('./metaController');
 const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
 
@@ -213,7 +214,9 @@ async function ver(req, res) {
   }));
 
   // --- Alerta de estoque baixo ---------------------------------------------
-  const itensEstoque = await prisma.estoque.findMany({ where: { barbeariaId: b } });
+  // Fase 2 (B3): função fora do plano não aparece na Home (nem é consultada).
+  const plano = res.locals.planoCortavo || planoCortavo.planoDe(res.locals.barbeariaAtual && res.locals.barbeariaAtual.planoCortavo);
+  const itensEstoque = planoCortavo.libera(plano, 'estoque') ? await prisma.estoque.findMany({ where: { barbeariaId: b } }) : [];
   const emFalta = itensEstoque.filter((e) => e.quantidadeMinima > 0 && e.quantidade <= e.quantidadeMinima);
   const estoqueBaixo = {
     tem: emFalta.length > 0,
@@ -225,7 +228,7 @@ async function ver(req, res) {
   // Só o que a view consome. `barras`/`maxBarra` continuam existindo acima,
   // mas como matéria-prima de `barrasSemana` — não vão para a view.
   const u = req.session.usuario;
-  const metasHome = await metasDaHome(b, u.id, !!req.ehAdmin);
+  const metasHome = planoCortavo.libera(plano, 'metas') ? await metasDaHome(b, u.id, !!req.ehAdmin) : [];
 
   res.render('painel/dashboard', {
     titulo: 'Painel',

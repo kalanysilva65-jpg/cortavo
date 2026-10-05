@@ -4,6 +4,7 @@ const router = express.Router();
 const { exigeLogin, exigeAdmin } = require('../middlewares/auth');
 const { exigeBarbeariaPainel } = require('../middlewares/tenant');
 const { exigeFuncaoDoPlano } = require('../middlewares/planoCortavo');
+const planoCortavo = require('../services/planoCortavo');
 const prisma = require('../config/db');
 const agendaController = require('../controllers/agendaController');
 const horarioController = require('../controllers/horarioController');
@@ -143,7 +144,8 @@ router.use(async (req, res, next) => {
 
   // Alerta de estoque baixo (admin) — mostrado no subtítulo do cabeçalho em todas as telas.
   res.locals.estoqueBaixoCount = 0;
-  if (req.ehAdmin) {
+  // Fase 2 (B3): fora do plano, o cabeçalho não fala de estoque.
+  if (req.ehAdmin && planoCortavo.libera(planoCortavo.planoDe(barbearia && barbearia.planoCortavo), 'estoque')) {
     const itens = await prisma.estoque.findMany({ where: { barbeariaId: req.barbeariaId } });
     res.locals.estoqueBaixoCount = itens.filter((i) => i.quantidade <= i.quantidadeMinima).length;
   }

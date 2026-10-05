@@ -26,8 +26,10 @@ function bloqueadosDe(usuario) {
 }
 
 // Qual módulo cobre um caminho relativo ao /painel (ex.: "/clientes/3").
+// Sem diferenciar maiúsculas (o Express casa /CLIENTES com /clientes).
 function moduloDoCaminho(caminho) {
-  return MODULOS.find((m) => m.prefixos.some((p) => caminho === p || caminho.startsWith(p + '/')));
+  const c = String(caminho || '').toLowerCase();
+  return MODULOS.find((m) => m.prefixos.some((p) => c === p || c.startsWith(p + '/')));
 }
 
 // Do formulário: checkboxes `acesso_<chave>` marcados = liberado.
