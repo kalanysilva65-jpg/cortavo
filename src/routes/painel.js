@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { exigeLogin, exigeAdmin } = require('../middlewares/auth');
 const { exigeBarbeariaPainel } = require('../middlewares/tenant');
+const { exigeFuncaoDoPlano } = require('../middlewares/planoCortavo');
 const prisma = require('../config/db');
 const agendaController = require('../controllers/agendaController');
 const horarioController = require('../controllers/horarioController');
@@ -147,6 +148,9 @@ router.use(async (req, res, next) => {
   }
   next();
 });
+
+// Plano da Cortavo (fase 2.2): rotas fora do plano param aqui, no servidor.
+router.use(exigeFuncaoDoPlano);
 
 // Painel (dashboard).
 router.get('/', dashboardController.ver);

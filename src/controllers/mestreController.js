@@ -8,6 +8,7 @@ const prisma = require('../config/db');
 const { caminhoDoUpload } = require('../config/paths');
 const { geocodificar } = require('../services/geocodificacao');
 const auditoria = require('../services/auditoria');
+const planoCortavo = require('../services/planoCortavo');
 const custosIA = require('../services/custosIA');
 const canaisMensagens = require('../services/canaisMensagens');
 
@@ -440,6 +441,31 @@ async function definirAtiva(req, res) {
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 
+// POST /mestre/barbearias/:id/plano — troca o plano da Cortavo (fase 2.2,
+// spec 04). Só a Kalany (papel dono: a rota inteira do mestre exige exigeDono).
+// Vale na hora; dados das funções desligadas ficam guardados.
+async function definirPlano(req, res) {
+  const barbearia = await carregarBarbearia(req, res);
+  if (!barbearia) return;
+  const novo = String(req.body.plano || '');
+  if (!planoCortavo.chaveValida(novo)) {
+    req.session.flash = { tipo: 'erro', texto: 'Plano inválido.' };
+    return res.redirect('/mestre/barbearias/' + barbearia.id);
+  }
+  const antes = planoCortavo.planoDe(barbearia.planoCortavo);
+  if (antes.chave !== novo) {
+    await prisma.barbearia.update({ where: { id: barbearia.id }, data: { planoCortavo: novo, planoCortavoDesde: new Date() } });
+    await auditoria.registrar(req, {
+      acao: 'barbearia.plano',
+      alvoTipo: 'barbearia',
+      alvoId: barbearia.id,
+      detalhe: `Plano de "${barbearia.nome}": ${antes.nome} -> ${planoCortavo.planoDe(novo).nome}.`,
+    });
+  }
+  req.session.flash = { tipo: 'sucesso', texto: 'Plano: ' + planoCortavo.planoDe(novo).nome + '.' };
+  res.redirect('/mestre/barbearias/' + barbearia.id);
+}
+
 // POST /mestre/barbearias/:id/notas — salva as notas internas do dono do SaaS
 // sobre a barbearia (só o painel-mestre vê; a barbearia nunca).
 async function salvarNotas(req, res) {
@@ -614,4 +640,5 @@ module.exports = {
   definirAtiva,
   salvarNotas,
   auditoriaLista,
+  definirPlano,
 };

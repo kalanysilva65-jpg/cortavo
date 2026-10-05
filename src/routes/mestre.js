@@ -41,6 +41,7 @@ router.post('/sair', mestreController.sair);
 router.get('/barbearias/:id', mestreController.detalhe);
 router.post('/barbearias/:id', mestreController.atualizarBarbearia);
 router.post('/barbearias/:id/notas', mestreController.salvarNotas);
+router.post('/barbearias/:id/plano', mestreController.definirPlano); // fase 2.2: só papel dono
 router.post('/barbearias/:id/ativa', mestreController.definirAtiva);
 router.post('/barbearias/:id/remover', mestreController.removerBarbearia);
 
