@@ -13,5 +13,6 @@ ALTER TABLE "barbearias" ADD COLUMN "teste_aviso_fim_em" DATETIME;
 ALTER TABLE "barbearias" ADD COLUMN "teste_aviso_vencido_em" DATETIME;
 ALTER TABLE "barbearias" ADD COLUMN "teste_pausado_em" DATETIME;
 ALTER TABLE "barbearias" ADD COLUMN "teste_respostas" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "barbearias" ADD COLUMN "teste_consultas" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "barbearias" ADD COLUMN "fundador" TEXT;
 ALTER TABLE "barbearias" ADD COLUMN "fundador_em" DATETIME;

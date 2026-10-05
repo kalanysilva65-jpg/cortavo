@@ -56,6 +56,7 @@ model Barbearia {
   testeAvisoVencidoEm    DateTime? @map("teste_aviso_vencido_em") // aviso do 15º dia já enviado
   testePausadoEm         DateTime? @map("teste_pausado_em")
   testeRespostas         Int       @default(0) @map("teste_respostas") // secretária no teste (separado do mensal)
+  testeConsultas         Int       @default(0) @map("teste_consultas") // assistente no teste (50 no período, separado do mensal)
   fundador               String?   // null | "reservada" | "confirmada" (no máximo 5 ao mesmo tempo)
   fundadorEm             DateTime? @map("fundador_em")
   criadoEm DateTime @default(now()) @map("criado_em")

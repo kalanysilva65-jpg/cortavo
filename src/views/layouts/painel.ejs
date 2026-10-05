@@ -108,7 +108,7 @@
     </div>
     <main class="container conteudo">
       <% if (typeof faixaTeste !== 'undefined' && faixaTeste) { %>
-        <div class="alerta <%= faixaTeste.aviso ? 'alerta-aviso' : '' %> faixa-teste" role="status"><%= faixaTeste.texto %></div>
+        <div class="faixa-teste<%= faixaTeste.aviso ? ' faixa-teste--aviso' : '' %>" role="status" style="position:static;display:block;margin:0 0 16px;padding:10px 14px;border:1px solid <%= faixaTeste.aviso ? '#111111' : '#9A9A9A' %>;border-radius:12px;background:#FFFFFF;color:#111111;font-size:14px;line-height:1.4;<%= faixaTeste.aviso ? 'font-weight:600;' : '' %>"><%= faixaTeste.texto %></div>
       <% } %>
       <%- include('../partials/flash') %> <%- body %>
     </main>

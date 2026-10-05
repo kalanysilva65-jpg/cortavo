@@ -26,6 +26,11 @@ function diaBrasilia(data) {
   return Math.floor((new Date(data).getTime() + FUSO_BRASILIA_MS) / DIA_MS);
 }
 
+// Início (00:00) do dia de Brasília que contém `data`.
+function inicioDoDiaBrasilia(data) {
+  return new Date(diaBrasilia(data) * DIA_MS - FUSO_BRASILIA_MS);
+}
+
 function emTeste(b) {
   return !!b && b.situacaoCortavo === 'teste' && !!b.testeFim;
 }
@@ -61,11 +66,16 @@ async function vagasFundador() {
   return { usadas, total: VAGAS_FUNDADOR, livres: Math.max(0, VAGAS_FUNDADOR - usadas) };
 }
 
-// Dados para reservar a vaga, ou null quando as 5 já estão ocupadas.
-async function dadosReservaFundador(agora = new Date()) {
-  const v = await vagasFundador();
-  if (v.livres <= 0) return null;
-  return { fundador: 'reservada', fundadorEm: agora };
+// Reserva a vaga de fundador da barbearia, contando e gravando NA MESMA
+// transação (correção Sergio 1): dois pedidos ao mesmo tempo nunca passam de 5.
+// No SQLite a transação de escrita é serializada. Devolve true se reservou.
+async function reservarFundador(barbeariaId, agora = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    const usadas = await tx.barbearia.count({ where: { fundador: { in: ['reservada', 'confirmada'] } } });
+    if (usadas >= VAGAS_FUNDADOR) return false;
+    const r = await tx.barbearia.updateMany({ where: { id: barbeariaId, fundador: null }, data: { fundador: 'reservada', fundadorEm: agora } });
+    return r.count === 1;
+  });
 }
 
 const TEXTO_SEM_VAGA = `As ${VAGAS_FUNDADOR} vagas de fundador já estão reservadas. Esta barbearia fica sem o desconto de fundador.`;
@@ -95,6 +105,28 @@ async function tetoSecretariaTeste(barbeariaId, chavePlano) {
   return { teto: TETO_SECRETARIA_TESTE, respostas, atingido: respostas >= TETO_SECRETARIA_TESTE };
 }
 
+// Assistente no teste: 50 consultas no PERÍODO do teste (não 50 por mês
+// atravessando a virada). null = fora do teste (vale o mensal).
+const TETO_ASSISTENTE_TESTE = 50;
+async function tetoAssistenteTeste(barbeariaId) {
+  let b = null;
+  try {
+    b = await prisma.barbearia.findUnique({ where: { id: barbeariaId }, select: { situacaoCortavo: true, testeFim: true, testeConsultas: true } });
+  } catch (e) {
+    return null;
+  }
+  if (!emTeste(b)) return null;
+  return { teto: TETO_ASSISTENTE_TESTE, consultas: Number(b.testeConsultas) || 0 };
+}
+
+async function contarConsultaTeste(barbeariaId) {
+  try {
+    await prisma.barbearia.updateMany({ where: { id: barbeariaId, situacaoCortavo: 'teste' }, data: { testeConsultas: { increment: 1 } } });
+  } catch (e) {
+    console.error('[teste-gratis] falha ao contar consulta do teste:', e.message);
+  }
+}
+
 async function contarRespostaTeste(barbeariaId) {
   try {
     await prisma.barbearia.updateMany({ where: { id: barbeariaId, situacaoCortavo: 'teste' }, data: { testeRespostas: { increment: 1 } } });
@@ -106,13 +138,27 @@ async function contarRespostaTeste(barbeariaId) {
 // ---------- Rotina diária ----------
 const REQ_ROTINA = { session: { usuario: { nome: 'Rotina do teste grátis' } }, ip: '' };
 
-async function avisarKalany(notificar, titulo, corpo) {
+// Avisa a Kalany por push E registra o aviso na auditoria (aparece no
+// painel-mestre). Devolve true se ao menos um dos dois deu certo (correção
+// Sergio 4): sem isso, a marca do aviso é desfeita e a pausa não acontece.
+async function avisarKalany(notificar, titulo, corpo, barbeariaId) {
+  let entregues = 0;
   try {
     const donos = await prisma.usuario.findMany({ where: { papel: 'dono', ativo: true }, select: { id: true } });
-    for (const d of donos) await notificar(d.id, { titulo, corpo, url: '/mestre', tag: 'cortavo-teste' });
+    for (const d of donos) {
+      try { entregues += Number(await notificar(d.id, { titulo, corpo, url: '/mestre', tag: 'cortavo-teste' })) || 0; } catch (e) { console.error('[teste-gratis] push falhou:', e.message); }
+    }
   } catch (e) {
     console.error('[teste-gratis] falha ao avisar a Kalany:', e.message);
   }
+  let registrado = false;
+  try {
+    await prisma.logAuditoria.create({ data: { adminId: null, adminNome: 'Rotina do teste grátis', acao: 'teste.aviso', alvoTipo: 'barbearia', alvoId: barbeariaId || null, detalhe: `${titulo}: ${corpo}`, ip: null } });
+    registrado = true;
+  } catch (e) {
+    console.error('[teste-gratis] aviso não registrado na auditoria:', e.message);
+  }
+  return entregues > 0 || registrado;
 }
 
 function notificadorPadrao() {
@@ -123,60 +169,76 @@ function notificadorPadrao() {
 // Idempotente: cada passo grava a marca com updateMany condicionado ao campo
 // ainda vazio; só quem conseguiu gravar (count = 1) avisa. Rodar duas vezes no
 // mesmo dia (ou dois processos ao mesmo tempo) não duplica aviso nem pausa.
+async function processarUma(b, agora, enviar, resumo) {
+  if (!b.testeFim) return;
+  // Pagou no teste: vira assinatura, sem pausa (critério 3 / regra 7).
+  if (b.testePagoEm) {
+    const r = await prisma.barbearia.updateMany({
+      where: { id: b.id, situacaoCortavo: 'teste' },
+      data: { situacaoCortavo: 'ativa', ...(b.fundador === 'reservada' ? { fundador: 'confirmada' } : {}) },
+    });
+    if (r.count) {
+      resumo.convertidas++;
+      await auditoria.registrar(REQ_ROTINA, { acao: 'teste.convertido', alvoTipo: 'barbearia', alvoId: b.id, detalhe: `Teste de "${b.nome}" virou assinatura (pagamento registrado).` });
+    }
+    return;
+  }
+  const r = diasRestantes(b, agora);
+  // Dia 12 (faltam 2 dias ou menos): aviso à Kalany, uma vez.
+  if (r <= DIAS_AVISO && r >= 0 && !b.testeAvisoFimEm) {
+    const u = await prisma.barbearia.updateMany({ where: { id: b.id, testeAvisoFimEm: null }, data: { testeAvisoFimEm: agora } });
+    if (u.count) {
+      const ok = await avisarKalany(enviar, 'Teste terminando', `O teste da ${b.nome} termina em ${r} dia(s).`, b.id);
+      if (ok) resumo.avisosFim++;
+      else await prisma.barbearia.updateMany({ where: { id: b.id }, data: { testeAvisoFimEm: null } });
+    }
+  }
+  // Dia 15 (passou do fim): aviso à Kalany, uma vez. A marca só fica se o aviso
+  // chegou ou ficou registrado no painel (correção Sergio 4).
+  if (r < 0 && !b.testeAvisoVencidoEm) {
+    const u = await prisma.barbearia.updateMany({ where: { id: b.id, testeAvisoVencidoEm: null }, data: { testeAvisoVencidoEm: agora } });
+    if (u.count) {
+      const ok = await avisarKalany(enviar, 'Teste acabou sem pagamento', `O teste da ${b.nome} acabou sem pagamento registrado. Amanhã o acesso é pausado, a menos que você clique em "Segurar pausa".`, b.id);
+      if (ok) resumo.avisosVencido++;
+      else await prisma.barbearia.updateMany({ where: { id: b.id }, data: { testeAvisoVencidoEm: null } });
+    }
+    return; // a pausa só vem no dia seguinte ao aviso
+  }
+  // Dia 16 em diante: pausa, se o aviso já saiu num dia anterior e a Kalany não segurou.
+  if (r < 0 && b.testeAvisoVencidoEm && diaBrasilia(b.testeAvisoVencidoEm) < diaBrasilia(agora)) {
+    if (b.testeSegurarPausa) { resumo.seguradas++; return; }
+    const hoje = inicioDoDiaBrasilia(agora);
+    const u = await prisma.barbearia.updateMany({
+      // Correção Sergio 5: a condição confere de novo o fim e a marca do aviso
+      // (anterior a hoje). Prorrogar limpa a marca, então não pausa por corrida.
+      where: { id: b.id, situacaoCortavo: 'teste', testeSegurarPausa: false, testePagoEm: null, testeFim: { lt: hoje }, testeAvisoVencidoEm: { lt: hoje } },
+      data: {
+        ativo: false, // a pausa real que já existe (spec 01)
+        situacaoCortavo: 'pausada_teste',
+        testePausadoEm: agora,
+        // Vaga de fundador volta (regra 5).
+        ...(b.fundador === 'reservada' ? { fundador: null, fundadorEm: null } : {}),
+      },
+    });
+    if (u.count) {
+      resumo.pausadas++;
+      await auditoria.registrar(REQ_ROTINA, { acao: 'teste.pausar', alvoTipo: 'barbearia', alvoId: b.id, detalhe: `Teste de "${b.nome}" acabou sem pagamento: acesso pausado${b.fundador === 'reservada' ? ' e vaga de fundador liberada' : ''}.` });
+      await avisarKalany(enviar, 'Acesso pausado', `A ${b.nome} foi pausada: o teste acabou sem pagamento. Os dados ficam guardados.`, b.id);
+    }
+  }
+}
+
 async function rodarRotina({ agora = new Date(), notificar = null } = {}) {
   const enviar = notificar || notificadorPadrao();
   const resumo = { convertidas: 0, avisosFim: 0, avisosVencido: 0, pausadas: 0, seguradas: 0 };
   const testes = await prisma.barbearia.findMany({ where: { situacaoCortavo: 'teste' } });
   for (const b of testes) {
-    if (!b.testeFim) continue;
-    // Pagou no teste: vira assinatura, sem pausa (critério 3 / regra 7).
-    if (b.testePagoEm) {
-      const r = await prisma.barbearia.updateMany({
-        where: { id: b.id, situacaoCortavo: 'teste' },
-        data: { situacaoCortavo: 'ativa', ...(b.fundador === 'reservada' ? { fundador: 'confirmada' } : {}) },
-      });
-      if (r.count) {
-        resumo.convertidas++;
-        await auditoria.registrar(REQ_ROTINA, { acao: 'teste.convertido', alvoTipo: 'barbearia', alvoId: b.id, detalhe: `Teste de "${b.nome}" virou assinatura (pagamento registrado).` });
-      }
-      continue;
-    }
-    const r = diasRestantes(b, agora);
-    // Dia 12 (faltam 2 dias ou menos): aviso à Kalany, uma vez.
-    if (r <= DIAS_AVISO && r >= 0 && !b.testeAvisoFimEm) {
-      const u = await prisma.barbearia.updateMany({ where: { id: b.id, testeAvisoFimEm: null }, data: { testeAvisoFimEm: agora } });
-      if (u.count) {
-        resumo.avisosFim++;
-        await avisarKalany(enviar, 'Teste terminando', `O teste da ${b.nome} termina em ${r} dia(s).`);
-      }
-    }
-    // Dia 15 (passou do fim): aviso à Kalany, uma vez.
-    if (r < 0 && !b.testeAvisoVencidoEm) {
-      const u = await prisma.barbearia.updateMany({ where: { id: b.id, testeAvisoVencidoEm: null }, data: { testeAvisoVencidoEm: agora } });
-      if (u.count) {
-        resumo.avisosVencido++;
-        await avisarKalany(enviar, 'Teste acabou sem pagamento', `O teste da ${b.nome} acabou sem pagamento registrado. Amanhã o acesso é pausado, a menos que você clique em "Segurar pausa".`);
-      }
-      continue; // a pausa só vem no dia seguinte ao aviso
-    }
-    // Dia 16 em diante: pausa, se o aviso já saiu num dia anterior e a Kalany não segurou.
-    if (r < 0 && b.testeAvisoVencidoEm && diaBrasilia(b.testeAvisoVencidoEm) < diaBrasilia(agora)) {
-      if (b.testeSegurarPausa) { resumo.seguradas++; continue; }
-      const u = await prisma.barbearia.updateMany({
-        where: { id: b.id, situacaoCortavo: 'teste', testeSegurarPausa: false, testePagoEm: null },
-        data: {
-          ativo: false, // a pausa real que já existe (spec 01)
-          situacaoCortavo: 'pausada_teste',
-          testePausadoEm: agora,
-          // Vaga de fundador volta (regra 5).
-          ...(b.fundador === 'reservada' ? { fundador: null, fundadorEm: null } : {}),
-        },
-      });
-      if (u.count) {
-        resumo.pausadas++;
-        await auditoria.registrar(REQ_ROTINA, { acao: 'teste.pausar', alvoTipo: 'barbearia', alvoId: b.id, detalhe: `Teste de "${b.nome}" acabou sem pagamento: acesso pausado${b.fundador === 'reservada' ? ' e vaga de fundador liberada' : ''}.` });
-        await avisarKalany(enviar, 'Acesso pausado', `A ${b.nome} foi pausada: o teste acabou sem pagamento. Os dados ficam guardados.`);
-      }
+    // Correção Sergio 3: erro numa barbearia não interrompe as outras.
+    try {
+      await processarUma(b, agora, enviar, resumo);
+    } catch (e) {
+      resumo.erros = (resumo.erros || 0) + 1;
+      console.error('[teste-gratis] rotina falhou na barbearia', b.id, '-', e.message);
     }
   }
   return resumo;
@@ -202,7 +264,7 @@ function iniciarAgendador() {
 module.exports = {
   DIAS_TESTE, PRORROGACAO_MAX_DIAS, VAGAS_FUNDADOR, TETO_SECRETARIA_TESTE, SITUACOES, TEXTO_SEM_VAGA,
   diaBrasilia, emTeste, diasRestantes, dadosNovoTeste, faixaDono,
-  vagasFundador, dadosReservaFundador, validarProrrogacao,
-  tetoSecretariaTeste, contarRespostaTeste,
+  vagasFundador, reservarFundador, validarProrrogacao, inicioDoDiaBrasilia,
+  tetoSecretariaTeste, contarRespostaTeste, tetoAssistenteTeste, contarConsultaTeste,
   rodarRotina, testesAtivos, iniciarAgendador,
 };

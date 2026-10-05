@@ -47,7 +47,7 @@
               <td><span class="selo-plano"><%= planoDe(t.planoCortavo).nome %></span></td>
               <td class="col-valor"><strong><%= t.diasRestantes >= 0 ? t.diasRestantes : 'acabou' %></strong></td>
               <td><span class="texto-sutil"><%= t.fundador ? 'vaga reservada' : '-' %></span></td>
-              <td><span class="texto-sutil"><%= t.testeSegurarPausa ? 'pausa segurada' : (t.diasRestantes <= 2 ? 'avisar o dono' : '') %></span></td>
+              <td><span class="texto-sutil"><%= t.testeSegurarPausa ? 'pausa segurada' : (t.diasRestantes < 0 ? 'Pausa amanhã' : t.diasRestantes <= 2 ? 'avisar o dono' : '') %></span></td>
             </tr>
           <% }) %>
         </tbody>

@@ -151,7 +151,7 @@ router.use(async (req, res, next) => {
     res.locals.estoqueBaixoCount = itens.filter((i) => i.quantidade <= i.quantidadeMinima).length;
   }
   // Fase 2.7: faixa "Seu teste grátis termina em X dias" (sem botão de pagar).
-  res.locals.faixaTeste = testeGratis.faixaDono(barbearia);
+  res.locals.faixaTeste = req.ehAdmin ? testeGratis.faixaDono(barbearia) : null; // só dono/admin (correção Sergio 7)
   next();
 });
 

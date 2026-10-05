@@ -16,10 +16,12 @@ const CRIACAO = new Date('2026-10-20T13:00:00Z');
 const noDia = (n, horaUtc = '15:00') => new Date(new Date(`2026-10-20T${horaUtc}:00Z`).getTime() + n * DIA);
 
 // Banco em memória só com o que o teste grátis usa.
-function bancoFalso(barbearias, { donos = [{ id: 1 }] } = {}) {
+function bancoFalso(barbearias, { donos = [{ id: 1 }], logs = [], auditoriaFalha = false } = {}) {
   const casa = (b, where = {}) => Object.entries(where).every(([k, v]) => {
     if (v && typeof v === 'object' && Array.isArray(v.in)) return v.in.includes(b[k]);
     if (v === null) return b[k] == null;
+    if (v && typeof v === 'object' && 'not' in v) return v.not === null ? b[k] != null : b[k] !== v.not;
+    if (v && typeof v === 'object' && 'lt' in v) return b[k] != null && new Date(b[k]).getTime() < new Date(v.lt).getTime();
     return b[k] === v;
   });
   const aplica = (b, data) => {
@@ -38,7 +40,9 @@ function bancoFalso(barbearias, { donos = [{ id: 1 }] } = {}) {
       update: async ({ where, data }) => { const b = barbearias.find((x) => x.id === where.id); aplica(b, data); return { ...b }; },
     },
     usuario: { findMany: async () => donos },
+    logAuditoria: { create: async ({ data }) => { if (auditoriaFalha) throw new Error('banco travado'); logs.push(data); return data; } },
   });
+  prisma.$transaction = async (fn) => fn(prisma);
   return prisma;
 }
 
@@ -234,14 +238,14 @@ test('C5 com 5 vagas reservadas, a 6ª barbearia em teste não recebe vaga e o p
 
   const { tg } = servico(banco);
   assert.deepEqual(await tg.vagasFundador(), { usadas: 5, total: 5, livres: 0 });
-  assert.equal(await tg.dadosReservaFundador(), null);
+  assert.equal(await tg.reservarFundador(99), false);
 });
 
 test('C5 com vaga livre, o teste começa com a vaga reservada; sem "Em teste" nada de teste', async () => {
   const banco = [];
   const criadas = [];
   const prisma = bancoFalso(banco);
-  prisma.barbearia.create = async ({ data }) => { criadas.push(data); return { id: 1, ...data }; };
+  prisma.barbearia.create = async ({ data }) => { const b = { id: banco.length + 1, fundador: null, ...data }; banco.push(b); criadas.push(b); return b; };
   prisma.barbearia.findUnique = async () => null;
   prisma.usuario.create = async () => ({});
   prisma.configuracao = { upsert: async () => ({}) };
@@ -351,4 +355,149 @@ test('2.7 faixa do dono aparece no layout do painel sem botão de pagar', async 
     const txt = fs.readFileSync(path.join(VIEWS, v), 'utf8');
     assert.doesNotMatch(txt.slice(txt.indexOf('teste') || 0), /#(0d6efd|1e90ff|007bff|2563eb|3b82f6)/i, 'sem azul');
   }
+});
+
+
+// ---------- Correções do Sergio (fase2-teste-gratis-seguranca.md) ----------
+test('Sergio 1: reservas simultâneas nunca passam de 5 (conta e grava na mesma transação)', async () => {
+  const banco = [1, 2, 3, 4].map((id) => ({ id, fundador: 'reservada' })).concat([{ id: 5, fundador: null }, { id: 6, fundador: null }]);
+  const prisma = bancoFalso(banco);
+  // Transação serializada como no SQLite: uma de cada vez.
+  let fila = Promise.resolve();
+  prisma.$transaction = (fn) => { const p = fila.then(() => fn(prisma)); fila = p.catch(() => {}); return p; };
+  const tg = carregar('src/services/testeGratis.js', { prisma, stubs: { 'src/services/auditoria.js': { registrar: async () => {} } } });
+  const [a, b] = await Promise.all([tg.reservarFundador(5), tg.reservarFundador(6)]);
+  assert.deepEqual([a, b].sort(), [false, true]);
+  assert.equal(banco.filter((x) => x.fundador).length, 5);
+});
+
+test('Sergio 2: no teste do + IA, secretária desligada (teto 0) continua desligada; teto menor vale', async () => {
+  const banco = [emTeste({ testeRespostas: 10 })];
+  const prisma = bancoFalso(banco);
+  prisma.configuracao = { findUnique: async () => null };
+  prisma.usoIA = { findUnique: async () => null };
+  const stubPlano = (teto) => ({ ...carregar('src/services/planoCortavo.js'), planoDaBarbearia: async () => ({ chave: 'barbearia_ia', tetos: { secretaria: teto } }), resolverTeto: () => teto });
+  let at = carregar('src/services/atendimento.js', { prisma, stubs: { 'src/services/planoCortavo.js': stubPlano(0) } });
+  let e = await at.estadoTeto(7);
+  assert.equal(e.desligado, true);
+  assert.equal(e.teto, 0);
+  at = carregar('src/services/atendimento.js', { prisma, stubs: { 'src/services/planoCortavo.js': stubPlano(100) } });
+  e = await at.estadoTeto(7);
+  assert.equal(e.teto, 100);
+  assert.equal(e.desligado, false);
+  at = carregar('src/services/atendimento.js', { prisma, stubs: { 'src/services/planoCortavo.js': stubPlano(800) } });
+  e = await at.estadoTeto(7);
+  assert.equal(e.teto, 250);
+});
+
+test('Sergio 3: erro numa barbearia não interrompe a rotina das outras', async () => {
+  const banco = [emTeste({ id: 1, nome: 'Quebra' }), emTeste({ id: 2, nome: 'Boa' })];
+  const prisma = bancoFalso(banco);
+  const original = prisma.barbearia.updateMany;
+  prisma.barbearia.updateMany = async (a) => { if (a.where.id === 1) throw new Error('banco travado'); return original(a); };
+  const tg = carregar('src/services/testeGratis.js', { prisma, stubs: { 'src/services/auditoria.js': { registrar: async () => {} } } });
+  const r = await tg.rodarRotina({ agora: noDia(12), notificar: async () => 1 });
+  assert.equal(r.erros, 1);
+  assert.equal(r.avisosFim, 1);
+  assert.ok(banco[1].testeAvisoFimEm);
+});
+
+test('Sergio 4: aviso que não chegou nem ficou registrado desfaz a marca e a pausa não acontece', async () => {
+  const banco = [emTeste()];
+  const opts = { auditoriaFalha: true };
+  const tg = carregar('src/services/testeGratis.js', { prisma: bancoFalso(banco, opts), stubs: { 'src/services/auditoria.js': { registrar: async () => {} } } });
+  const semPush = async () => { throw new Error('push fora'); };
+  await tg.rodarRotina({ agora: noDia(15), notificar: semPush });
+  assert.equal(banco[0].testeAvisoVencidoEm, null, 'marca desfeita');
+  await tg.rodarRotina({ agora: noDia(16), notificar: semPush });
+  assert.equal(banco[0].ativo, true, 'sem aviso registrado, sem pausa');
+});
+
+test('Sergio 4: push falhou mas o aviso ficou na auditoria do painel: segue o fluxo', async () => {
+  const banco = [emTeste()];
+  const logs = [];
+  const tg = carregar('src/services/testeGratis.js', { prisma: bancoFalso(banco, { logs }), stubs: { 'src/services/auditoria.js': { registrar: async () => {} } } });
+  await tg.rodarRotina({ agora: noDia(15), notificar: async () => 0 });
+  assert.ok(banco[0].testeAvisoVencidoEm);
+  assert.ok(logs.some((l) => l.acao === 'teste.aviso' && /acabou sem pagamento/.test(l.detalhe)));
+});
+
+test('Sergio 5: prorrogado entre a leitura e a pausa, a condição do UPDATE impede a pausa', async () => {
+  const banco = [emTeste({ testeAvisoVencidoEm: noDia(15) })];
+  const prisma = bancoFalso(banco);
+  const findMany = prisma.barbearia.findMany;
+  prisma.barbearia.findMany = async (a) => {
+    const lidos = await findMany(a);
+    // A Kalany prorroga logo depois da leitura da rotina.
+    banco[0].testeFim = new Date(banco[0].testeFim.getTime() + 7 * DIA);
+    banco[0].testeAvisoVencidoEm = null;
+    return lidos;
+  };
+  const tg = carregar('src/services/testeGratis.js', { prisma, stubs: { 'src/services/auditoria.js': { registrar: async () => {} } } });
+  const r = await tg.rodarRotina({ agora: noDia(16), notificar: async () => 1 });
+  assert.equal(r.pausadas, 0);
+  assert.equal(banco[0].ativo, true);
+});
+
+test('Sergio 7: faixa do teste só para dono/admin, não para funcionário', () => {
+  const fs = require('node:fs');
+  const txt = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
+  assert.match(txt, /res\.locals\.faixaTeste = req\.ehAdmin \? testeGratis\.faixaDono\(barbearia\) : null/);
+});
+
+test('Sergio obs.: soltar "Segurar pausa" depois do prazo limpa o aviso (avisa de novo e só pausa no dia seguinte)', async () => {
+  const banco = [emTeste({ testeFim: new Date(Date.now() - 3 * DIA), testeSegurarPausa: true, testeAvisoVencidoEm: new Date(Date.now() - 2 * DIA) })];
+  const m = carregar('src/controllers/mestreController.js', { prisma: bancoFalso(banco), stubs: { 'src/services/auditoria.js': { registrar: async () => {} } } });
+  const req = reqFalso({ params: { id: '7' }, body: { segurar: 'false' } });
+  await m.segurarPausaTeste(req, resFalso());
+  assert.equal(banco[0].testeSegurarPausa, false);
+  assert.equal(banco[0].testeAvisoVencidoEm, null);
+  assert.match(req.session.flash.texto, /novo aviso/);
+});
+
+test('Sergio obs.: liberar vaga CONFIRMADA pede confirmação na tela', () => {
+  const fs = require('node:fs');
+  const det = fs.readFileSync(path.join(VIEWS, 'mestre/barbearia-detalhe.ejs'), 'utf8');
+  assert.match(det, /fundador === 'confirmada'[\s\S]{0,40}onsubmit="return confirm/);
+});
+
+
+// ---------- Ajustes da Vera ----------
+test('Vera T1: faixa do teste usa classe própria e estática (sem `alerta`, que vira aviso flutuante na Home)', async () => {
+  const html = await render('layouts/painel.ejs', {}).catch(() => null);
+  const fs = require('node:fs');
+  const txt = fs.readFileSync(path.join(VIEWS, 'layouts/painel.ejs'), 'utf8');
+  const linha = txt.split('\n').find((l) => l.includes('faixaTeste.texto'));
+  assert.match(linha, /class="faixa-teste/);
+  assert.doesNotMatch(linha, /alerta/);
+  assert.match(linha, /position:static/);
+  void html;
+});
+
+test('Vera: mestre mostra "Pausa amanhã" para teste já vencido', async () => {
+  const html = await render('mestre/painel.ejs', {
+    backup: { situacao: 'nunca' }, filtros: { q: '', status: 'todas' }, total: 0, barbearias: [],
+    paginacao: { pagina: 1, totalPaginas: 1 }, planoDe: () => ({ nome: 'Barbearia' }), avisoBarbeiros: () => null,
+    testesAtivos: [{ id: 3, nome: 'Vencida', planoCortavo: 'barbearia', diasRestantes: -1, fundador: null }],
+    vagasFundador: { usadas: 0, total: 5, livres: 5 },
+  });
+  assert.match(html, /Pausa amanhã/);
+  assert.doesNotMatch(html, /avisar o dono/);
+});
+
+test('Vera: assistente no teste tem 50 consultas no período (contador próprio, atravessa a virada do mês)', async () => {
+  const banco = [emTeste({ testeConsultas: 50 })];
+  const prisma = bancoFalso(banco);
+  prisma.configuracao = { findUnique: async () => null };
+  prisma.usoIA = { findUnique: async () => ({ copilotoConsultas: 0 }) }; // mês novo zerado
+  const at = carregar('src/services/atendimento.js', { prisma });
+  const e = await at.estadoTetoCopiloto(7);
+  assert.equal(e.teto, 50);
+  assert.equal(e.atingido, true);
+  const { tg } = servico(banco);
+  banco[0].testeConsultas = 3;
+  await tg.contarConsultaTeste(7);
+  assert.equal(banco[0].testeConsultas, 4);
+  banco[0].situacaoCortavo = 'ativa';
+  assert.equal(await tg.tetoAssistenteTeste(7), null, 'depois do teste vale o mensal');
 });

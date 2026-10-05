@@ -182,14 +182,11 @@ async function criarBarbearia(req, res) {
   // começar o teste a vaga de fundador fica reservada, se ainda houver uma das 5.
   const agora = new Date();
   const emTeste = req.body.emTeste === '1' || req.body.emTeste === 'on';
-  let dadosTeste = {};
-  let semVaga = false;
-  if (emTeste) {
-    const reserva = await testeGratis.dadosReservaFundador(agora);
-    semVaga = !reserva;
-    dadosTeste = { ...testeGratis.dadosNovoTeste(agora), ...(reserva || {}) };
-  }
+  const dadosTeste = emTeste ? testeGratis.dadosNovoTeste(agora) : {};
   const barbearia = await prisma.barbearia.create({ data: { nome, slug, planoCortavo: plano, planoCortavoDesde: agora, ...dadosTeste } });
+  // Vaga de fundador: conta e grava na mesma transação (nunca mais de 5).
+  const comVaga = emTeste ? await testeGratis.reservarFundador(barbearia.id, agora) : false;
+  const semVaga = emTeste && !comVaga;
   await prisma.usuario.create({
     data: {
       barbeariaId: barbearia.id,
@@ -205,7 +202,7 @@ async function criarBarbearia(req, res) {
     acao: 'barbearia.criar',
     alvoTipo: 'barbearia',
     alvoId: barbearia.id,
-    detalhe: `Criou "${nome}" (slug ${slug}) com admin ${adminEmail}, plano ${planoCortavo.planoDe(plano).nome}${emTeste ? `, em teste de ${testeGratis.DIAS_TESTE} dias${dadosTeste.fundador ? ', vaga de fundador reservada' : ', sem vaga de fundador'}` : ''}.`,
+    detalhe: `Criou "${nome}" (slug ${slug}) com admin ${adminEmail}, plano ${planoCortavo.planoDe(plano).nome}${emTeste ? `, em teste de ${testeGratis.DIAS_TESTE} dias${comVaga ? ', vaga de fundador reservada' : ', sem vaga de fundador'}` : ''}.`,
   });
   req.session.flash = semVaga
     ? { tipo: 'aviso', texto: 'Barbearia criada em teste. ' + testeGratis.TEXTO_SEM_VAGA }
@@ -547,12 +544,15 @@ async function segurarPausaTeste(req, res) {
   const barbearia = await carregarBarbearia(req, res);
   if (!barbearia) return;
   const segurar = req.body.segurar === 'true';
-  await prisma.barbearia.update({ where: { id: barbearia.id }, data: { testeSegurarPausa: segurar } });
+  // Soltar depois do prazo: a marca do aviso é limpa, então a rotina avisa a
+  // Kalany de novo e só pausa no dia seguinte (observação do Sergio).
+  const prazoPassou = testeGratis.emTeste(barbearia) && testeGratis.diasRestantes(barbearia) < 0;
+  await prisma.barbearia.update({ where: { id: barbearia.id }, data: { testeSegurarPausa: segurar, ...(!segurar && prazoPassou ? { testeAvisoVencidoEm: null } : {}) } });
   await auditoria.registrar(req, {
     acao: segurar ? 'teste.segurar_pausa' : 'teste.soltar_pausa', alvoTipo: 'barbearia', alvoId: barbearia.id,
     detalhe: `${segurar ? 'Segurou' : 'Soltou'} a pausa automática de "${barbearia.nome}".`,
   });
-  req.session.flash = { tipo: 'sucesso', texto: segurar ? 'Pausa automática segurada.' : 'Pausa automática liberada.' };
+  req.session.flash = { tipo: 'sucesso', texto: segurar ? 'Pausa automática segurada.' : prazoPassou ? 'Pausa automática liberada. Você recebe um novo aviso e a pausa acontece no dia seguinte.' : 'Pausa automática liberada.' };
   res.redirect('/mestre/barbearias/' + barbearia.id + '#teste');
 }
 
@@ -587,12 +587,10 @@ async function definirFundador(req, res) {
       req.session.flash = { tipo: 'erro', texto: 'Esta barbearia já tem vaga de fundador.' };
       return res.redirect('/mestre/barbearias/' + barbearia.id + '#teste');
     }
-    const reserva = await testeGratis.dadosReservaFundador();
-    if (!reserva) {
+    if (!(await testeGratis.reservarFundador(barbearia.id))) {
       req.session.flash = { tipo: 'erro', texto: testeGratis.TEXTO_SEM_VAGA };
       return res.redirect('/mestre/barbearias/' + barbearia.id + '#teste');
     }
-    await prisma.barbearia.update({ where: { id: barbearia.id }, data: reserva });
   } else {
     await prisma.barbearia.update({ where: { id: barbearia.id }, data: { fundador: null, fundadorEm: null } });
   }

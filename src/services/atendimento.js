@@ -184,7 +184,10 @@ async function estadoTeto(barbeariaId) {
   // total do TESTE (250), num contador separado do mensal.
   const doTeste = await testeGratis.tetoSecretariaTeste(barbeariaId, plano.chave);
   if (doTeste) {
-    return { competencia, teto: doTeste.teto, respostas: doTeste.respostas, atingido: doTeste.atingido, desligado: false, avisado: uso ? uso.avisadoTeto : false, teste: true };
+    // Correção Sergio 2: desligado (teto 0) continua desligado no teste, e um
+    // teto menor que 250 vale. A pausa do dono (secretaria_pausada) é checada antes.
+    const tetoTeste = teto === 0 ? 0 : Math.min(doTeste.teto, teto);
+    return { competencia, teto: tetoTeste, respostas: doTeste.respostas, atingido: doTeste.respostas >= tetoTeste, desligado: tetoTeste === 0, avisado: uso ? uso.avisadoTeto : false, teste: true };
   }
   const respostas = uso ? uso.respostas : 0;
   return { competencia, teto, respostas, atingido: respostas >= teto, desligado: teto === 0, avisado: uso ? uso.avisadoTeto : false };
@@ -195,6 +198,12 @@ async function estadoTetoCopiloto(barbeariaId) {
   const plano = await planoCortavo.planoDaBarbearia(barbeariaId);
   const teto = planoCortavo.resolverTeto(plano, 'assistente', await lerConfig(barbeariaId, 'copiloto_teto_mes', ''), TETO_COPILOTO_PADRAO);
   const uso = await prisma.usoIA.findUnique({ where: { barbeariaId_competencia: { barbeariaId, competencia } } });
+  // No teste: 50 consultas no período do teste (contador próprio); desligado continua desligado.
+  const doTeste = teto > 0 ? await testeGratis.tetoAssistenteTeste(barbeariaId) : null;
+  if (doTeste) {
+    const t = Math.min(doTeste.teto, teto);
+    return { competencia, teto: t, consultas: doTeste.consultas, atingido: doTeste.consultas >= t, desligado: false, teste: true };
+  }
   const consultas = uso ? uso.copilotoConsultas : 0;
   return { competencia, teto, consultas, atingido: consultas >= teto, desligado: teto === 0 };
 }
@@ -247,6 +256,7 @@ async function registrarUsoCopiloto(barbeariaId, usage) {
   });
   // Modelo REAL do copiloto (mesma lógica de env do services/ia.js).
   const modeloCop = process.env.IA_MODELO_COPILOTO || process.env.IA_MODELO || 'claude-haiku-4-5';
+  await testeGratis.contarConsultaTeste(barbeariaId); // assistente no teste (fase 2.6)
   await registrarUsoModelo(barbeariaId, competencia, 'copiloto', modeloCop, usage);
 }
 

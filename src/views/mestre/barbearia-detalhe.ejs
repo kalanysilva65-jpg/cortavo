@@ -82,7 +82,7 @@
     <div class="flex gap-8 mt-16" style="flex-wrap:wrap">
       <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/segurar" class="inline">
         <input type="hidden" name="segurar" value="<%= barbearia.testeSegurarPausa ? 'false' : 'true' %>" />
-        <button class="btn btn-secundario btn-sm" type="submit"><%= barbearia.testeSegurarPausa ? 'Soltar pausa automática' : 'Segurar pausa' %></button>
+        <button class="btn btn-secundario btn-sm" type="submit"><%= barbearia.testeSegurarPausa ? (teste.diasRestantes < 0 ? 'Soltar pausa (avisa e pausa amanhã)' : 'Soltar pausa automática') : 'Segurar pausa' %></button>
       </form>
       <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/pago" class="inline"
             onsubmit="return confirm('Registrar que esta barbearia pagou? O teste vira assinatura e não haverá pausa.')">
@@ -98,7 +98,8 @@
   <% if (!barbearia.fundador && vagasFundador.livres <= 0) { %>
     <div class="alerta alerta-aviso mt-16">As 5 vagas de fundador já estão reservadas.</div>
   <% } else { %>
-    <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/fundador" class="inline">
+    <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/fundador" class="inline"
+          <% if (barbearia.fundador === 'confirmada') { %>onsubmit="return confirm('Esta barbearia já é fundadora confirmada (pagou com desconto). Liberar a vaga mesmo assim?')"<% } %>>
       <input type="hidden" name="reservar" value="<%= barbearia.fundador ? 'false' : 'true' %>" />
       <button class="btn btn-secundario btn-sm" type="submit"><%= barbearia.fundador ? 'Liberar vaga de fundador' : 'Reservar vaga de fundador' %></button>
     </form>
