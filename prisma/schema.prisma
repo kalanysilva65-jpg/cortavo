@@ -34,6 +34,14 @@ model Barbearia {
   longitude Float?
   capaUrl   String?  @map("capa_url") // foto de capa do hero da Home (em /uploads)
   notasInternas String? @map("notas_internas") // anotações do dono do SaaS sobre a barbearia (só o painel-mestre vê)
+  // Plano da Cortavo (assinatura da barbearia com a Cortavo). NÃO confundir com
+  // o model `Plano` (pacotes que a barbearia vende aos clientes dela).
+  // Valores: "personalizado" | "essencial" | "barbearia" | "barbearia_ia".
+  // O que cada plano libera fica num lugar só: src/services/planoCortavo.js.
+  // "personalizado" = tudo liberado e tetos pela Configuracao (como antes da
+  // fase 2); todas as barbearias que já existiam entram assim.
+  planoCortavo       String    @default("personalizado") @map("plano_cortavo")
+  planoCortavoDesde  DateTime? @map("plano_cortavo_desde") // quando o plano atual começou a valer
   criadoEm DateTime @default(now()) @map("criado_em")
 
   usuarios           Usuario[]
