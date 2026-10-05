@@ -12,7 +12,7 @@
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 // Identifica a aplicação para o Nominatim (exigido pela política de uso).
-const USER_AGENT = 'Cortavo/1.0 (agendamento de barbearias; contato: kalanysilva65@gmail.com)';
+const USER_AGENT = 'Cortavo/1.0 (agendamento de barbearias; contato: cortavo.app@gmail.com)';
 
 async function geocodificar(endereco) {
   const texto = (endereco || '').trim();

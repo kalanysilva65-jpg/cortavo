@@ -30,8 +30,8 @@ Planeje: **conta → build → teste interno → teste fechado (14 dias) → pro
 
 ## Passo 0 — Criar a conta no Google Play Console
 
-1. Acesse `play.google.com/console` e entre com uma conta Google (pode ser a
-   `kalanysilva65@gmail.com`).
+1. Acesse `play.google.com/console` e entre com a conta Google **da marca**
+   (`cortavo.app@gmail.com`), nunca com uma conta pessoal.
 2. Escolha o tipo: **Pessoal** (mais rápido, mas cai na regra dos 12 testadores) ou
    **Organização** (precisa de dados da empresa; isenta da regra).
 3. Pague a **taxa única de US$ 25**.
