@@ -739,5 +739,7 @@
 .sv-mp-plano-sub { font-size: 12px; color: var(--sv-muted-2); margin-top: 4px; }
 .sv-mp-trancado .sv-pf-item-rot,
 .sv-mp-trancado .sv-pf-item-val { color: var(--sv-muted); }
+/* A2 da Vera: o texto do cadeado quebra linha em vez de ser cortado. */
+.sv-mp-trancado .sv-pf-item-val { white-space: normal; overflow: visible; text-overflow: clip; }
 .sv-mp-cadeado { font-size: 12px; }
 .sv-mp-fale { margin: 0; font-size: 14px; font-weight: 500; color: var(--sv-ink); }

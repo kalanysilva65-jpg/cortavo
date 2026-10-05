@@ -150,12 +150,12 @@ function atendimentoCom({ plano, config = {}, uso = null, conversa = null, faq =
   });
 }
 
-test('2.3 teto 0 configurado = desligado; vazio = padrão (critério 5)', async () => {
+test('2.3/M3 opção A: Personalizado com teto "0" = padrão antigo (1500/200), nada muda para as atuais', async () => {
   let a = atendimentoCom({ plano: 'personalizado', config: { secretaria_teto_mes: '0', copiloto_teto_mes: '0' } });
   let s = await a.estadoTeto(1);
-  assert.equal(s.teto, 0); assert.equal(s.atingido, true); assert.equal(s.desligado, true);
+  assert.equal(s.teto, 1500); assert.equal(s.atingido, false); assert.equal(s.desligado, false);
   let c = await a.estadoTetoCopiloto(1);
-  assert.equal(c.teto, 0); assert.equal(c.atingido, true); assert.equal(c.desligado, true);
+  assert.equal(c.teto, 200); assert.equal(c.atingido, false); assert.equal(c.desligado, false);
 
   a = atendimentoCom({ plano: 'personalizado', config: { secretaria_teto_mes: '', copiloto_teto_mes: '' } });
   assert.equal((await a.estadoTeto(1)).teto, 1500);
@@ -281,4 +281,25 @@ test('2.3 plano sem secretária: pausar continua liberado; + IA e Personalizado 
     await ctrl.pausarIA(reqFalso({ barbeariaId: 1, session: { usuario: { id: 2, papel: 'admin' } } }), resFalso());
     assert.equal(gravado[0].update.valor, '0', plano);
   }
+});
+
+test('M3 opção A: nos planos novos 0 = desligado (critério 5)', async () => {
+  const a = atendimentoCom({ plano: 'essencial', config: { secretaria_teto_mes: '0', copiloto_teto_mes: '0' } });
+  const s = await a.estadoTeto(1);
+  assert.equal(s.teto, 0); assert.equal(s.atingido, true); assert.equal(s.desligado, true);
+  const c = await a.estadoTetoCopiloto(1);
+  assert.equal(c.teto, 0); assert.equal(c.desligado, true);
+  const b = atendimentoCom({ plano: 'barbearia' });
+  assert.equal((await b.estadoTeto(1)).desligado, true);
+  assert.equal((await b.estadoTetoCopiloto(1)).teto, 50);
+});
+
+test('critério 6: 3º barbeiro no Essencial gera aviso para a Kalany, sem bloqueio', () => {
+  const pc = carregar('src/services/planoCortavo.js');
+  assert.equal(pc.avisoBarbeiros(pc.planoDe('essencial'), 2, 'Navalha'), null);
+  assert.match(pc.avisoBarbeiros(pc.planoDe('essencial'), 3, 'Navalha'), /Navalha tem 3 barbeiros no Essencial/);
+  assert.equal(pc.avisoBarbeiros(pc.planoDe('personalizado'), 30, 'X'), null);
+  // o cadastro de barbeiro não consulta o plano (nunca bloqueia)
+  const eq = fs.readFileSync(path.join(RAIZ, 'src/controllers/equipeController.js'), 'utf8');
+  assert.doesNotMatch(eq, /planoCortavo|barbeirosRef/);
 });

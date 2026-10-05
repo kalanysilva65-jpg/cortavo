@@ -110,15 +110,13 @@ function textoForaDoPlano(funcao) {
 
 // Teto efetivo de 'secretaria' ou 'assistente'.
 //  - Plano com número: vale o número do plano (0 = desligado).
-//  - Personalizado: vale a configuração da barbearia; vazio = padrão do código;
-//    "0" = desligado (antes da fase 2, 0 virava o padrão).
+//  - Personalizado (barbearias atuais): regra ANTIGA, decisão da Kalany (M3,
+//    opção A): vazio ou "0" = padrão do código (1500 / 200), como sempre foi.
 function resolverTeto(plano, recurso, valorConfig, padrao) {
   const doPlano = plano.tetos[recurso];
   if (typeof doPlano === 'number') return doPlano;
-  const txt = String(valorConfig == null ? '' : valorConfig).trim();
-  if (txt === '') return padrao;
-  const n = parseInt(txt, 10);
-  return Number.isFinite(n) && n >= 0 ? n : padrao;
+  const n = parseInt(String(valorConfig == null ? '' : valorConfig).trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : padrao;
 }
 
 // A secretária pode existir neste plano? (teto do plano diferente de 0)
