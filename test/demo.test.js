@@ -119,3 +119,59 @@ test('página pública da demo mostra o aviso; barbearia comum não', () => {
   assert.match(html, /Barbearia de demonstração: pode marcar à vontade, ninguém vai aparecer\./);
   assert.doesNotMatch(renderPublico({ slug: 'navalha', nome: 'Navalha' }), /Barbearia de demonstração/);
 });
+
+// ---------- Limpeza semanal (critério 4) ----------
+function bancoDemo() {
+  const agora = new Date('2026-10-05T12:00:00Z');
+  const h = (horas) => new Date(agora.getTime() - horas * 3600000);
+  const ags = [
+    { id: 1, barbeariaId: 1, origem: 'publico', criadoEm: h(48), data: agora, horaInicio: '10:00', clienteNome: 'Teste A' },
+    { id: 2, barbeariaId: 1, origem: 'publico', criadoEm: h(2), data: agora, horaInicio: '11:00', clienteNome: 'Teste B' },
+    { id: 3, barbeariaId: 1, origem: 'barbeiro', criadoEm: h(72), data: agora, horaInicio: '12:00', clienteNome: 'Revisor' },
+    { id: 4, barbeariaId: 1, origem: null, criadoEm: h(500), data: agora, horaInicio: '13:00', clienteNome: 'Semente' },
+    { id: 5, barbeariaId: 2, origem: 'publico', criadoEm: h(48), data: agora, horaInicio: '14:00', clienteNome: 'Cliente real' },
+  ];
+  const casa = (a, w) => a.barbeariaId === w.barbeariaId && a.origem === w.origem && a.criadoEm < w.criadoEm.lt
+    && (!w.id || w.id.in.includes(a.id));
+  const registro = { backup: 0 };
+  const prisma = prismaFalso({
+    barbearia: { findUnique: async ({ where }) => (where.slug === 'demo' ? { id: 1, nome: 'Demo', slug: 'demo' } : null) },
+    agendamento: {
+      findMany: async ({ where }) => ags.filter((a) => casa(a, where)),
+      deleteMany: async ({ where }) => {
+        const fora = ags.filter((a) => casa(a, where));
+        for (const a of fora) ags.splice(ags.indexOf(a), 1);
+        return { count: fora.length };
+      },
+    },
+    $queryRawUnsafe: async () => [{ name: 'main', file: '/tmp/x.db' }],
+    $executeRawUnsafe: async () => { registro.backup++; },
+  });
+  return { prisma, ags, agora, registro };
+}
+
+test('limpeza da demo: simulação lista e não apaga nada', async () => {
+  const { limparDemo } = carregar('scripts/limpar-demo-publico.js');
+  const { prisma, ags, agora } = bancoDemo();
+  const r = await limparDemo({ prisma, agora, log: () => {} });
+  assert.equal(r.simulacao, true);
+  assert.equal(r.encontrados, 1);
+  assert.equal(ags.length, 5);
+});
+
+test('limpeza da demo: executar apaga só agendamento público com mais de 1 dia da demo', async () => {
+  const { limparDemo } = carregar('scripts/limpar-demo-publico.js');
+  const { prisma, ags, agora, registro } = bancoDemo();
+  const r = await limparDemo({ prisma, agora, executar: true, confirmar: 'demo', log: () => {} });
+  assert.equal(r.apagados, 1);
+  assert.deepEqual(ags.map((a) => a.id), [2, 3, 4, 5]);
+  assert.equal(registro.backup, 1, 'faz backup antes');
+});
+
+test('limpeza da demo: sem --confirmar certo não apaga; slug que não é demo é recusado', async () => {
+  const { limparDemo } = carregar('scripts/limpar-demo-publico.js');
+  const { prisma, ags, agora } = bancoDemo();
+  assert.equal((await limparDemo({ prisma, agora, executar: true, confirmar: 'errado', log: () => {} })).ok, false);
+  assert.equal((await limparDemo({ prisma, agora, slug: 'navalha', executar: true, confirmar: 'navalha', log: () => {} })).motivo, 'nao-demo');
+  assert.equal(ags.length, 5);
+});
