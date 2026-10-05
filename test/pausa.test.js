@@ -216,7 +216,11 @@ function lembretesCom(ativo, registro) {
     ] },
     barbearia: {
       findUnique: async () => ({ nome: 'Teste', ativo }),
-      findMany: async ({ where } = {}) => [{ id: 7, ativo }].filter((b) => !where || where.ativo === undefined || b.ativo === where.ativo),
+      // Integração com a demo (spec 03): a barbearia 7 não é demo (slug 'teste');
+      // o filtro por slug do demo.idsDemo() precisa ser respeitado no falso.
+      findMany: async ({ where } = {}) => [{ id: 7, ativo, slug: 'teste' }]
+        .filter((b) => !where || where.ativo === undefined || b.ativo === where.ativo)
+        .filter((b) => !where || !where.slug || where.slug.in.includes(b.slug)),
     },
     agendamento: { findMany: async () => [ag], update: async () => {} },
     lembreteLog: { create: async () => { registro.logs++; } },

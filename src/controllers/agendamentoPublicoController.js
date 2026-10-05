@@ -11,6 +11,7 @@ const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
 const precos = require('../services/precos');
 const notifServ = require('../services/notificacoes');
+const demoServ = require('../services/demo');
 const { lerJanelaAgendamento } = require('./horarioController');
 
 // Até quantos dias no futuro o cliente pode marcar vem de `lerJanelaAgendamento`
@@ -606,7 +607,10 @@ async function confirmar(req, res) {
   // Avisa o barbeiro no aparelho dele. Sem `await`: o cliente não pode esperar
   // (nem levar erro) por causa de um push — o agendamento já está criado, e o
   // serviço engole as próprias falhas.
-  notifServ.notificarNovoAgendamento(agendamento, servicos.map((s) => s.nome).join(' + '));
+  // Na demonstração (spec 03) ninguém é avisado: é só para ver como funciona.
+  if (!demoServ.ehSlugDemo(req.barbearia && req.barbearia.slug)) {
+    notifServ.notificarNovoAgendamento(agendamento, servicos.map((s) => s.nome).join(' + '));
+  }
 
   res.redirect('/agendar/sucesso/' + agendamento.id);
 }
