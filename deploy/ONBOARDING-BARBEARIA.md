@@ -15,25 +15,59 @@ o cartão da Cortavo é cadastrado manualmente na conta de cada barbearia.
 - [ ] Serviços + preços cadastrados.
 - [ ] Barbeiros com **horário de trabalho** (é daí que a secretária tira os horários livres).
 
-## 2. Pré-requisitos do número
+## 2. Pré-requisitos (conferir antes da chamada)
 - [ ] Número usado no **WhatsApp Business** (app) há **7+ dias**, app atualizado.
 - [ ] Celular do número em mãos (o popup pede confirmação por ele).
+- [ ] Na Cortavo: serviços, preços, equipe e horários de trabalho cadastrados.
+- [ ] O dono consegue entrar em **business.facebook.com** (é admin do portfólio da barbearia).
 
 ## 3. Conectar
 1. Logado como admin da barbearia → **Secretária** → **Conectar WhatsApp**.
 2. No popup: conectar o **WhatsApp Business existente** (não criar número novo) e confirmar no celular.
 3. A tela volta como **Conectado** com o número.
 
-## 4. Cartão da Cortavo na conta da barbearia (cobrança centralizada)
-1. O dono da barbearia abre **business.facebook.com** → **Configurações** → **Usuários → Pessoas**
-   e **adiciona a conta da Cortavo** (kalanysilva65@gmail.com) com **acesso total (admin)**.
-2. A Cortavo aceita o convite, troca para o portfólio da barbearia e vai em
-   **Contas do WhatsApp** → conta dela → **Configurações de pagamento** (ou WhatsApp Manager → **Cobrança**).
-3. **Adicionar forma de pagamento** → cartão da Cortavo → salvar.
-4. Conferir que aparece como **ativo** (pode levar alguns minutos para propagar;
-   o erro 131042 nos primeiros envios é esse atraso).
+## 4. A Cortavo como PARCEIRA na Meta (cobrança centralizada)
 
-> Se a barbearia sair: remover o cartão da conta dela e sair do portfólio.
+**Regra:** a barbearia adiciona o **portfólio Cortavo como parceiro**, pelo **ID do
+portfólio**. Nenhum e-mail de pessoa entra nesse processo. O ID fica nos registros
+internos da Cortavo e é passado ao dono **na chamada** (não escrever o número neste
+repositório).
+
+**O que dizer ao dono (frase pronta):**
+> "As mensagens do WhatsApp são cobradas pela Meta, e quem paga é a Cortavo. Para
+> isso você adiciona a Cortavo como parceira na sua conta de empresa da Meta. A gente
+> só usa esse acesso para colocar o cartão da Cortavo e acompanhar o WhatsApp da
+> secretária. Se um dia você cancelar, a Cortavo tira o cartão e sai; você também
+> pode remover a parceira quando quiser."
+
+**Passo a passo do dono (junto, na chamada):**
+1. Abrir **business.facebook.com** → **Configurações** (engrenagem) → **Usuários** → **Parceiros**.
+2. Tocar em **Adicionar** → **Dar a um parceiro acesso aos seus ativos**.
+3. Colar o **ID do portfólio da Cortavo** (a Cortavo passa na chamada).
+4. Escolher a **Conta do WhatsApp** da barbearia e marcar **controle total**
+   (gerenciar a conta, incluindo pagamentos). Salvar.
+
+> Os nomes dos menus da Meta mudam com frequência. Conferir na primeira chamada e
+> ajustar este guia se algo estiver diferente.
+
+**O que a Cortavo faz depois (Kalany):**
+1. No portfólio **Cortavo** → **Contas do WhatsApp**: a conta da barbearia aparece como
+   compartilhada. Atribuir a si mesma (e à pessoa reserva do portfólio) acesso a ela.
+2. **Configurações de pagamento** da conta (ou WhatsApp Manager → **Cobrança**) →
+   **Adicionar forma de pagamento** → cartão da Cortavo → salvar.
+3. Conferir que aparece como **ativo** (pode levar alguns minutos; o erro 131042 nos
+   primeiros envios é esse atraso).
+4. Só então ligar a secretária. **Conta sem forma de pagamento = a Meta para de
+   entregar as respostas.**
+
+**Se a barbearia sair da Cortavo:**
+1. A Cortavo remove o cartão da conta do WhatsApp da barbearia.
+2. A Cortavo deixa de usar a conta compartilhada; o dono remove a parceira em
+   **Configurações → Usuários → Parceiros → Cortavo → Remover**.
+
+> Barbearias conectadas antes desta regra (com acesso por pessoa): trocar pela
+> parceria com calma, numa chamada, e depois remover a pessoa antiga do portfólio da
+> barbearia. É ação manual na Meta (Kalany).
 
 ## 5. Testar
 - [ ] De outro celular, mandar "Oi, quero marcar um corte amanhã".

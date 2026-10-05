@@ -32,7 +32,7 @@ router.get('/privacidade', (req, res) => {
     layout: 'layouts/legal',
     titulo: 'Política de Privacidade',
     atualizadoEm: '17 de setembro de 2026',
-    emailContato: process.env.EMAIL_CONTATO || 'kalanysilva65@gmail.com',
+    emailContato: process.env.EMAIL_CONTATO || 'cortavo.app@gmail.com',
   });
 });
 
@@ -43,7 +43,7 @@ router.get('/termos', (req, res) => {
     layout: 'layouts/legal',
     titulo: 'Termos de Serviço',
     atualizadoEm: '17 de setembro de 2026',
-    emailContato: process.env.EMAIL_CONTATO || 'kalanysilva65@gmail.com',
+    emailContato: process.env.EMAIL_CONTATO || 'cortavo.app@gmail.com',
   });
 });
 

@@ -14,7 +14,7 @@ const apns = require('./apns');
 
 const PUBLICA = process.env.VAPID_PUBLIC_KEY || '';
 const PRIVADA = process.env.VAPID_PRIVATE_KEY || '';
-const CONTATO = process.env.VAPID_SUBJECT || 'mailto:kalanysilva65@gmail.com';
+const CONTATO = process.env.VAPID_SUBJECT || 'mailto:cortavo.app@gmail.com';
 
 const configurado = Boolean(PUBLICA && PRIVADA);
 if (configurado) {
