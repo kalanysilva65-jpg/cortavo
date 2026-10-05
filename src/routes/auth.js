@@ -31,8 +31,8 @@ router.get('/privacidade', (req, res) => {
   res.render('legal/privacidade', {
     layout: 'layouts/legal',
     titulo: 'Política de Privacidade',
-    atualizadoEm: '17 de setembro de 2026',
-    emailContato: process.env.EMAIL_CONTATO || 'cortavo.app@gmail.com',
+    atualizadoEm: '5 de outubro de 2026',
+    emailContato: require('../config/constantes').SUPORTE_CORTAVO,
   });
 });
 
@@ -42,8 +42,8 @@ router.get('/termos', (req, res) => {
   res.render('legal/termos', {
     layout: 'layouts/legal',
     titulo: 'Termos de Serviço',
-    atualizadoEm: '17 de setembro de 2026',
-    emailContato: process.env.EMAIL_CONTATO || 'cortavo.app@gmail.com',
+    atualizadoEm: '5 de outubro de 2026',
+    emailContato: require('../config/constantes').SUPORTE_CORTAVO,
   });
 });
 

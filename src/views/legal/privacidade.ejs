@@ -23,9 +23,14 @@
 
   <h2>Quem é responsável pelos dados</h2>
   <p>
-    Cada barbearia é responsável pelos dados dos seus próprios clientes. O Cortavo
-    fornece o sistema e a infraestrutura onde esses dados ficam armazenados, e trata
-    os dados apenas para operar o serviço.
+    Cada barbearia é a <strong>controladora</strong> dos dados dos seus clientes: é ela
+    quem decide para que esses dados servem. A <strong>Cortavo</strong> é a
+    <strong>operadora</strong>: trata os dados só para fazer o sistema funcionar, conforme
+    as instruções da barbearia. Para isso, a Cortavo usa <strong>suboperadores</strong>: a
+    <strong>Meta</strong> (WhatsApp Business Platform), que entrega as mensagens do WhatsApp,
+    e a <strong>Anthropic</strong>, provedora da inteligência artificial que gera as respostas
+    da secretária. Responsável: Cortavo, contato
+    <a href="mailto:<%= emailContato %>"><%= emailContato %></a>.
   </p>
 
   <h2>Que dados são coletados</h2>
@@ -78,11 +83,13 @@
     (secretária de IA). Quando você conversa com esse número:
   </p>
   <ul>
-    <li>As mensagens trocadas são guardadas para dar continuidade ao atendimento e registrar o histórico com a barbearia.</li>
-    <li>O conteúdo das mensagens pode ser enviado a um provedor de inteligência artificial (Anthropic) <strong>apenas para gerar a resposta</strong> — não é usado para treinar modelos nem para publicidade.</li>
-    <li>A assistente atua em nome da barbearia, para tirar dúvidas, agendar e remarcar horários.</li>
-    <li>Logo no primeiro contato você é avisado de que fala com um atendimento virtual. Você pode encerrar o atendimento automático a qualquer momento respondendo <strong>SAIR</strong> — e um atendente humano assume.</li>
-    <li>A conexão usa a <strong>API oficial da Meta (WhatsApp Business Platform)</strong>. O número e o app do WhatsApp continuam pertencendo à barbearia.</li>
+    <li><strong>Dados tratados:</strong> número de telefone e nome de perfil do WhatsApp de quem conversa, o conteúdo das mensagens, data e hora, e os dados de agendamento que surgirem na conversa (serviço, horário, barbeiro).</li>
+    <li><strong>Para quê:</strong> responder dúvidas, marcar, remarcar e lembrar horários em nome da barbearia, e manter o histórico desse atendimento. Os dados não são vendidos, não são usados em publicidade e o conteúdo enviado à Anthropic não é usado para treinar modelos.</li>
+    <li><strong>Por quanto tempo:</strong> enquanto a barbearia usar o serviço. Se ela sair, as conversas ficam disponíveis para exportação por 30 dias e depois são apagadas, salvo obrigação legal de guarda. Meta e Anthropic guardam dados pelos prazos das suas próprias políticas.</li>
+    <li><strong>Transferência internacional:</strong> Meta e Anthropic processam dados em servidores fora do Brasil (por exemplo, nos Estados Unidos). Essa transferência acontece só para entregar as mensagens e gerar as respostas, com base nas garantias contratuais desses fornecedores, conforme o art. 33 da LGPD.</li>
+    <li>Logo no primeiro contato você é avisado de que fala com um atendimento virtual. Você pode encerrar o atendimento automático a qualquer momento respondendo <strong>SAIR</strong>, e um atendente humano assume.</li>
+    <li>A conexão usa a <strong>API oficial da Meta (WhatsApp Business Platform)</strong>. O número continua sendo da barbearia; enquanto ela usa a secretária, ele fica registrado na conta de WhatsApp Business da Cortavo.</li>
+    <li><strong>Seus direitos:</strong> você pode pedir confirmação de que seus dados são tratados, acesso, correção, exclusão e informação sobre com quem são compartilhados. O caminho mais direto é falar com a barbearia. Você também pode escrever para <a href="mailto:<%= emailContato %>"><%= emailContato %></a>, e a Cortavo encaminha o pedido à barbearia e ajuda a atendê-lo.</li>
   </ul>
 
   <h2>Contato</h2>
