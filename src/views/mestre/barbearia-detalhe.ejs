@@ -23,6 +23,33 @@
   </div>
 </div>
 
+<!-- Plano da Cortavo (fase 2.4, spec 04). Vale na hora; dados das funções
+     desligadas ficam guardados. Rota: POST /mestre/barbearias/:id/plano. -->
+<div class="card mb-16" id="plano">
+  <h2>Plano da Cortavo</h2>
+  <p class="texto-secundario">
+    Atual: <span class="selo-plano"><%= plano.nome %></span>
+    <% if (barbearia.planoCortavoDesde) { %> · desde <%= new Date(barbearia.planoCortavoDesde).toLocaleDateString('pt-BR') %><% } %>
+  </p>
+  <% if (avisoBarbeiros) { %>
+    <div class="alerta alerta-aviso mt-16"><%= avisoBarbeiros %> O cadastro não é bloqueado.</div>
+  <% } %>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/plano" class="form mt-16">
+    <div class="campo">
+      <label for="plano">Trocar plano</label>
+      <select id="plano" name="plano" required>
+        <% planos.forEach(function (p) { %>
+          <option value="<%= p.chave %>" <%= p.chave === plano.chave ? 'selected' : '' %>><%= p.nome %><%= p.precoCentavos ? ' · R$ ' + (p.precoCentavos / 100) : ' · tudo liberado, tetos da configuração' %></option>
+        <% }) %>
+      </select>
+      <small class="texto-sutil">Vale na hora e fica na auditoria. Nada é apagado ao descer de plano.</small>
+    </div>
+    <div class="mt-16">
+      <button class="btn btn-primario btn-sm" type="submit">Salvar plano</button>
+    </div>
+  </form>
+</div>
+
 <!-- Dados da barbearia -->
 <div class="card mb-16">
   <h2>Dados da barbearia</h2>

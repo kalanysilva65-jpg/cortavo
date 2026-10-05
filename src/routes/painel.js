@@ -25,6 +25,7 @@ const permissoes = require('../services/permissoes');
 const iaController = require('../controllers/iaController');
 const secretariaController = require('../controllers/secretariaController');
 const logoController = require('../controllers/logoController');
+const meuPlanoController = require('../controllers/meuPlanoController');
 const conversasController = require('../controllers/conversasController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
@@ -169,6 +170,8 @@ router.post('/perfil/jornada', horarioController.salvarJornada);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
 router.get('/mais', perfilController.ver);
+// Fase 2.4: plano da Cortavo da barbearia (só admin/dono; barbeiro não vê plano).
+router.get('/meu-plano', exigeAdmin, meuPlanoController.ver);
 
 // Backup manual dos dados (só admin — inclui financeiro e todos os clientes).
 // JSON = cópia fiel para restaurar; PDF = documento legível para arquivo.

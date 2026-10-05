@@ -8,6 +8,12 @@ function exigeFuncaoDoPlano(req, res, next) {
   const plano = planoCortavo.planoDe(res.locals.barbeariaAtual && res.locals.barbeariaAtual.planoCortavo);
   res.locals.planoCortavo = plano;
   res.locals.planoLibera = (funcao) => planoCortavo.libera(plano, funcao);
+  // Fase 2.4 (cadeados nos menus): função do plano que um link do painel
+  // abre e que este plano NÃO libera; null quando o link está liberado.
+  res.locals.foraDoPlano = (href) => {
+    const f = planoCortavo.funcaoDoCaminho(String(href || '').replace(/^\/painel/, '') || '/');
+    return f && !planoCortavo.libera(plano, f.chave) ? { ...f, texto: planoCortavo.textoForaDoPlano(f.chave) } : null;
+  };
 
   const funcao = planoCortavo.funcaoDoCaminho(req.path);
   if (!funcao || planoCortavo.libera(plano, funcao.chave)) return next();

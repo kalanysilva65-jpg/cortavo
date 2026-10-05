@@ -2,7 +2,7 @@
   // Precisa vir ANTES do <head>: é daqui que sai quais CSS a página carrega.
   // Telas já no design SUAVE — as demais (fidelidade, comissões, horários e os
   // formulários órfãos) seguem na pilha de CSS antiga.
-  var TELAS_SUAVE = ['/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/logo', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
+  var TELAS_SUAVE = ['/painel/meu-plano', '/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/logo', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
   var ehSuave = TELAS_SUAVE.indexOf(currentPath) !== -1;
 %>
 <!DOCTYPE html>
@@ -34,6 +34,7 @@
         '/painel/planos': 'sv-planos-perfil',
         '/painel/mais': 'sv-planos-perfil',
         '/painel/logo': 'sv-planos-perfil',
+        '/painel/meu-plano': 'sv-planos-perfil',
         '/painel/metas': 'sv-metas',
         '/painel/ia': 'sv-ia',
         '/painel/secretaria': 'sv-secretaria',

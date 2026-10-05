@@ -99,6 +99,10 @@ async function painel(req, res) {
     filtros: { q, status },
     paginacao: { pagina: paginaAtual, totalPaginas },
     backup: statusBackup(),
+    // Fase 2.4: plano de cada uma e aviso de barbeiros acima da referência
+    // (nunca bloqueia; spec 04, regra 3).
+    planoDe: planoCortavo.planoDe,
+    avisoBarbeiros: planoCortavo.avisoBarbeiros,
   });
 }
 
@@ -125,7 +129,7 @@ function statusBackup() {
 
 // GET /mestre/nova — formulário de nova barbearia (+ primeiro admin).
 function formNova(req, res) {
-  res.render('mestre/barbearia-nova', { layout: 'layouts/mestre', titulo: 'Nova barbearia', valores: null, erro: null });
+  res.render('mestre/barbearia-nova', { layout: 'layouts/mestre', titulo: 'Nova barbearia', valores: null, erro: null, planos: planoCortavo.planosParaSeletor() });
 }
 
 // POST /mestre/barbearias — cria a barbearia e o admin inicial.
@@ -135,6 +139,7 @@ async function criarBarbearia(req, res) {
   const adminNome = (req.body.adminNome || '').trim();
   const adminEmail = (req.body.adminEmail || '').trim().toLowerCase();
   const adminSenha = req.body.adminSenha || '';
+  const plano = String(req.body.plano || '');
 
   const erros = [];
   if (!nome) erros.push('Informe o nome da barbearia.');
@@ -142,6 +147,7 @@ async function criarBarbearia(req, res) {
   if (!adminNome) erros.push('Informe o nome do admin.');
   if (!adminEmail) erros.push('Informe o e-mail do admin.');
   if (adminSenha.length < 6) erros.push('A senha do admin precisa de no mínimo 6 caracteres.');
+  if (!planoCortavo.chaveValida(plano)) erros.push('Escolha o plano da Cortavo.');
   if (slug && (await prisma.barbearia.findUnique({ where: { slug } }))) {
     erros.push('Já existe uma barbearia com esse subdomínio.');
   }
@@ -152,10 +158,11 @@ async function criarBarbearia(req, res) {
       titulo: 'Nova barbearia',
       valores: req.body,
       erro: erros.join(' '),
+      planos: planoCortavo.planosParaSeletor(),
     });
   }
 
-  const barbearia = await prisma.barbearia.create({ data: { nome, slug } });
+  const barbearia = await prisma.barbearia.create({ data: { nome, slug, planoCortavo: plano, planoCortavoDesde: new Date() } });
   await prisma.usuario.create({
     data: {
       barbeariaId: barbearia.id,
@@ -171,7 +178,7 @@ async function criarBarbearia(req, res) {
     acao: 'barbearia.criar',
     alvoTipo: 'barbearia',
     alvoId: barbearia.id,
-    detalhe: `Criou "${nome}" (slug ${slug}) com admin ${adminEmail}.`,
+    detalhe: `Criou "${nome}" (slug ${slug}) com admin ${adminEmail}, plano ${planoCortavo.planoDe(plano).nome}.`,
   });
   req.session.flash = { tipo: 'sucesso', texto: 'Barbearia criada.' };
   res.redirect('/mestre/barbearias/' + barbearia.id);
@@ -205,6 +212,9 @@ async function detalhe(req, res) {
     barbearia,
     equipe,
     marca,
+    plano: planoCortavo.planoDe(barbearia.planoCortavo),
+    planos: planoCortavo.planosParaSeletor(),
+    avisoBarbeiros: planoCortavo.avisoBarbeiros(planoCortavo.planoDe(barbearia.planoCortavo), equipe.filter((m) => m.ativo !== false).length, barbearia.nome),
   });
 }
 

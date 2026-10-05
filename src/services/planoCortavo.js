@@ -112,7 +112,36 @@ function temAssistente(plano) {
   return plano.tetos.assistente !== 0;
 }
 
+// ---------- Telas (fatia 2.4) ----------
+
+// Planos na ordem do seletor do painel-mestre: os três nomeados e, por último,
+// o Personalizado.
+function planosParaSeletor() {
+  return Object.values(PLANOS).sort((a, b) => (a.ordem || 99) - (b.ordem || 99));
+}
+
+// Aviso de barbeiros acima da referência do plano (spec 04, regra 3 / critério 6).
+// NUNCA bloqueia: só devolve o texto (ou null quando está dentro).
+function avisoBarbeiros(plano, quantidade, nomeBarbearia) {
+  const ref = plano.tetos.barbeirosRef;
+  const n = Number(quantidade) || 0;
+  if (typeof ref !== 'number' || n <= ref) return null;
+  const quem = nomeBarbearia ? `${nomeBarbearia} tem` : 'Tem';
+  return `${quem} ${n} barbeiros no ${plano.nome} (referência: até ${ref}).`;
+}
+
+// O que o plano inclui e o que fica de fora (tela "Meu plano" e cadeados).
+function resumoFuncoes(plano) {
+  return FUNCOES.map((f) => ({
+    chave: f.chave,
+    rotulo: f.rotulo,
+    liberada: libera(plano, f.chave),
+    texto: libera(plano, f.chave) ? null : textoForaDoPlano(f.chave),
+  }));
+}
+
 module.exports = {
+  planosParaSeletor, avisoBarbeiros, resumoFuncoes,
   FUNCOES, PLANOS, CHAVE_PADRAO,
   chaveValida, planoDe, planoDaBarbearia, libera, funcaoDoCaminho,
   menorPlanoCom, textoForaDoPlano, resolverTeto, temSecretaria, temAssistente,

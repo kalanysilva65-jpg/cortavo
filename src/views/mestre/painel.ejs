@@ -58,6 +58,7 @@
           <tr>
             <th>Barbearia</th>
             <th>Subdomínio</th>
+            <th>Plano</th>
             <th class="col-valor">Equipe</th>
             <th class="col-valor">Clientes</th>
             <th class="col-valor">Agend.</th>
@@ -70,6 +71,11 @@
             <tr>
               <td><a href="/mestre/barbearias/<%= barb.id %>" class="link-cliente"><%= barb.nome %></a></td>
               <td><span class="texto-sutil"><%= barb.slug %></span></td>
+              <% var pl = planoDe(barb.planoCortavo); var av = avisoBarbeiros(pl, barb._count.usuarios, barb.nome); %>
+              <td>
+                <span class="selo-plano<%= av ? ' selo-plano--aviso' : '' %>"><%= pl.nome %></span>
+                <% if (av) { %><div class="texto-sutil" style="margin-top:4px"><%= av %></div><% } %>
+              </td>
               <td class="col-valor"><%= barb._count.usuarios %></td>
               <td class="col-valor"><%= barb._count.clientes %></td>
               <td class="col-valor"><%= barb._count.agendamentos %></td>

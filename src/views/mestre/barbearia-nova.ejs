@@ -21,6 +21,18 @@
     </div>
   </div>
 
+  <div class="campo mt-16">
+    <label for="plano">Plano da Cortavo</label>
+    <% var planoEscolhido = valores ? valores.plano : ''; %>
+    <select id="plano" name="plano" required>
+      <option value="" <%= !planoEscolhido ? 'selected' : '' %> disabled>Escolha o plano</option>
+      <% planos.forEach(function (p) { %>
+        <option value="<%= p.chave %>" <%= p.chave === planoEscolhido ? 'selected' : '' %>><%= p.nome %><%= p.precoCentavos ? ' · R$ ' + (p.precoCentavos / 100) : ' · tudo liberado' %></option>
+      <% }) %>
+    </select>
+    <span class="texto-sutil">Dá para trocar depois no detalhe da barbearia.</span>
+  </div>
+
   <h2 class="mt-16">Admin da barbearia</h2>
   <div class="grid-2 mt-16">
     <div class="campo">

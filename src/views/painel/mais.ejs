@@ -65,6 +65,19 @@
     </div>
   </div>
 
+  <% if (ehAdmin && typeof planoCortavo !== 'undefined' && planoCortavo) { %>
+    <%/* Fase 2.4: plano da Cortavo (só admin/dono; barbeiro não vê plano). */%>
+    <div class="sv-pf-secao sv-reveal">
+      <div class="sv-pf-secao-tit">Plano</div>
+      <a class="sv-cartao sv-pf-lista sv-pf-link" href="/painel/meu-plano">
+        <div class="sv-pf-item" style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="sv-pf-item-rot">Meu plano</div><div class="sv-pf-item-val"><%= planoCortavo.nome %> · o que inclui e uso do mês</div></div>
+          <span aria-hidden="true">›</span>
+        </div>
+      </a>
+    </div>
+  <% } %>
+
   <% if (ehAdmin) { %>
     <div class="sv-pf-secao sv-reveal">
       <div class="sv-pf-secao-tit">Agendamento online</div>
