@@ -127,6 +127,7 @@ app.use((req, res, next) => {
   res.locals.flash = req.session.flash || null;
   delete req.session.flash; // flash some depois de exibido
   res.locals.currentPath = req.path;
+  res.locals.suporteCortavo = require('./config/constantes').SUPORTE_CORTAVO;
   // Formata centavos -> "R$ 40,00"
   res.locals.fmtBRL = (centavos) =>
     ((centavos || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

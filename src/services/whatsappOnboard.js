@@ -136,8 +136,96 @@ async function statusConexao(barbeariaId) {
   };
 }
 
-// Remove as credenciais (a secretária para de atender no número).
+// Libera o número na Meta: POST /{phone_number_id}/deregister (Cloud API,
+// https://developers.facebook.com/docs/whatsapp/cloud-api/reference/registration).
+// Usa o token do System User da Cortavo; nunca o loga.
+// Erro lançado tem: fase 'meta', mensagemTela (amigável, sem texto técnico),
+// tecnico (message/code/fbtrace_id, só para log e auditoria) e jaLiberado.
+function erroMeta(tecnico, mensagemTela, jaLiberado = false) {
+  const e = new Error(mensagemTela || 'A Meta não aceitou agora.');
+  e.fase = 'meta';
+  e.mensagemTela = mensagemTela || null;
+  e.tecnico = tecnico;
+  e.jaLiberado = jaLiberado;
+  return e;
+}
+
+// "Número já não está registrado" conta como sucesso (correção Sergio M1).
+// Código 133010 = "Account not registered" na Cloud API; o texto cobre variações.
+// A confirmar com um teste real da Kalany (registrado no relatório).
+function pareceJaLiberado(err) {
+  if (!err) return false;
+  if (Number(err.code) === 133010) return true;
+  return /not registered|already deregistered|não está registrado/i.test(String(err.message || '') + ' ' + String(err.error_user_msg || ''));
+}
+
+async function desregistrarNumero(phoneNumberId, token) {
+  let r;
+  try {
+    r = await fetch(`${GRAPH}/${API_VERSION}/${phoneNumberId}/deregister`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (e) {
+    throw erroMeta('fetch falhou: ' + e.message, null);
+  }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.error || j.success === false) {
+    const er = j.error || {};
+    const tecnico = `HTTP ${r.status} code=${er.code ?? '-'} subcode=${er.error_subcode ?? '-'} fbtrace_id=${er.fbtrace_id ?? '-'} msg=${String(er.message || '').slice(0, 200)}`;
+    throw erroMeta(tecnico, er.error_user_msg || null, pareceJaLiberado(er));
+  }
+}
+
+// Desconecta. No modo Cortavo (número na WABA da Cortavo):
+//  1) libera o número na Meta; erro = NADA é apagado (fase 'meta');
+//     "já não registrado" = segue como sucesso;
+//  2) apaga as chaves no banco, com UMA retentativa; se ainda falhar, erro
+//     de fase 'banco' (o número JÁ foi liberado na Meta: a mensagem diz isso).
+// Coexistência (barbearias antigas): só apaga no banco, como antes.
+// Devolve { desregistrado, jaLiberado, final4 }.
 async function desconectar(barbeariaId) {
+  const regs = await prisma.configuracao.findMany({
+    where: { barbeariaId, chave: { in: ['whatsapp_phone_number_id', 'whatsapp_modo', 'whatsapp_numero'] } },
+  });
+  const m = Object.fromEntries(regs.map((r) => [r.chave, r.valor]));
+  const final4 = String(m.whatsapp_numero || '').replace(/\D/g, '').slice(-4) || null;
+  let desregistrado = false;
+  let jaLiberado = false;
+  if (m.whatsapp_modo === 'cortavo' && m.whatsapp_phone_number_id) {
+    const token = process.env.WHATSAPP_SYSTEM_TOKEN;
+    if (!token) throw erroMeta('WHATSAPP_SYSTEM_TOKEN ausente no servidor', null);
+    try {
+      await desregistrarNumero(m.whatsapp_phone_number_id, token);
+    } catch (e) {
+      if (!e.jaLiberado) {
+        console.error('[wa-onboard] deregister falhou:', e.tecnico || e.message);
+        throw e;
+      }
+      console.log('[wa-onboard] número já estava liberado na Meta; limpando o cadastro.');
+      jaLiberado = true;
+    }
+    desregistrado = true;
+  }
+  try {
+    await apagarCredenciais(barbeariaId);
+  } catch (e1) {
+    try {
+      await apagarCredenciais(barbeariaId); // retentativa
+    } catch (e2) {
+      console.error('[wa-onboard] limpeza do cadastro falhou depois do deregister:', e2.message);
+      const e = new Error('limpeza do cadastro falhou');
+      e.fase = 'banco';
+      e.desregistrado = desregistrado;
+      e.tecnico = e2.message;
+      e.final4 = final4;
+      throw e;
+    }
+  }
+  return { desregistrado, jaLiberado, final4 };
+}
+
+async function apagarCredenciais(barbeariaId) {
   await prisma.configuracao.deleteMany({
     where: {
       barbeariaId,
@@ -146,4 +234,4 @@ async function desconectar(barbeariaId) {
   });
 }
 
-module.exports = { configurado, conectar, statusConexao, desconectar };
+module.exports = { configurado, conectar, statusConexao, desconectar, desregistrarNumero, pareceJaLiberado };

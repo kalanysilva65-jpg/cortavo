@@ -6,6 +6,7 @@ const onboard = require('../services/whatsappOnboard');
 const numeroCortavo = require('../services/waNumeroCortavo');
 const waPerfil = require('../services/waPerfil');
 const prisma = require('../config/db');
+const auditoria = require('../services/auditoria');
 const planoCortavo = require('../services/planoCortavo');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
@@ -214,10 +215,60 @@ async function verificarCodigoNumero(req, res) {
   }
 }
 
-// POST /painel/secretaria/whatsapp/desconectar — remove as credenciais.
+// POST /painel/secretaria/whatsapp/desconectar — admin da barbearia ou a Kalany
+// (dono). Confirmação conferida NO SERVIDOR: digitar DESCONECTAR. No modo
+// Cortavo também libera o número na Meta. A cada desconexão a Kalany é avisada
+// (push + auditoria, que aparece no painel-mestre) para remover o número no
+// WhatsApp Manager. Mensagens da tela são amigáveis; o detalhe técnico vai só
+// para o log e a auditoria.
+const PALAVRA_DESCONECTAR = 'DESCONECTAR';
+
+async function avisarKalanyDesconexao(titulo, corpo) {
+  try {
+    const notificacoes = require('../services/notificacoes');
+    const donos = await prisma.usuario.findMany({ where: { papel: 'dono', ativo: true }, select: { id: true } });
+    for (const d of donos) await notificacoes.enviarParaUsuario(d.id, { titulo, corpo, url: '/mestre/auditoria', tag: 'cortavo-whatsapp' });
+  } catch (e) {
+    console.error('[wa-onboard] aviso à Kalany falhou:', e.message);
+  }
+}
+
 async function desconectarWhatsApp(req, res) {
-  await onboard.desconectar(req.barbeariaId);
-  req.session.flash = { tipo: 'sucesso', texto: 'WhatsApp desconectado desta barbearia.' };
+  const { SUPORTE_CORTAVO } = require('../config/constantes');
+  if (String(req.body.confirmacao || '').trim().toUpperCase() !== PALAVRA_DESCONECTAR) {
+    req.session.flash = { tipo: 'erro', texto: `Para desconectar, digite ${PALAVRA_DESCONECTAR} no campo de confirmação. Nada foi alterado.` };
+    return res.redirect('/painel/secretaria');
+  }
+  const quem = (req.session.usuario && req.session.usuario.nome) || 'alguém';
+  try {
+    const r = await onboard.desconectar(req.barbeariaId);
+    const num = r.final4 ? ` (final ${r.final4})` : '';
+    await auditoria.registrar(req, {
+      acao: 'whatsapp.desconectar', alvoTipo: 'barbearia', alvoId: req.barbeariaId,
+      detalhe: r.desregistrado
+        ? `${quem} desconectou o WhatsApp${num}. Número liberado na Meta${r.jaLiberado ? ' (já estava liberado)' : ''}. Kalany: remover o número no WhatsApp Manager.`
+        : `${quem} desconectou o WhatsApp${num} (coexistência: só apagou no Cortavo).`,
+    });
+    if (r.desregistrado) await avisarKalanyDesconexao('WhatsApp desconectado', `Barbearia ${req.barbeariaId}: número${num} liberado na Meta. Remova o número no WhatsApp Manager.`);
+    req.session.flash = { tipo: 'sucesso', texto: r.desregistrado ? 'WhatsApp desconectado e número liberado na Meta.' : 'WhatsApp desconectado desta barbearia.' };
+  } catch (e) {
+    if (e.fase === 'banco') {
+      // A Meta já liberou o número, mas o cadastro não foi limpo: mensagem verdadeira.
+      await auditoria.registrar(req, {
+        acao: 'whatsapp.desconectar_parcial', alvoTipo: 'barbearia', alvoId: req.barbeariaId,
+        detalhe: `Número${e.final4 ? ' final ' + e.final4 : ''} liberado na Meta, mas a limpeza do cadastro falhou (2 tentativas). Erro: ${String(e.tecnico || '').slice(0, 300)}`,
+      });
+      await avisarKalanyDesconexao('Desconexão incompleta', `Barbearia ${req.barbeariaId}: número liberado na Meta, mas o cadastro não foi limpo. Confira.`);
+      req.session.flash = { tipo: 'erro', texto: `O número foi liberado na Meta, mas não conseguimos limpar o cadastro. Fale com a Cortavo: ${SUPORTE_CORTAVO}.` };
+    } else {
+      await auditoria.registrar(req, {
+        acao: 'whatsapp.desconectar_falhou', alvoTipo: 'barbearia', alvoId: req.barbeariaId,
+        detalhe: 'A Meta não liberou o número; nada foi apagado. Detalhe: ' + String(e.tecnico || e.message || '').slice(0, 300),
+      });
+      const motivo = e.mensagemTela || `A Meta não aceitou agora. Tente mais tarde ou fale com ${SUPORTE_CORTAVO}.`;
+      req.session.flash = { tipo: 'erro', texto: `Não foi possível desconectar. ${motivo} Nada foi apagado.` };
+    }
+  }
   res.redirect('/painel/secretaria');
 }
 
