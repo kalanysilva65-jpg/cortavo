@@ -6,6 +6,7 @@ const onboard = require('../services/whatsappOnboard');
 const numeroCortavo = require('../services/waNumeroCortavo');
 const waPerfil = require('../services/waPerfil');
 const prisma = require('../config/db');
+const auditoria = require('../services/auditoria');
 const planoCortavo = require('../services/planoCortavo');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
@@ -215,9 +216,23 @@ async function verificarCodigoNumero(req, res) {
 }
 
 // POST /painel/secretaria/whatsapp/desconectar — remove as credenciais.
+// No modo Cortavo também libera o número na Meta (deregister). Se a Meta der
+// erro, os dados ficam e a mensagem aparece. Tudo vai para a auditoria.
 async function desconectarWhatsApp(req, res) {
-  await onboard.desconectar(req.barbeariaId);
-  req.session.flash = { tipo: 'sucesso', texto: 'WhatsApp desconectado desta barbearia.' };
+  try {
+    const r = await onboard.desconectar(req.barbeariaId);
+    await auditoria.registrar(req, {
+      acao: 'whatsapp.desconectar', alvoTipo: 'barbearia', alvoId: req.barbeariaId,
+      detalhe: r.desregistrado ? 'Desconectou o WhatsApp e liberou o número na Meta (deregister).' : 'Desconectou o WhatsApp (coexistência: só apagou no Cortavo).',
+    });
+    req.session.flash = { tipo: 'sucesso', texto: r.desregistrado ? 'WhatsApp desconectado e número liberado na Meta.' : 'WhatsApp desconectado desta barbearia.' };
+  } catch (e) {
+    await auditoria.registrar(req, {
+      acao: 'whatsapp.desconectar_falhou', alvoTipo: 'barbearia', alvoId: req.barbeariaId,
+      detalhe: 'A Meta recusou liberar o número; nada foi apagado. Erro: ' + String(e.message || e).slice(0, 300),
+    });
+    req.session.flash = { tipo: 'erro', texto: 'Não foi possível desconectar: ' + (e.message || 'erro da Meta') + ' Nada foi apagado.' };
+  }
   res.redirect('/painel/secretaria');
 }
 

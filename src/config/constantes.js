@@ -13,4 +13,8 @@ module.exports = {
 
   // Comissão fixa dos produtos (em %). Serviços usam a % de cada barbeiro.
   COMISSAO_PRODUTO_PERCENTUAL: 10,
+
+  // Contato de ajuda da Cortavo mostrado nas telas (lugar único; a spec 11
+  // reutiliza). Disponível nas views como `suporteCortavo`.
+  SUPORTE_CORTAVO: 'cortavo.app@gmail.com',
 };

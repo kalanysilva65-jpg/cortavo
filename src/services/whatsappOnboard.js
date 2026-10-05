@@ -136,8 +136,53 @@ async function statusConexao(barbeariaId) {
   };
 }
 
-// Remove as credenciais (a secretária para de atender no número).
+// Libera o número na Meta: POST /{phone_number_id}/deregister (Cloud API,
+// https://developers.facebook.com/docs/whatsapp/cloud-api/reference/registration).
+// Usa o token do System User da Cortavo; nunca o loga.
+async function desregistrarNumero(phoneNumberId, token) {
+  let r;
+  try {
+    r = await fetch(`${GRAPH}/${API_VERSION}/${phoneNumberId}/deregister`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (e) {
+    throw new Error('não foi possível falar com a Meta agora. Tente de novo em alguns minutos.');
+  }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.error || j.success === false) {
+    const msg = (j.error && (j.error.error_user_msg || j.error.message)) || `HTTP ${r.status}`;
+    throw new Error(msg);
+  }
+}
+
+// Desconecta. No modo Cortavo (número na WABA da Cortavo), PRIMEIRO libera o
+// número na Meta; se a Meta der erro, NADA é apagado (o vínculo com um número
+// ainda registrado não se perde) e o erro sobe para a tela. Coexistência
+// (barbearias antigas): como antes, só apaga no banco.
+// Devolve { desregistrado: boolean }.
 async function desconectar(barbeariaId) {
+  const regs = await prisma.configuracao.findMany({
+    where: { barbeariaId, chave: { in: ['whatsapp_phone_number_id', 'whatsapp_modo'] } },
+  });
+  const m = Object.fromEntries(regs.map((r) => [r.chave, r.valor]));
+  let desregistrado = false;
+  if (m.whatsapp_modo === 'cortavo' && m.whatsapp_phone_number_id) {
+    const token = process.env.WHATSAPP_SYSTEM_TOKEN;
+    if (!token) throw new Error('o servidor está sem o acesso da Cortavo à Meta. Fale com a Cortavo.');
+    try {
+      await desregistrarNumero(m.whatsapp_phone_number_id, token);
+    } catch (e) {
+      console.error('[wa-onboard] deregister falhou:', e.message);
+      throw e;
+    }
+    desregistrado = true;
+  }
+  await apagarCredenciais(barbeariaId);
+  return { desregistrado };
+}
+
+async function apagarCredenciais(barbeariaId) {
   await prisma.configuracao.deleteMany({
     where: {
       barbeariaId,
@@ -146,4 +191,4 @@ async function desconectar(barbeariaId) {
   });
 }
 
-module.exports = { configurado, conectar, statusConexao, desconectar };
+module.exports = { configurado, conectar, statusConexao, desconectar, desregistrarNumero };
