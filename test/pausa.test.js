@@ -243,3 +243,41 @@ test('lembretes: barbearia ativa envia (reativar devolve os lembretes futuros)',
   assert.equal(registro.envios, 1);
   assert.equal(registro.logs, 1);
 });
+
+// ---------- Pausar/Reativar no painel-mestre (critérios 7 e 8) ----------
+function mestreCom(registro) {
+  return carregar('src/controllers/mestreController.js', {
+    prisma: prismaFalso({
+      barbearia: {
+        findUnique: async () => ({ ...ATIVA }),
+        update: async (args) => { registro.updates.push(args); return {}; },
+      },
+    }),
+    stubs: {
+      'src/services/auditoria.js': { registrar: async (_req, dados) => { registro.auditoria.push(dados); } },
+      'src/services/geocodificacao.js': { geocodificar: async () => null },
+      'src/services/custosIA.js': {},
+      'src/services/canaisMensagens.js': {},
+    },
+  });
+}
+
+test('mestre: pausar só muda o campo ativo (nada é apagado) e registra na auditoria', async () => {
+  const registro = { updates: [], auditoria: [] };
+  const ctrl = mestreCom(registro);
+  const req = reqFalso({ params: { id: '7' }, body: { ativa: 'false' }, session: { usuario: { id: 99, papel: 'dono' }, barbeariaAtivaId: 7 } });
+  await ctrl.definirAtiva(req, resFalso());
+  assert.deepEqual(registro.updates, [{ where: { id: 7 }, data: { ativo: false } }]);
+  assert.equal(registro.auditoria[0].acao, 'barbearia.suspender');
+  assert.equal(registro.auditoria[0].alvoId, 7);
+  assert.equal(req.session.barbeariaAtivaId, undefined, 'encerra a impersonação');
+});
+
+test('mestre: reativar volta ativo = true e registra na auditoria', async () => {
+  const registro = { updates: [], auditoria: [] };
+  const ctrl = mestreCom(registro);
+  const req = reqFalso({ params: { id: '7' }, body: { ativa: 'true' }, session: { usuario: { id: 99, papel: 'dono' } } });
+  await ctrl.definirAtiva(req, resFalso());
+  assert.deepEqual(registro.updates[0].data, { ativo: true });
+  assert.equal(registro.auditoria[0].acao, 'barbearia.reativar');
+});
