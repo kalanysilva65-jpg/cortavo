@@ -241,6 +241,11 @@ input[type="checkbox"] { width: auto; }
 }
 .alerta-sucesso { background: var(--sv-verde-bg); border-color: #c6e9d3; color: #146c37; }
 .alerta-erro { background: var(--sv-vermelho-bg); border-color: #f2cccc; color: #a5231f; }
+/* Aviso neutro (fase 2.4: barbeiros acima do plano). Só preto/cinza: avisa, não bloqueia. */
+.alerta-aviso { background: var(--sv-surface); border-color: var(--sv-ink); color: var(--sv-ink); }
+/* Selo do plano da Cortavo na lista e no detalhe. */
+.selo-plano { display: inline-block; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--sv-line); font-size: 12px; font-weight: 600; color: var(--sv-ink); white-space: nowrap; }
+.selo-plano--aviso { border-color: var(--sv-ink); }
 
 /* --- Utilitários --------------------------------------------------------- */
 .flex { display: flex; }

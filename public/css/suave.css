@@ -621,6 +621,19 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
 }
 .sv-grade-rot { font-size: 11px; font-weight: 500; color: var(--sv-ink-2); }
 
+/* Fase 2.4: item fora do plano da Cortavo. Continua visível para o admin,
+   mais apagado e com cadeado preto no canto do ladrilho. */
+.sv-grade-caixa { position: relative; }
+.sv-grade-item--trancado .sv-grade-caixa { color: var(--sv-muted); }
+.sv-grade-item--trancado .sv-grade-rot { color: var(--sv-muted); }
+.sv-grade-cadeado {
+  position: absolute; top: 6px; right: 6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--sv-ink); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.sv-grade-cadeado svg { width: 11px; height: 11px; }
+
 /* Cartão escuro de perfil no pé da folha "Menu". */
 .pg-sv .sv-folha-perfil {
   margin-top: 20px;

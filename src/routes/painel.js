@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const { exigeLogin, exigeAdmin } = require('../middlewares/auth');
 const { exigeBarbeariaPainel } = require('../middlewares/tenant');
+const { exigeFuncaoDoPlano } = require('../middlewares/planoCortavo');
+const planoCortavo = require('../services/planoCortavo');
 const prisma = require('../config/db');
 const agendaController = require('../controllers/agendaController');
 const horarioController = require('../controllers/horarioController');
@@ -24,6 +26,7 @@ const permissoes = require('../services/permissoes');
 const iaController = require('../controllers/iaController');
 const secretariaController = require('../controllers/secretariaController');
 const logoController = require('../controllers/logoController');
+const meuPlanoController = require('../controllers/meuPlanoController');
 const conversasController = require('../controllers/conversasController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
@@ -141,12 +144,16 @@ router.use(async (req, res, next) => {
 
   // Alerta de estoque baixo (admin) — mostrado no subtítulo do cabeçalho em todas as telas.
   res.locals.estoqueBaixoCount = 0;
-  if (req.ehAdmin) {
+  // Fase 2 (B3): fora do plano, o cabeçalho não fala de estoque.
+  if (req.ehAdmin && planoCortavo.libera(planoCortavo.planoDe(barbearia && barbearia.planoCortavo), 'estoque')) {
     const itens = await prisma.estoque.findMany({ where: { barbeariaId: req.barbeariaId } });
     res.locals.estoqueBaixoCount = itens.filter((i) => i.quantidade <= i.quantidadeMinima).length;
   }
   next();
 });
+
+// Plano da Cortavo (fase 2.2): rotas fora do plano param aqui, no servidor.
+router.use(exigeFuncaoDoPlano);
 
 // Painel (dashboard).
 router.get('/', dashboardController.ver);
@@ -165,6 +172,8 @@ router.post('/perfil/jornada', horarioController.salvarJornada);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
 router.get('/mais', perfilController.ver);
+// Fase 2.4: plano da Cortavo da barbearia (só admin/dono; barbeiro não vê plano).
+router.get('/meu-plano', exigeAdmin, meuPlanoController.ver);
 
 // Backup manual dos dados (só admin — inclui financeiro e todos os clientes).
 // JSON = cópia fiel para restaurar; PDF = documento legível para arquivo.

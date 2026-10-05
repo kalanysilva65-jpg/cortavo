@@ -17,6 +17,7 @@ const waMidia = require('./waMidia');
 const notificacoes = require('./notificacoes');
 const pausa = require('./pausa');
 const demo = require('./demo');
+const planoCortavo = require('./planoCortavo');
 const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
@@ -173,18 +174,22 @@ async function atualizarStatusEnvio(waId, statusMeta) {
 // --- Teto de custo (uso mensal de IA por barbearia) ---
 async function estadoTeto(barbeariaId) {
   const competencia = competenciaAtual();
-  const teto = parseInt(await lerConfig(barbeariaId, 'secretaria_teto_mes', ''), 10) || TETO_PADRAO;
+  // Fase 2.3: teto vem do plano da Cortavo; 0 = DESLIGADO (antes 0 virava o
+  // padrão). No Personalizado vale a configuração, como antes.
+  const plano = await planoCortavo.planoDaBarbearia(barbeariaId);
+  const teto = planoCortavo.resolverTeto(plano, 'secretaria', await lerConfig(barbeariaId, 'secretaria_teto_mes', ''), TETO_PADRAO);
   const uso = await prisma.usoIA.findUnique({ where: { barbeariaId_competencia: { barbeariaId, competencia } } });
   const respostas = uso ? uso.respostas : 0;
-  return { competencia, teto, respostas, atingido: respostas >= teto, avisado: uso ? uso.avisadoTeto : false };
+  return { competencia, teto, respostas, atingido: respostas >= teto, desligado: teto === 0, avisado: uso ? uso.avisadoTeto : false };
 }
 // Teto mensal do COPILOTO (Assistente do painel), à parte do WhatsApp.
 async function estadoTetoCopiloto(barbeariaId) {
   const competencia = competenciaAtual();
-  const teto = parseInt(await lerConfig(barbeariaId, 'copiloto_teto_mes', ''), 10) || TETO_COPILOTO_PADRAO;
+  const plano = await planoCortavo.planoDaBarbearia(barbeariaId);
+  const teto = planoCortavo.resolverTeto(plano, 'assistente', await lerConfig(barbeariaId, 'copiloto_teto_mes', ''), TETO_COPILOTO_PADRAO);
   const uso = await prisma.usoIA.findUnique({ where: { barbeariaId_competencia: { barbeariaId, competencia } } });
   const consultas = uso ? uso.copilotoConsultas : 0;
-  return { competencia, teto, consultas, atingido: consultas >= teto };
+  return { competencia, teto, consultas, atingido: consultas >= teto, desligado: teto === 0 };
 }
 
 // Registra o uso DETALHADO por modelo (canal whatsapp|copiloto) — base do custo
@@ -335,6 +340,12 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto, tipo
   // já TRANSCRITO em `texto`, então segue o fluxo normal.
   if (!texto) return { conversaId: conversa.id, respostaIA: null };
 
+  // (0b) Fase 2.3: plano sem secretária (Essencial/Barbearia). A mensagem fica
+  // em Conversas para a equipe, mas nada responde sozinho (nem FAQ, nem SAIR).
+  if (!planoCortavo.temSecretaria(await planoCortavo.planoDaBarbearia(barbeariaId))) {
+    return { conversaId: conversa.id, respostaIA: null, foraDoPlano: true };
+  }
+
   // (1) OPT-OUT: pausa a IA nesta conversa e chama um humano.
   if (ehOptOut(texto)) {
     _cancelarResposta(conversa.id); // cancela resposta agrupada pendente, se houver
@@ -361,7 +372,9 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto, tipo
   // cliente continua sendo gravada e aparece na Caixa de entrada, mas a IA não
   // responde sozinha até o dono reativar.
   const pausada = (await lerConfig(barbeariaId, 'secretaria_pausada', null)) === '1';
-  const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada;
+  // Fase 2.3: plano sem secretária (teto 0) = desligada, nem a FAQ responde.
+  const noPlano = planoCortavo.temSecretaria(await planoCortavo.planoDaBarbearia(barbeariaId));
+  const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada && noPlano;
   if (!conversa.iaAtiva || !ligada) return { conversaId: conversa.id, respostaIA: null };
 
   // O aviso de privacidade (LGPD) NÃO sai mais como mensagem separada: vai junto
@@ -402,7 +415,9 @@ async function responderConversa(barbeariaId, conversaId) {
   if (await pausa.estaPausada(barbeariaId)) return { conversaId, respostaIA: null, pausada: true };
   if (await demo.ehDemo(barbeariaId)) return { conversaId, respostaIA: null, demo: true };
   const pausada = (await lerConfig(barbeariaId, 'secretaria_pausada', null)) === '1';
-  const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada;
+  // Fase 2.3: plano sem secretária (teto 0) = desligada, nem a FAQ responde.
+  const noPlano = planoCortavo.temSecretaria(await planoCortavo.planoDaBarbearia(barbeariaId));
+  const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada && noPlano;
   if (!conversa.iaAtiva || !ligada) return { conversaId, respostaIA: null };
 
   // Texto da ÚLTIMA mensagem do cliente (para o cache de FAQ). No modo agrupado é a

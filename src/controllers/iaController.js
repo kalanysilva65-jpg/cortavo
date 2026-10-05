@@ -55,6 +55,10 @@ async function mensagem(req, res) {
 
   // Teto mensal do copiloto — ao estourar, para de responder no mês (protege custo).
   const teto = await atendimento.estadoTetoCopiloto(req.barbeariaId);
+  if (teto.desligado) {
+    // Fase 2.3: plano sem assistente (teto 0). Não chama a IA nem conta consulta.
+    return res.json({ resposta: 'O Assistente não está no seu plano. Disponível no plano Barbearia. Fale com a Cortavo.' });
+  }
   if (teto.atingido) {
     return res.json({ resposta: `Você atingiu o limite de ${teto.teto} consultas do Assistente neste mês. Ele volta no próximo mês. 🙂` });
   }
@@ -90,6 +94,7 @@ async function mensagem(req, res) {
 async function acao(req, res) {
   if (!ia.iaHabilitada()) return res.status(503).json({ erro: 'O assistente não está configurado.' });
   if (await pausa.estaPausada(req.barbeariaId)) return res.status(403).json({ erro: 'O acesso desta barbearia está pausado.' });
+  if ((await atendimento.estadoTetoCopiloto(req.barbeariaId)).desligado) return res.status(403).json({ erro: 'O Assistente não está no seu plano.' });
   const tipo = String(req.body.tipo || '');
   const dados = req.body.dados || {};
   const b = req.barbeariaId;

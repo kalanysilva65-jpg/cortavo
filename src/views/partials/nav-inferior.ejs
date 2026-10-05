@@ -7,8 +7,16 @@
   var TELAS_NOVAS_PATHS = ['/painel', '/painel/agenda', '/painel/estoque', '/painel/servicos', '/painel/produtos', '/painel/planos', '/painel/clientes', '/painel/equipe', '/painel/caixa', '/painel/relatorios', '/painel/fidelidade'];
   var navNovo = TELAS_NOVAS_PATHS.indexOf(currentPath) !== -1;
   // Design "suave" (2026-07-31): mesma lista de src/views/layouts/painel.ejs.
-  var TELAS_SUAVE_PATHS = ['/painel', '/painel/caixa', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/agenda', '/painel/clientes', '/painel/equipe', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
+  var TELAS_SUAVE_PATHS = ['/painel/meu-plano', '/painel', '/painel/caixa', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/agenda', '/painel/clientes', '/painel/equipe', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
   var navSuave = TELAS_SUAVE_PATHS.indexOf(currentPath) !== -1;
+  // Plano da Cortavo (fase 2.4): função fora do plano. Admin vê o item com
+  // cadeado (ao tocar, o servidor mostra a tela "fora do plano"); barbeiro não
+  // vê o item. Sem o helper (tela fora do painel), nada fica trancado.
+  var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
+  function mostraItem(item) {
+    return (!item.admin || ehAdmin) && podeAcessar(item.href) && (ehAdmin || !fdp(item.href));
+  }
+  var CADEADO = '<svg class="ic-cadeado" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.5a4.8 4.8 0 0 0-4.8 4.8v2.4H6.4A2.4 2.4 0 0 0 4 12.1v7A2.4 2.4 0 0 0 6.4 21.5h11.2a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-.8V7.3A4.8 4.8 0 0 0 12 2.5zm2.6 7.2V7.3a2.6 2.6 0 1 0-5.2 0v2.4z"/></svg>';
 %>
 
 <% if (navSuave) { %>
@@ -60,7 +68,7 @@
   %>
   <nav class="sv-nav" aria-label="Navegação do painel">
     <% svAbas.forEach(function (aba) { %>
-      <% if ((!aba.admin || ehAdmin) && podeAcessar(aba.href)) { %>
+      <% if (mostraItem(aba)) { %>
         <% var ativa = svAtiva(aba); %>
         <a href="<%= aba.href %>" class="sv-nav-item <%= ativa ? 'ativo' : '' %>" title="<%= aba.nome %>" aria-label="<%= aba.nome %>" <%= ativa ? 'aria-current="page"' : '' %>>
           <svg class="sv-nav-ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- svIcones[aba.nome] %></svg>
@@ -86,10 +94,12 @@
 
       <div class="sv-grade">
         <% svMenu.forEach(function (item) { %>
-          <% if ((!item.admin || ehAdmin) && podeAcessar(item.href)) { %>
-            <a href="<%= item.href %>" class="sv-grade-item">
+          <% if (mostraItem(item)) { %>
+            <% var tranca = fdp(item.href); %>
+            <a href="<%= item.href %>" class="sv-grade-item<%= tranca ? ' sv-grade-item--trancado' : '' %>"<% if (tranca) { %> title="<%= tranca.texto %>" aria-label="<%= item.nome %> (fora do plano)"<% } %>>
               <span class="sv-grade-caixa">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><%- item.icone %></svg>
+                <% if (tranca) { %><span class="sv-grade-cadeado"><%- CADEADO %></span><% } %>
               </span>
               <span class="sv-grade-rot"><%= item.nome %></span>
             </a>
@@ -208,8 +218,9 @@
   <div class="nav-novo-overlay" id="nav-novo-overlay" hidden></div>
   <div class="nav-novo-mais-painel" id="nav-novo-mais-painel" hidden>
     <% abasMais.forEach(function (aba) { %>
-      <% if ((!aba.admin || ehAdmin) && podeAcessar(aba.href)) { %>
-        <a href="<%= aba.href %>" class="nav-novo-mais-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><%- iconesMais[aba.nome] %></svg><span><%= aba.nome %></span></a>
+      <% if (mostraItem(aba)) { %>
+        <% var tranca = fdp(aba.href); %>
+        <a href="<%= aba.href %>" class="nav-novo-mais-item"<% if (tranca) { %> title="<%= tranca.texto %>" aria-label="<%= aba.nome %> (fora do plano)" style="opacity:.6"<% } %>><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><%- iconesMais[aba.nome] %></svg><span><%= aba.nome %></span><% if (tranca) { %> <%- CADEADO %><% } %></a>
       <% } %>
     <% }) %>
   </div>
@@ -322,16 +333,18 @@
   <nav class="nav-inf" aria-label="Navegação do painel">
     <div class="nav-inf-scroll">
       <% abas.forEach(function (aba) { %>
-        <% if ((!aba.admin || ehAdmin) && podeAcessar(aba.href)) { %>
+        <% if (mostraItem(aba)) { %>
           <%
             var ehAtiva = ativa(aba);
+            var tranca = fdp(aba.href);
             var svg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + icones[aba.nome] + '</svg>';
           %>
           <a
             href="<%= aba.href %>"
             class="nav-inf-item <%= ehAtiva ? 'ativo' : '' %>"
-            title="<%= aba.nome %>"
-            aria-label="<%= aba.nome %>"
+            title="<%= tranca ? aba.nome + ': ' + tranca.texto : aba.nome %>"
+            aria-label="<%= tranca ? aba.nome + ' (fora do plano)' : aba.nome %>"
+            <%= tranca ? 'style=opacity:.55' : '' %>
             <%= ehAtiva ? 'aria-current="page"' : '' %>
           >
             <% if (ehAtiva) { %>

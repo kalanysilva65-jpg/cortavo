@@ -8,13 +8,21 @@
   // O bloco de dinheiro é do admin. Para o funcionário a mesma moldura mostra
   // VOLUME de atendimentos (regra que já existia no Turno 6 e continua valendo:
   // funcionário não enxerga faturamento).
+  // Plano da Cortavo (fase 2, B3): mesma regra dos menus. Fora do plano, o
+  // admin vê o atalho com cadeado (o servidor mostra "fora do plano"); o
+  // barbeiro não vê.
+  var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
+  var CADEADO_HM = '<svg class="ic-cadeado" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.5a4.8 4.8 0 0 0-4.8 4.8v2.4H6.4A2.4 2.4 0 0 0 4 12.1v7A2.4 2.4 0 0 0 6.4 21.5h11.2a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-.8V7.3A4.8 4.8 0 0 0 12 2.5zm2.6 7.2V7.3a2.6 2.6 0 1 0-5.2 0v2.4z"/></svg>';
+  var trancaRel = fdp('/painel/relatorios');
+  var trancaEst = fdp('/painel/estoque');
+  var trancaMetas = fdp('/painel/metas');
   var resumoHref = ehAdmin ? '/painel/caixa' : '/painel/agenda';
   var resumoRot = ehAdmin ? 'Faturamento hoje' : 'Atendimentos hoje';
   var resumoNum = ehAdmin ? fmtT6(ganhoHoje) : totalHoje;
   var ladrilhos = ehAdmin
     ? [
-        { href: '/painel/relatorios', num: concluidosHoje, rot: 'Cortes hoje' },
-        { href: '/painel/relatorios', num: fmtT6(ticketMedioHoje), rot: 'Ticket médio' },
+        { href: trancaRel ? '/painel/caixa' : '/painel/relatorios', num: concluidosHoje, rot: 'Cortes hoje' },
+        { href: trancaRel ? '/painel/caixa' : '/painel/relatorios', num: fmtT6(ticketMedioHoje), rot: 'Ticket médio' },
       ]
     : [
         { href: '/painel/agenda', num: concluidosHoje, rot: 'Concluídos' },
@@ -55,10 +63,13 @@
     </div>
     <%/* O sino leva ao Estoque porque é o único aviso que a Home tem hoje —
          a bolinha só aparece quando existe item no limite. */%>
-    <a href="/painel/estoque" class="sv-topo-btn" title="Estoque" aria-label="Estoque">
+    <% if (!trancaEst || ehAdmin) { %>
+    <a href="/painel/estoque" class="sv-topo-btn" title="<%= trancaEst ? 'Estoque: ' + trancaEst.texto : 'Estoque' %>" aria-label="<%= trancaEst ? 'Estoque (fora do plano)' : 'Estoque' %>"<% if (trancaEst) { %> style="opacity:.55"<% } %>>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
       <% if (estoqueBaixo.tem) { %><span class="sv-topo-btn-ponto"></span><% } %>
+      <% if (trancaEst) { %><%- CADEADO_HM %><% } %>
     </a>
+    <% } %>
   </div>
 
   <a href="/painel/agenda" class="sv-cartao sv-cartao--escuro sv-hm-prox sv-reveal sv-hm-p2">
@@ -106,9 +117,9 @@
     </div>
   <% } else if (ehAdmin) { %>
     <div class="sv-hm-metas sv-reveal sv-hm-p3">
-      <a href="/painel/metas" class="sv-hm-meta sv-hm-meta--vazia">
-        <span class="sv-hm-meta-rot">Metas do mês</span>
-        <span class="sv-hm-meta-pct">Nenhuma meta configurada · toque para criar</span>
+      <a href="/painel/metas" class="sv-hm-meta sv-hm-meta--vazia"<% if (trancaMetas) { %> title="<%= trancaMetas.texto %>" aria-label="Metas (fora do plano)"<% } %>>
+        <span class="sv-hm-meta-rot">Metas do mês<% if (trancaMetas) { %> <%- CADEADO_HM %><% } %></span>
+        <span class="sv-hm-meta-pct"><%= trancaMetas ? trancaMetas.texto : 'Nenhuma meta configurada · toque para criar' %></span>
       </a>
     </div>
   <% } %>
@@ -135,7 +146,7 @@
   <div class="sv-hm-secao sv-hm-secao--resumo sv-reveal">
     <div class="sv-hm-secao-tit">Resumo de hoje</div>
     <% if (ehAdmin) { %>
-      <a href="/painel/relatorios" class="sv-hm-secao-link">Relatórios</a>
+      <a href="/painel/relatorios" class="sv-hm-secao-link"<% if (trancaRel) { %> title="<%= trancaRel.texto %>" aria-label="Relatórios (fora do plano)" style="opacity:.55"<% } %>>Relatórios<% if (trancaRel) { %> <%- CADEADO_HM %><% } %></a>
     <% } %>
   </div>
 

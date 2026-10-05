@@ -6,6 +6,7 @@ const onboard = require('../services/whatsappOnboard');
 const numeroCortavo = require('../services/waNumeroCortavo');
 const waPerfil = require('../services/waPerfil');
 const prisma = require('../config/db');
+const planoCortavo = require('../services/planoCortavo');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
 const CHAVES = ['secretaria_modo', 'secretaria_link', 'secretaria_regras', 'secretaria_teto_mes', 'copiloto_teto_mes', 'secretaria_privacidade_link', 'secretaria_pausada', 'lembretes_ativos', 'lembrete_template_nome', 'lembrete_antecedencia_min'];
@@ -48,6 +49,10 @@ function verTeste(req, res) {
 async function mensagemTeste(req, res) {
   if (!secretaria.habilitada()) {
     return res.status(503).json({ erro: 'A secretária ainda não está configurada (falta a chave da IA).' });
+  }
+  // Fase 2.3: o chat de teste também gasta IA; fora do plano, não roda.
+  if (!planoCortavo.temSecretaria(await planoCortavo.planoDaBarbearia(req.barbeariaId))) {
+    return res.status(403).json({ erro: 'A secretária não está no seu plano. Disponível no plano Barbearia + IA. Fale com a Cortavo.' });
   }
   const modo = modoValido(req.body.modo);
   const texto = String(req.body.mensagem || '').trim().slice(0, MAX_MSG);
@@ -111,6 +116,12 @@ async function pausarIA(req, res) {
     where: { barbeariaId_chave: { barbeariaId: b, chave: 'secretaria_pausada' } },
   });
   const novo = atual && atual.valor === '1' ? '0' : '1';
+  // Fase 2.3: num plano sem secretária ninguém tira a pausa pelo painel; só a
+  // Kalany, trocando o plano no painel-mestre. Pausar continua liberado.
+  if (novo === '0' && !planoCortavo.temSecretaria(await planoCortavo.planoDaBarbearia(b))) {
+    req.session.flash = { tipo: 'erro', texto: 'A secretária não está no seu plano. Disponível no plano Barbearia + IA. Fale com a Cortavo.' };
+    return res.redirect('/painel/secretaria');
+  }
   await prisma.configuracao.upsert({
     where: { barbeariaId_chave: { barbeariaId: b, chave: 'secretaria_pausada' } },
     update: { valor: novo },

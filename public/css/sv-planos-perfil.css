@@ -731,3 +731,15 @@
 .pg-sv .sv-pl-qtd > span { flex: 1; font-size: 14px; font-weight: 600; }
 .pg-sv .sv-pl-qtd .sv-campo-input { width: 76px; text-align: center; margin: 0; }
 .pg-sv .sv-pl-qtd small { color: var(--sv-muted, #777); font-size: 12px; }
+
+/* --- Meu plano (fase 2.4) — só preto, branco e cinzas da marca ---------- */
+.sv-mp-plano { padding: 20px; margin-top: 16px; }
+.sv-mp-plano-rot { font-size: 12px; font-weight: 500; color: var(--sv-muted-2); }
+.sv-mp-plano-nome { font-size: 24px; font-weight: 700; color: #fff; margin-top: 4px; }
+.sv-mp-plano-sub { font-size: 12px; color: var(--sv-muted-2); margin-top: 4px; }
+.sv-mp-trancado .sv-pf-item-rot,
+.sv-mp-trancado .sv-pf-item-val { color: var(--sv-muted); }
+/* A2 da Vera: o texto do cadeado quebra linha em vez de ser cortado. */
+.sv-mp-trancado .sv-pf-item-val { white-space: normal; overflow: visible; text-overflow: clip; }
+.sv-mp-cadeado { font-size: 12px; }
+.sv-mp-fale { margin: 0; font-size: 14px; font-weight: 500; color: var(--sv-ink); }
