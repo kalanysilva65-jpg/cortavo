@@ -18,6 +18,7 @@ const notificacoes = require('./notificacoes');
 const pausa = require('./pausa');
 const demo = require('./demo');
 const planoCortavo = require('./planoCortavo');
+const testeGratis = require('./testeGratis');
 const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
@@ -179,6 +180,12 @@ async function estadoTeto(barbeariaId) {
   const plano = await planoCortavo.planoDaBarbearia(barbeariaId);
   const teto = planoCortavo.resolverTeto(plano, 'secretaria', await lerConfig(barbeariaId, 'secretaria_teto_mes', ''), TETO_PADRAO);
   const uso = await prisma.usoIA.findUnique({ where: { barbeariaId_competencia: { barbeariaId, competencia } } });
+  // Fase 2.6 (spec 05 regra 4 / spec 07 regra 3): no teste do + IA vale o
+  // total do TESTE (250), num contador separado do mensal.
+  const doTeste = await testeGratis.tetoSecretariaTeste(barbeariaId, plano.chave);
+  if (doTeste) {
+    return { competencia, teto: doTeste.teto, respostas: doTeste.respostas, atingido: doTeste.atingido, desligado: false, avisado: uso ? uso.avisadoTeto : false, teste: true };
+  }
   const respostas = uso ? uso.respostas : 0;
   return { competencia, teto, respostas, atingido: respostas >= teto, desligado: teto === 0, avisado: uso ? uso.avisadoTeto : false };
 }
@@ -213,6 +220,8 @@ async function registrarUso(barbeariaId, competencia, usage) {
     create: { barbeariaId, competencia, respostas: 1, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0, tokensEntradaCru: usage?.inputCru || 0 },
     update: { respostas: { increment: 1 }, tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 }, tokensEntradaCru: { increment: usage?.inputCru || 0 } },
   });
+  // Contador do teste (só conta se a barbearia estiver em teste).
+  await testeGratis.contarRespostaTeste(barbeariaId);
   // Modelo REAL usado pela secretária (para o custo por modelo).
   await registrarUsoModelo(barbeariaId, competencia, 'whatsapp', secretaria.MODELO, usage);
 }

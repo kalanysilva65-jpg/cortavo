@@ -97,7 +97,7 @@ test('2.4 fora do plano: tela com cadeado, sem botão de pagar', async () => {
 test('2.4 criar barbearia exige escolher o plano e grava o escolhido', async () => {
   const criadas = [];
   const prisma = prismaFalso({
-    barbearia: { findUnique: async () => null, create: async ({ data }) => { criadas.push(data); return { id: 7, ...data }; } },
+    barbearia: { findUnique: async () => null, count: async () => 0, create: async ({ data }) => { criadas.push(data); return { id: 7, ...data }; } }, // count: vagas de fundador (fase 2.6)
     usuario: { create: async () => ({}) },
     configuracao: { upsert: async () => ({}) },
   });

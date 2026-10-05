@@ -42,6 +42,22 @@ model Barbearia {
   // fase 2); todas as barbearias que já existiam entram assim.
   planoCortavo       String    @default("personalizado") @map("plano_cortavo")
   planoCortavoDesde  DateTime? @map("plano_cortavo_desde") // quando o plano atual começou a valer
+  // Teste grátis (fase 2.6, spec 05). Regras em src/services/testeGratis.js.
+  // situacaoCortavo: "ativa" | "teste" | "pausada_teste" | "pausada_atraso".
+  // Todas as barbearias que já existiam ficam "ativa", sem teste.
+  situacaoCortavo        String    @default("ativa") @map("situacao_cortavo")
+  testeInicio            DateTime? @map("teste_inicio")
+  testeFim               DateTime? @map("teste_fim") // início + 14 dias (+ prorrogação)
+  testeProrrogado        Boolean   @default(false) @map("teste_prorrogado") // só uma vez
+  testeProrrogacaoMotivo String?   @map("teste_prorrogacao_motivo")
+  testeSegurarPausa      Boolean   @default(false) @map("teste_segurar_pausa") // "Segurar pausa" da Kalany
+  testePagoEm            DateTime? @map("teste_pago_em") // pagamento confirmado (manual até a spec 06)
+  testeAvisoFimEm        DateTime? @map("teste_aviso_fim_em") // aviso do 12º dia já enviado
+  testeAvisoVencidoEm    DateTime? @map("teste_aviso_vencido_em") // aviso do 15º dia já enviado
+  testePausadoEm         DateTime? @map("teste_pausado_em")
+  testeRespostas         Int       @default(0) @map("teste_respostas") // secretária no teste (separado do mensal)
+  fundador               String?   // null | "reservada" | "confirmada" (no máximo 5 ao mesmo tempo)
+  fundadorEm             DateTime? @map("fundador_em")
   criadoEm DateTime @default(now()) @map("criado_em")
 
   usuarios           Usuario[]

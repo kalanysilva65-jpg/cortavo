@@ -43,6 +43,11 @@ router.post('/barbearias/:id', mestreController.atualizarBarbearia);
 router.post('/barbearias/:id/notas', mestreController.salvarNotas);
 router.post('/barbearias/:id/plano', mestreController.definirPlano); // fase 2.2: só papel dono
 router.post('/barbearias/:id/ativa', mestreController.definirAtiva);
+// Teste grátis e vaga de fundador (fase 2.6)
+router.post('/barbearias/:id/teste/prorrogar', mestreController.prorrogarTeste);
+router.post('/barbearias/:id/teste/segurar', mestreController.segurarPausaTeste);
+router.post('/barbearias/:id/teste/pago', mestreController.registrarPagamentoTeste);
+router.post('/barbearias/:id/fundador', mestreController.definirFundador);
 router.post('/barbearias/:id/remover', mestreController.removerBarbearia);
 
 // Equipe da barbearia (barbeiros + e-mail/senha)

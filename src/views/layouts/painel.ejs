@@ -107,6 +107,9 @@
       <%- include('../partials/header-painel') %>
     </div>
     <main class="container conteudo">
+      <% if (typeof faixaTeste !== 'undefined' && faixaTeste) { %>
+        <div class="alerta <%= faixaTeste.aviso ? 'alerta-aviso' : '' %> faixa-teste" role="status"><%= faixaTeste.texto %></div>
+      <% } %>
       <%- include('../partials/flash') %> <%- body %>
     </main>
     <%- include('../partials/nav-inferior') %>
