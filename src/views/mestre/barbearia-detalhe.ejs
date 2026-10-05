@@ -1,17 +1,18 @@
 <div class="cabecalho-pagina agenda-cabecalho">
   <div>
     <h1><%= barbearia.nome %></h1>
-    <p class="texto-secundario">Subdomínio: <strong><%= barbearia.slug %></strong> · <%= barbearia.ativo ? 'Ativa' : 'Inativa' %></p>
+    <p class="texto-secundario">Subdomínio: <strong><%= barbearia.slug %></strong> · <%= barbearia.ativo ? 'Ativa' : 'Pausada' %></p>
   </div>
   <div class="flex gap-8">
     <% if (barbearia.ativo) { %>
       <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="inline"
-            onsubmit="return confirm('Suspender a <%= barbearia.nome %>? O login e o agendamento dela ficam bloqueados até reativar.')">
+            onsubmit="return confirm(<%= JSON.stringify('Pausar o acesso da ' + barbearia.nome + '? Vai parar: login do dono e dos barbeiros, secretária, assistente, lembretes e agendamento online. Nenhum dado é apagado; Reativar volta tudo.') %>)">
         <input type="hidden" name="ativa" value="false" />
-        <button class="btn btn-secundario btn-sm" type="submit">Suspender</button>
+        <button class="btn btn-secundario btn-sm" type="submit">Pausar acesso</button>
       </form>
     <% } else { %>
-      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="inline">
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="inline"
+            onsubmit="return confirm(<%= JSON.stringify('Reativar a ' + barbearia.nome + '? Login, secretária, assistente e lembretes futuros voltam.') %>)">
         <input type="hidden" name="ativa" value="true" />
         <button class="btn btn-secundario btn-sm" type="submit">Reativar</button>
       </form>
@@ -49,8 +50,8 @@
       </small>
     </div>
     <p class="texto-sutil" style="margin-top:8px">
-      Status: <strong><%= barbearia.ativo ? 'Ativa' : 'Suspensa' %></strong> — use o botão
-      <%= barbearia.ativo ? '“Suspender”' : '“Reativar”' %> no topo para mudar (fica registrado na auditoria).
+      Status: <strong><%= barbearia.ativo ? 'Ativa' : 'Pausada' %></strong> — use o botão
+      <%= barbearia.ativo ? '“Pausar acesso”' : '“Reativar”' %> no topo para mudar (fica registrado na auditoria).
     </p>
     <div class="mt-16">
       <button class="btn btn-primario btn-sm" type="submit">Salvar dados</button>

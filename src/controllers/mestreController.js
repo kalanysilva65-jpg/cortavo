@@ -434,9 +434,9 @@ async function definirAtiva(req, res) {
     acao: ativa ? 'barbearia.reativar' : 'barbearia.suspender',
     alvoTipo: 'barbearia',
     alvoId: barbearia.id,
-    detalhe: `${ativa ? 'Reativou' : 'Suspendeu'} "${barbearia.nome}".`,
+    detalhe: `${ativa ? 'Reativou' : 'Pausou'} "${barbearia.nome}".`,
   });
-  req.session.flash = { tipo: 'sucesso', texto: ativa ? 'Barbearia reativada.' : 'Barbearia suspensa.' };
+  req.session.flash = { tipo: 'sucesso', texto: ativa ? 'Barbearia reativada.' : 'Acesso da barbearia pausado.' };
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 
