@@ -9,6 +9,7 @@
 //  - Painel (/painel): a barbearia vem do usuário logado (staff) ou da barbearia
 //    que o dono escolheu "entrar" (impersonação) — NUNCA do subdomínio, por segurança.
 const prisma = require('../config/db');
+const pausa = require('../services/pausa');
 
 // Subdomínios que NÃO representam uma barbearia.
 const SUBDOMINIOS_RESERVADOS = new Set(['www', 'admin', 'painel', 'app', 'api', 'mestre']);
@@ -112,6 +113,20 @@ async function exigeBarbeariaPainel(req, res, next) {
       titulo: 'Barbearia não encontrada',
       mensagem: 'Sua conta não está vinculada a nenhuma barbearia.',
     });
+  }
+  // Pausa de verdade (spec 01): equipe de barbearia pausada (ou removida) cai
+  // fora no próximo clique — a sessão é encerrada e aparece a tela de pausa.
+  // A Kalany (papel "dono") continua podendo abrir a barbearia pelo
+  // painel-mestre para conferir dados.
+  if (req.session.usuario.papel !== 'dono') {
+    const b = await prisma.barbearia.findUnique({ where: { id }, select: { ativo: true, nome: true } });
+    if (!b || b.ativo === false) {
+      await new Promise((resolve) => req.session.destroy(() => resolve()));
+      if (req.xhr || (req.headers.accept || '').includes('application/json')) {
+        return res.status(403).json({ erro: pausa.mensagemPausa(b && b.nome) });
+      }
+      return pausa.renderTelaPausa(res, b && b.nome);
+    }
   }
   req.barbeariaId = id;
   next();

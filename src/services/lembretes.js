@@ -65,12 +65,18 @@ async function dispararDevidos() {
   rodando = true;
   try {
     const cfg = await configPorBarbearia();
+    // Pausa de verdade (spec 01): barbearia pausada não recebe lembrete. Na
+    // reativação NADA sai em lote: os que venceram na pausa já saíram da janela.
+    const pausadas = new Set(
+      (await prisma.barbearia.findMany({ where: { ativo: false }, select: { id: true } })).map((b) => b.id),
+    );
     const agora = new Date();
     for (const [barbeariaId, c] of cfg) {
       // Isola a barbearia: um erro aqui (ex.: falha de banco ao ler os
       // agendamentos) NÃO pode abortar a rodada e deixar as OUTRAS sem lembrete.
       try {
         if (c.lembretes_ativos !== '1') continue;
+        if (pausadas.has(barbeariaId)) continue;
         if (!c.whatsapp_phone_number_id || !c.whatsapp_token) continue; // sem WhatsApp conectado, não há como enviar
         const templateNome = c.lembrete_template_nome || TEMPLATE_PADRAO; // pré-programado se o dono não digitou um nome
         const antecedencia = parseInt(c.lembrete_antecedencia_min, 10) || ANTECEDENCIA_PADRAO;

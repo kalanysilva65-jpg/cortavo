@@ -4,6 +4,7 @@
 const ia = require('../services/ia');
 const atendimento = require('../services/atendimento');
 const agseg = require('../services/agendamentoSeguro');
+const pausa = require('../services/pausa');
 
 // "AAAA-MM-DD" -> "DD/MM/AAAA" para as mensagens de confirmação.
 function brData(iso) {
@@ -46,6 +47,12 @@ async function mensagem(req, res) {
   const texto = String(req.body.mensagem || '').trim().slice(0, MAX_MSG);
   if (!texto) return res.status(400).json({ erro: 'Escreva uma pergunta.' });
 
+  // Pausa de verdade (spec 01): responde a mensagem de pausa sem chamar a IA e
+  // sem contar consulta (vale também para a Kalany operando pelo painel-mestre).
+  if (await pausa.estaPausada(req.barbeariaId)) {
+    return res.json({ resposta: 'O acesso desta barbearia está pausado, então o Assistente não responde agora. Fale com a Cortavo pelo direct ' + pausa.CONTATO + '.' });
+  }
+
   // Teto mensal do copiloto — ao estourar, para de responder no mês (protege custo).
   const teto = await atendimento.estadoTetoCopiloto(req.barbeariaId);
   if (teto.atingido) {
@@ -82,6 +89,7 @@ async function mensagem(req, res) {
 // A proposta que o cliente reenvia é só conveniência — quem manda é este código.
 async function acao(req, res) {
   if (!ia.iaHabilitada()) return res.status(503).json({ erro: 'O assistente não está configurado.' });
+  if (await pausa.estaPausada(req.barbeariaId)) return res.status(403).json({ erro: 'O acesso desta barbearia está pausado.' });
   const tipo = String(req.body.tipo || '');
   const dados = req.body.dados || {};
   const b = req.barbeariaId;

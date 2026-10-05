@@ -15,6 +15,7 @@ const faq = require('./faq');
 const whatsapp = require('./whatsapp');
 const waMidia = require('./waMidia');
 const notificacoes = require('./notificacoes');
+const pausa = require('./pausa');
 const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
@@ -322,6 +323,10 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto, tipo
     },
   });
 
+  // (0) PAUSA de verdade (spec 01): barbearia pausada guarda a mensagem (fica
+  // em Conversas) mas NADA responde — nem IA, nem FAQ, nem o aviso de SAIR.
+  if (await pausa.estaPausada(barbeariaId)) return { conversaId: conversa.id, respostaIA: null, pausada: true };
+
   // Mídia sem texto (foto sem legenda, figurinha, localização...): fica na caixa
   // de entrada pro humano ver, mas a IA não tem o que responder. Áudio chega aqui
   // já TRANSCRITO em `texto`, então segue o fluxo normal.
@@ -391,6 +396,7 @@ async function responderConversa(barbeariaId, conversaId) {
   const conversa = await prisma.conversa.findUnique({ where: { id: conversaId } });
   if (!conversa) return { conversaId, respostaIA: null };
   // Estado pode ter mudado entre agendar e disparar (opt-out / pausa / handoff).
+  if (await pausa.estaPausada(barbeariaId)) return { conversaId, respostaIA: null, pausada: true };
   const pausada = (await lerConfig(barbeariaId, 'secretaria_pausada', null)) === '1';
   const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada;
   if (!conversa.iaAtiva || !ligada) return { conversaId, respostaIA: null };

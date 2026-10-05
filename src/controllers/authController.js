@@ -4,6 +4,7 @@
 // painel-mestre.
 const bcrypt = require('bcryptjs');
 const prisma = require('../config/db');
+const pausa = require('../services/pausa');
 
 // Para onde mandar cada perfil depois do login.
 function destino(usuario) {
@@ -24,9 +25,17 @@ function mostrarLogin(req, res) {
 
 // Localiza o usuário que está tentando logar, conforme o contexto.
 async function localizarUsuario(email, req) {
-  // Um subdomínio/slug foi informado mas NÃO resolveu para uma barbearia ativa
-  // (inexistente ou inativa): bloqueia o login.
-  if (req.slugBarbearia && !req.barbearia) return null;
+  // Um subdomínio/slug foi informado mas NÃO resolveu para uma barbearia ativa.
+  // Inexistente: bloqueia (mensagem genérica). PAUSADA (spec 01): procura o
+  // usuário nela só para, com a senha certa, mostrar a tela de acesso pausado —
+  // o bloqueio de fato acontece em fazerLogin, antes de criar a sessão.
+  if (req.slugBarbearia && !req.barbearia) {
+    const b = await prisma.barbearia.findUnique({ where: { slug: req.slugBarbearia } });
+    if (!b || b.ativo) return null;
+    return prisma.usuario.findUnique({
+      where: { barbeariaId_email: { barbeariaId: b.id, email } },
+    });
+  }
   // Com barbearia no contexto, autentica dentro dela.
   if (req.barbearia) {
     return prisma.usuario.findUnique({
@@ -62,6 +71,14 @@ async function fazerLogin(req, res) {
   if (invalido) {
     req.session.flash = { tipo: 'erro', texto: 'E-mail ou senha inválidos.' };
     return res.redirect('/login');
+  }
+
+  // Pausa de verdade (spec 01): só DEPOIS de conferir a senha (quem erra a
+  // senha continua vendo a mensagem genérica, sem saber que está pausada) e
+  // ANTES de criar a sessão. O dono do sistema não tem barbearia: nunca cai aqui.
+  if (usuario.papel !== 'dono' && usuario.barbeariaId) {
+    const b = await prisma.barbearia.findUnique({ where: { id: usuario.barbeariaId }, select: { ativo: true, nome: true } });
+    if (!b || b.ativo === false) return pausa.renderTelaPausa(res, b && b.nome);
   }
 
   // Renova o ID de sessão no login (anti session-fixation): se alguém plantou
