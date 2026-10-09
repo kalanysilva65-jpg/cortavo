@@ -53,10 +53,9 @@
       <input id="adminEmail" type="email" name="adminEmail" value="<%= valores ? valores.adminEmail : '' %>" required />
     </div>
   </div>
-  <div class="campo">
-    <label for="adminSenha">Senha (mínimo 6 caracteres)</label>
-    <input id="adminSenha" type="text" name="adminSenha" required />
-  </div>
+  <%/* Spec 13: sem campo de senha. O dono recebe um e-mail para criar a
+       PRÓPRIA senha; ninguém mais conhece. */%>
+  <p class="texto-secundario">O dono recebe um e-mail para criar a própria senha. Confira o e-mail antes de salvar.</p>
 
   <div class="flex gap-8 mt-16">
     <button class="btn btn-primario btn-sm" type="submit">Criar barbearia</button>

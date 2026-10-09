@@ -12,19 +12,32 @@ const testeGratis = require('../services/testeGratis');
 const planoCortavo = require('../services/planoCortavo');
 const custosIA = require('../services/custosIA');
 const canaisMensagens = require('../services/canaisMensagens');
+const acessoLink = require('../services/acessoLink');
+const tokensAcesso = require('../services/tokensAcesso');
+const emailSvc = require('../services/email');
 
 // Quantas barbearias por página na lista (paginação server-side).
 const POR_PAGINA = 20;
 
-// Senha provisória forte e legível pra passar por telefone/WhatsApp: sem
-// caracteres ambíguos (0/O, 1/l/I). O barbeiro entra com ela e o app OBRIGA a
-// troca no 1º login (senhaProvisoria = true), então ela nunca fica valendo.
-function gerarSenhaProvisoria() {
-  const alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-  const bytes = crypto.randomBytes(10);
-  let s = '';
-  for (let i = 0; i < 10; i++) s += alfabeto[bytes[i] % alfabeto.length];
-  return s;
+// Spec 13 (acesso por link): a Kalany nunca mais digita nem vê senha de
+// ninguém. A conta nasce com uma senha aleatória que NINGUÉM conhece (mesmo
+// padrão do equipeController) e a pessoa recebe um e-mail para criar a dela.
+async function senhaDesconhecida() {
+  return bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+}
+
+// Frase do flash depois de tentar mandar o e-mail de acesso.
+function avisoDoEnvio(r, email) {
+  if (r.ok) return { ok: true, texto: `Enviamos um e-mail para ${email} criar a senha.` };
+  return { ok: false, texto: `E-mail não enviado (${r.texto}). Use "Reenviar link" na equipe.` };
+}
+
+// Aviso no mestre quando o envio de e-mail não está pronto.
+function avisoEmailConfig() {
+  const e = emailSvc.estado();
+  if (e === 'desligado') return 'Envio de e-mail desligado (EMAIL_ENVIO_DESLIGADO). Os links não saem.';
+  if (e === 'nao_configurado') return 'Envio de e-mail não configurado. As contas novas ficam com "E-mail não enviado" até a configuração.';
+  return null;
 }
 
 // Normaliza um slug de subdomínio: minúsculas, sem acentos, só [a-z0-9-].
@@ -153,7 +166,6 @@ async function criarBarbearia(req, res) {
   const slug = normalizarSlug(req.body.slug || nome);
   const adminNome = (req.body.adminNome || '').trim();
   const adminEmail = (req.body.adminEmail || '').trim().toLowerCase();
-  const adminSenha = req.body.adminSenha || '';
   const plano = String(req.body.plano || '');
 
   const erros = [];
@@ -161,7 +173,6 @@ async function criarBarbearia(req, res) {
   if (!slug) erros.push('Informe um subdomínio válido.');
   if (!adminNome) erros.push('Informe o nome do admin.');
   if (!adminEmail) erros.push('Informe o e-mail do admin.');
-  if (adminSenha.length < 6) erros.push('A senha do admin precisa de no mínimo 6 caracteres.');
   if (!planoCortavo.chaveValida(plano)) erros.push('Escolha o plano da Cortavo.');
   if (slug && (await prisma.barbearia.findUnique({ where: { slug } }))) {
     erros.push('Já existe uma barbearia com esse subdomínio.');
@@ -187,12 +198,13 @@ async function criarBarbearia(req, res) {
   // Vaga de fundador: conta e grava na mesma transação (nunca mais de 5).
   const comVaga = emTeste ? await testeGratis.reservarFundador(barbearia.id, agora) : false;
   const semVaga = emTeste && !comVaga;
-  await prisma.usuario.create({
+  const admin = await prisma.usuario.create({
     data: {
       barbeariaId: barbearia.id,
       nome: adminNome,
       email: adminEmail,
-      senhaHash: await bcrypt.hash(adminSenha, 10),
+      senhaHash: await senhaDesconhecida(),
+      senhaDefinidaEm: null,
       papel: 'admin',
     },
   });
@@ -204,9 +216,18 @@ async function criarBarbearia(req, res) {
     alvoId: barbearia.id,
     detalhe: `Criou "${nome}" (slug ${slug}) com admin ${adminEmail}, plano ${planoCortavo.planoDe(plano).nome}${emTeste ? `, em teste de ${testeGratis.DIAS_TESTE} dias${comVaga ? ', vaga de fundador reservada' : ', sem vaga de fundador'}` : ''}.`,
   });
-  req.session.flash = semVaga
-    ? { tipo: 'aviso', texto: 'Barbearia criada em teste. ' + testeGratis.TEXTO_SEM_VAGA }
-    : { tipo: 'sucesso', texto: 'Barbearia criada.' };
+  // E-mail de acesso DEPOIS de gravar tudo: se falhar, a barbearia continua
+  // criada e o mestre mostra "E-mail não enviado" com Reenviar (nunca 500).
+  const envio = avisoDoEnvio(await acessoLink.enviarLink({
+    usuario: { ...admin, email: adminEmail, nome: adminNome },
+    barbearia,
+    tipo: 'primeiro_acesso',
+    criadoPorId: req.session.usuario && req.session.usuario.id,
+    req,
+    acao: 'acesso.link_enviado',
+  }), adminEmail);
+  const base = semVaga ? 'Barbearia criada em teste. ' + testeGratis.TEXTO_SEM_VAGA : 'Barbearia criada.';
+  req.session.flash = { tipo: semVaga || !envio.ok ? 'aviso' : 'sucesso', texto: base + ' ' + envio.texto };
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 
@@ -232,11 +253,25 @@ async function detalhe(req, res) {
   });
   const marca = await lerMarca(barbearia.id);
 
+  // Estado do acesso de cada pessoa (spec 13): aguardando, vencido, não
+  // enviado ou senha criada, e o botão certo. Falha ao ler não derruba a tela.
+  let acessos = {};
+  try {
+    const ultimos = await tokensAcesso.ultimosPorUsuario(equipe.map((m) => m.id));
+    const agora = new Date();
+    for (const m of equipe) acessos[m.id] = tokensAcesso.estadoDoAcesso(m, ultimos[m.id], agora);
+  } catch (e) {
+    console.log('[acesso] falha ao ler o estado dos links:', e && e.message);
+    acessos = {};
+  }
+
   res.render('mestre/barbearia-detalhe', {
     layout: 'layouts/mestre',
     titulo: barbearia.nome,
     barbearia,
     equipe,
+    acessos,
+    avisoEmail: avisoEmailConfig(),
     marca,
     plano: planoCortavo.planoDe(barbearia.planoCortavo),
     planos: planoCortavo.planosParaSeletor(),
@@ -326,11 +361,10 @@ async function criarBarbeiro(req, res) {
 
   const nome = (req.body.nome || '').trim();
   const email = (req.body.email || '').trim().toLowerCase();
-  const senha = req.body.senha || '';
   const papel = req.body.papel === 'admin' ? 'admin' : 'funcionario';
 
-  if (!nome || !email || senha.length < 6) {
-    req.session.flash = { tipo: 'erro', texto: 'Preencha nome, e-mail e senha (mínimo 6 caracteres).' };
+  if (!nome || !email) {
+    req.session.flash = { tipo: 'erro', texto: 'Preencha nome e e-mail.' };
     return res.redirect('/mestre/barbearias/' + barbearia.id);
   }
   const existe = await prisma.usuario.findUnique({
@@ -342,7 +376,7 @@ async function criarBarbeiro(req, res) {
   }
 
   const novo = await prisma.usuario.create({
-    data: { barbeariaId: barbearia.id, nome, email, senhaHash: await bcrypt.hash(senha, 10), papel },
+    data: { barbeariaId: barbearia.id, nome, email, senhaHash: await senhaDesconhecida(), senhaDefinidaEm: null, papel },
   });
   await auditoria.registrar(req, {
     acao: 'usuario.criar',
@@ -350,7 +384,15 @@ async function criarBarbeiro(req, res) {
     alvoId: novo.id,
     detalhe: `Adicionou ${email} (${papel}) à barbearia "${barbearia.nome}".`,
   });
-  req.session.flash = { tipo: 'sucesso', texto: `${nome} adicionado à equipe.` };
+  const envio = avisoDoEnvio(await acessoLink.enviarLink({
+    usuario: { ...novo, nome, email },
+    barbearia,
+    tipo: 'primeiro_acesso',
+    criadoPorId: req.session.usuario && req.session.usuario.id,
+    req,
+    acao: 'acesso.link_enviado',
+  }), email);
+  req.session.flash = { tipo: envio.ok ? 'sucesso' : 'aviso', texto: `${nome} adicionado à equipe. ${envio.texto}` };
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 
@@ -365,7 +407,8 @@ async function formEditarBarbeiro(req, res) {
   res.render('mestre/barbeiro-editar', { layout: 'layouts/mestre', titulo: 'Editar ' + membro.nome, barbearia, membro });
 }
 
-// POST /mestre/barbearias/:id/equipe/:uid — atualiza nome/e-mail/senha/papel.
+// POST /mestre/barbearias/:id/equipe/:uid — atualiza nome/e-mail/papel. A senha
+// não passa mais por aqui (spec 13): trocar o e-mail revoga os links abertos.
 async function atualizarBarbeiro(req, res) {
   const barbearia = await carregarBarbearia(req, res);
   if (!barbearia) return;
@@ -376,14 +419,9 @@ async function atualizarBarbeiro(req, res) {
   const nome = (req.body.nome || '').trim();
   const email = (req.body.email || '').trim().toLowerCase();
   const papel = req.body.papel === 'admin' ? 'admin' : 'funcionario';
-  const senha = req.body.senha || '';
 
   if (!nome || !email) {
     req.session.flash = { tipo: 'erro', texto: 'Nome e e-mail são obrigatórios.' };
-    return res.redirect(`/mestre/barbearias/${barbearia.id}/equipe/${uid}/editar`);
-  }
-  if (senha && senha.length < 6) {
-    req.session.flash = { tipo: 'erro', texto: 'A nova senha precisa de no mínimo 6 caracteres.' };
     return res.redirect(`/mestre/barbearias/${barbearia.id}/equipe/${uid}/editar`);
   }
   const conflito = await prisma.usuario.findFirst({
@@ -394,17 +432,26 @@ async function atualizarBarbeiro(req, res) {
     return res.redirect(`/mestre/barbearias/${barbearia.id}/equipe/${uid}/editar`);
   }
 
-  const data = { nome, email, papel };
-  const trocouSenha = senha.length >= 6;
-  if (trocouSenha) data.senhaHash = await bcrypt.hash(senha, 10);
-  await prisma.usuario.update({ where: { id: uid }, data });
+  const trocouEmail = email !== membro.email;
+  await prisma.usuario.update({ where: { id: uid }, data: { nome, email, papel } });
+  // E-mail corrigido: o link que foi para o endereço antigo deixa de valer.
+  let revogados = 0;
+  if (trocouEmail) {
+    try {
+      revogados = await tokensAcesso.revogarDoUsuario(uid);
+    } catch (e) {
+      console.log('[acesso] falha ao revogar links na troca de e-mail:', e && e.message);
+    }
+  }
   await auditoria.registrar(req, {
     acao: 'usuario.editar',
     alvoTipo: 'usuario',
     alvoId: uid,
-    detalhe: `Editou ${email} na "${barbearia.nome}"` + (trocouSenha ? ' (incluindo a senha).' : '.'),
+    detalhe: `Editou ${email} na "${barbearia.nome}"` + (trocouEmail ? ` (e-mail trocado de ${membro.email}; ${revogados} link(s) revogado(s)).` : '.'),
   });
-  req.session.flash = { tipo: 'sucesso', texto: 'Dados do barbeiro atualizados.' };
+  req.session.flash = trocouEmail
+    ? { tipo: 'aviso', texto: 'Dados atualizados. O e-mail mudou: o link anterior deixou de valer. Use "Reenviar link".' }
+    : { tipo: 'sucesso', texto: 'Dados do barbeiro atualizados.' };
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 
@@ -417,6 +464,8 @@ async function toggleBarbeiro(req, res) {
   });
   if (membro) {
     await prisma.usuario.update({ where: { id: membro.id }, data: { ativo: !membro.ativo } });
+    // Desativar a pessoa revoga os links abertos (spec 13, seção 4).
+    if (membro.ativo) await tokensAcesso.revogarDoUsuario(membro.id).catch(() => 0);
     await auditoria.registrar(req, {
       acao: membro.ativo ? 'usuario.desativar' : 'usuario.ativar',
       alvoTipo: 'usuario',
@@ -427,40 +476,42 @@ async function toggleBarbeiro(req, res) {
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 
-// POST /mestre/barbearias/:id/equipe/:uid/reset-senha — gera uma senha
-// provisória para um membro da equipe. A senha atual NUNCA é exposta (é hash);
-// geramos uma nova aleatória, marcamos como provisória (o app obriga a troca no
-// 1º login) e mostramos UMA vez pro dono repassar. Serve pra "o dono da
-// barbearia esqueceu a senha".
-async function resetarSenha(req, res) {
+// POST /mestre/barbearias/:id/equipe/:uid/enviar-link — substitui o antigo
+// "Resetar senha" (spec 13). Manda um link para a pessoa criar a senha:
+// primeiro acesso (72 h) para quem ainda não criou, nova senha (1 h) para quem
+// já tem. O link anterior deixa de valer; a senha atual continua valendo até a
+// pessoa criar a nova. Limites por pessoa: 1 a cada 60 s e 5 por dia.
+async function enviarLinkMembro(req, res) {
   const barbearia = await carregarBarbearia(req, res);
   if (!barbearia) return;
   const uid = Number(req.params.uid);
   const membro = await prisma.usuario.findFirst({ where: { id: uid, barbeariaId: barbearia.id } });
+  const voltar = () => res.redirect('/mestre/barbearias/' + barbearia.id);
   if (!membro) {
     req.session.flash = { tipo: 'erro', texto: 'Usuário não encontrado nesta barbearia.' };
-    return res.redirect('/mestre/barbearias/' + barbearia.id);
+    return voltar();
   }
-
-  const provisoria = gerarSenhaProvisoria();
-  await prisma.usuario.update({
-    where: { id: uid },
-    data: { senhaHash: await bcrypt.hash(provisoria, 10), senhaProvisoria: true },
+  if (membro.ativo === false) {
+    req.session.flash = { tipo: 'erro', texto: `Ative ${membro.nome} antes de enviar o link.` };
+    return voltar();
+  }
+  const limite = await acessoLink.limiteReenvio(membro.id);
+  if (limite) {
+    req.session.flash = { tipo: 'erro', texto: limite };
+    return voltar();
+  }
+  const r = await acessoLink.enviarLink({
+    usuario: membro,
+    barbearia,
+    tipo: membro.senhaDefinidaEm ? 'redefinir' : 'primeiro_acesso',
+    criadoPorId: req.session.usuario && req.session.usuario.id,
+    req,
+    acao: 'acesso.link_reenviado',
   });
-  await auditoria.registrar(req, {
-    acao: 'usuario.reset_senha',
-    alvoTipo: 'usuario',
-    alvoId: uid,
-    detalhe: `Gerou senha provisória para ${membro.email} na "${barbearia.nome}".`,
-  });
-
-  // A senha provisória vai no flash uma única vez (não fica salva em lugar
-  // nenhum em texto). O dono copia e repassa; no 1º login o app força a troca.
-  req.session.flash = {
-    tipo: 'sucesso',
-    texto: `Senha provisória de ${membro.nome}: ${provisoria} — copie agora, ela não será mostrada de novo. No 1º login o app pede a troca.`,
-  };
-  res.redirect('/mestre/barbearias/' + barbearia.id);
+  req.session.flash = r.ok
+    ? { tipo: 'sucesso', texto: `Link enviado para ${membro.email}. O link anterior deixou de valer.` }
+    : { tipo: 'aviso', texto: `E-mail não enviado (${r.texto}). Tente "Reenviar link" de novo depois.` };
+  return voltar();
 }
 
 // POST /mestre/barbearias/:id/ativa — suspende (ativa=false) ou reativa
@@ -772,7 +823,7 @@ module.exports = {
   removerCapa,
   entrar,
   sair,
-  resetarSenha,
+  enviarLinkMembro,
   definirAtiva,
   salvarNotas,
   auditoriaLista,

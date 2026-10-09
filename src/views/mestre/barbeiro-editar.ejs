@@ -14,11 +14,11 @@
       <input id="email" type="email" name="email" value="<%= membro.email %>" required />
     </div>
   </div>
+  <%/* Spec 13: a senha não passa mais pelo mestre. Para uma senha nova, use
+       "Enviar link para nova senha" na equipe. Trocar o e-mail revoga o link
+       aberto (use "Reenviar link" depois). */%>
+  <p class="texto-secundario">Trocar o e-mail faz o link de acesso anterior deixar de valer. Para uma senha nova, use “Enviar link para nova senha” na equipe.</p>
   <div class="grid-2">
-    <div class="campo">
-      <label for="senha">Nova senha (deixe em branco para manter)</label>
-      <input id="senha" type="text" name="senha" placeholder="mínimo 6 caracteres" />
-    </div>
     <div class="campo">
       <label for="papel">Papel</label>
       <select id="papel" name="papel">
