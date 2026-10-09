@@ -80,8 +80,13 @@ async function verConfig(req, res) {
   const regs = await prisma.configuracao.findMany({ where: { barbeariaId: req.barbeariaId, chave: { in: CHAVES } } });
   const cfg = Object.fromEntries(regs.map((r) => [r.chave, r.valor]));
   const whatsapp = await onboard.statusConexao(req.barbeariaId);
+  // Redesign v3 (F8): respostas usadas no mês, no objeto do topo. Sem a
+  // leitura, o objeto mostra só o estado.
+  let usoSecretaria = null;
+  try { usoSecretaria = await require('../services/atendimento').estadoTeto(req.barbeariaId); } catch (_) { usoSecretaria = null; }
   res.render('painel/secretaria-config', {
     titulo: 'Secretária',
+    usoSecretaria,
     cfg: {
       modo: cfg.secretaria_modo === 'terceiros' ? 'terceiros' : 'cortavo',
       link: cfg.secretaria_link || '',
