@@ -1,4 +1,16 @@
-<% if (typeof flash !== 'undefined' && flash) { %>
+<%/* v3 (F1): nas telas novas o aviso do servidor é o aviso em vidro preto
+     (cv-aviso), acima da navbar; some sozinho (cv-casca.js). Erro ganha o
+     círculo vermelho e role="alert"; sucesso, o check. Nas telas antigas segue
+     o aviso de antes. */%>
+<% if (typeof flash !== 'undefined' && flash && typeof flashCv !== 'undefined' && flashCv) { %>
+<% var ehErro = flash.tipo === 'erro'; %>
+<div class="cv-avisos">
+  <div class="cv-aviso<%= ehErro ? ' cv-aviso--erro' : '' %>" data-flash="<%= ehErro ? 'erro' : 'ok' %>" role="<%= ehErro ? 'alert' : 'status' %>">
+    <span class="ok" aria-hidden="true"><% if (ehErro) { %><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/></svg><% } else { %><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg><% } %></span>
+    <span><b><%= flash.texto %></b></span>
+  </div>
+</div>
+<% } else if (typeof flash !== 'undefined' && flash) { %>
 <div class="alerta alerta-<%= flash.tipo %>" id="flash-alerta"><%= flash.texto %></div>
 <script>
   /* Some sozinho (pedido do dono, 2026-09-03): antes o aviso "X adicionado"

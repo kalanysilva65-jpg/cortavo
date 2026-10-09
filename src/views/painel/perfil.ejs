@@ -1,0 +1,357 @@
+<%/* Perfil no design SUAVE (pedido do dono, 2026-07-31): substitui o Turno 6
+     (título em caixa alta, foto de 110px ao lado do nome, seções separadas por
+     sobrancelha) pelo HTML de referência — cartão de identidade centrado no
+     topo, seções com cartões arredondados e o cartão preto "Sua semana"
+     fechando a tela.
+     A foto continua editável AQUI: o cabeçalho antigo, que tinha o campo de
+     upload, fica escondido no design novo (`.pg-sv .app-topo-fixo`), então este
+     é o único lugar onde o usuário troca a própria foto.
+     Estilos em public/css/sv-planos-perfil.css. */%>
+<%
+  var cargo = ehDono ? 'Dono do sistema' : (usuario.papel === 'admin' ? 'Admin' : 'Barbeiro');
+  // `usuarioFotoUrl` vem do res.locals (lido do banco a cada requisição).
+  // `usuario.fotoUrl` NÃO existe: a sessão guarda só id/nome/papel.
+  var inicial = (usuario.nome || '?').charAt(0).toUpperCase();
+  var diasTrabalhados = jornada.filter(function (d) { return d.trabalha; });
+%>
+
+<div class="sv-tela">
+
+  <div class="sv-pf-topo sv-reveal">
+    <div class="sv-titulo">Perfil</div>
+    <%/* v3 (F1): o Perfil abre pelo cartão do topo da tela Mais; o "x"
+         volta para lá. O redesenho desta tela é a fatia F8. */%>
+    <a href="/painel/mais" class="sv-pf-fechar" title="Mais" aria-label="Voltar para Mais">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </a>
+  </div>
+
+  <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="sv-cartao sv-pf-cabeca sv-reveal sv-pf-p2">
+    <label class="sv-pf-foto" title="Trocar foto">
+      <% if (usuarioFotoUrl) { %>
+        <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
+      <% } else { %>
+        <span class="sv-pf-foto-inicial"><%= inicial %></span>
+      <% } %>
+      <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+    </label>
+    <div class="sv-pf-nome"><%= usuario.nome %></div>
+    <div class="sv-pf-funcao"><%= cargo %></div>
+    <div class="sv-pf-dica">Toque no círculo para trocar a foto</div>
+  </form>
+  <% if (usuarioFotoUrl) { %>
+    <form method="POST" action="/painel/perfil/foto/remover" class="sv-pf-remover">
+      <button type="submit" class="sv-foto-rem" onclick="return confirm('Remover a sua foto de perfil?')">Remover foto</button>
+    </form>
+  <% } %>
+
+  <div class="sv-pf-secao sv-reveal sv-pf-p3">
+    <div class="sv-pf-secao-tit">Conta</div>
+    <div class="sv-cartao sv-pf-lista">
+      <div class="sv-pf-item">
+        <div class="sv-pf-item-rot">Barbearia</div>
+        <div class="sv-pf-item-val"><%= barbeariaAtual ? barbeariaAtual.nome : '—' %></div>
+      </div>
+      <div class="sv-pf-item">
+        <div class="sv-pf-item-rot">Função</div>
+        <div class="sv-pf-item-val"><%= cargo %></div>
+      </div>
+      <% if (usuario.barbeariaId) { %>
+        <div class="sv-pf-item">
+          <div class="sv-pf-item-rot">Atendimentos concluídos</div>
+          <div class="sv-pf-item-val"><%= atendimentos %></div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (ehAdmin && typeof planoCortavo !== 'undefined' && planoCortavo) { %>
+    <%/* Fase 2.4: plano da Cortavo (só admin/dono; barbeiro não vê plano). */%>
+    <div class="sv-pf-secao sv-reveal">
+      <div class="sv-pf-secao-tit">Plano</div>
+      <a class="sv-cartao sv-pf-lista sv-pf-link" href="/painel/meu-plano">
+        <div class="sv-pf-item" style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="sv-pf-item-rot">Meu plano</div><div class="sv-pf-item-val"><%= planoCortavo.nome %> · o que inclui e uso do mês</div></div>
+          <span aria-hidden="true">›</span>
+        </div>
+      </a>
+    </div>
+  <% } %>
+
+  <% if (ehAdmin) { %>
+    <div class="sv-pf-secao sv-reveal">
+      <div class="sv-pf-secao-tit">Agendamento online</div>
+      <a class="sv-cartao sv-pf-lista sv-pf-link" href="/painel/logo">
+        <div class="sv-pf-item" style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="sv-pf-item-rot">Logo da barbearia</div><div class="sv-pf-item-val">Adicionar, trocar, posição e tamanho</div></div>
+          <span aria-hidden="true">›</span>
+        </div>
+      </a>
+    </div>
+  <% } %>
+
+  <% if (ehAdmin) { %>
+    <%/* Backup manual dos dados (só admin: inclui financeiro e todos os
+         clientes). Dois formatos com propósitos diferentes — o PDF é para ler
+         e imprimir; o JSON é o que realmente permite restaurar se o banco for
+         perdido. São <a download> apontando para as rotas de exportação.
+         Observação: o download funciona no NAVEGADOR; dentro do app da loja
+         (WKWebView) o arquivo pode abrir em vez de baixar — por isso o texto
+         sugere fazer pelo navegador. */%>
+    <div class="sv-pf-secao sv-reveal" id="pf-backup">
+      <div class="sv-pf-secao-tit">Backup dos dados</div>
+      <div class="sv-cartao sv-pf-avisos">
+        <div class="sv-pf-avisos-texto">
+          Baixe uma cópia de todos os dados desta barbearia — clientes, agenda, caixa, catálogo, estoque e equipe.
+          O <strong>PDF</strong> é para ler, imprimir e arquivar. O <strong>arquivo de dados</strong> é o que permite recuperar tudo caso algo se perca — guarde-o num lugar seguro.
+        </div>
+        <div class="sv-pf-avisos-botoes">
+          <a class="sv-btn sv-pf-avisos-btn" href="/painel/exportar/relatorio">Abrir PDF</a>
+          <a class="sv-pf-avisos-sec" href="/painel/exportar/dados.json" download>Baixar dados (backup)</a>
+        </div>
+        <div class="sv-pf-dica" style="margin-top:10px;">Dica: faça pelo navegador (cortavo.com.br) para o download funcionar melhor.</div>
+      </div>
+    </div>
+  <% } %>
+
+  <%/* Avisos no aparelho. A permissão de notificação só pode ser pedida a
+       partir de um TOQUE do usuário — navegador nenhum concede no carregamento
+       da página —, então isto é um botão de verdade, não um interruptor que
+       "já vem ligado". O estado real é lido do navegador ao abrir a tela. */%>
+  <div class="sv-pf-secao sv-reveal" id="pf-avisos" hidden>
+    <div class="sv-pf-secao-topo">
+      <div class="sv-pf-secao-tit">Avisos</div>
+      <div class="sv-pf-secao-lado" id="pf-avisos-estado"></div>
+    </div>
+    <div class="sv-cartao sv-pf-avisos">
+      <div class="sv-pf-avisos-texto" id="pf-avisos-texto">
+        Receba um aviso neste aparelho quando cair um agendamento novo na sua agenda.
+      </div>
+      <div class="sv-pf-avisos-botoes">
+        <button type="button" class="sv-btn sv-pf-avisos-btn" id="pf-avisos-ligar">Ativar avisos</button>
+        <button type="button" class="sv-pf-avisos-sec" id="pf-avisos-testar" hidden>Enviar teste</button>
+        <button type="button" class="sv-pf-avisos-sec" id="pf-avisos-desligar" hidden>Desativar</button>
+      </div>
+    </div>
+  </div>
+
+  <% if (usuario.barbeariaId) { %>
+    <%/* Jornada EDITÁVEL aqui (pedido do dono, 2026-08-01): a tela
+         /painel/horarios saiu do menu e a edição veio para o Perfil.
+         Um formulário só para dias e horas: marcar o dia sem definir a hora
+         não faz sentido, e são a mesma decisão ("quando eu atendo").
+         É esta jornada que o agendamento público lê para oferecer horários —
+         desmarcar um dia aqui o fecha para o cliente na hora. */%>
+    <form method="POST" action="/painel/perfil/jornada" class="sv-pf-secao sv-reveal" id="pf-jornada">
+      <input type="hidden" name="retorno" value="perfil" />
+
+      <div class="sv-pf-secao-topo">
+        <div class="sv-pf-secao-tit">Dias de trabalho</div>
+        <div class="sv-pf-secao-lado" id="pf-conta-dias"><%= semana.dias ? semana.dias + ' dias' : 'nenhum dia' %></div>
+      </div>
+
+      <div class="sv-pf-dias">
+        <% jornada.forEach(function (d) { %>
+          <%/* O <input> real carrega o estado e vai no POST; o <label> é o
+               ladrilho visível. `trabalha_<dia>` é o nome que o controller
+               espera. */%>
+          <label class="sv-pf-dia-caixa">
+            <input type="checkbox" name="trabalha_<%= d.dia %>" <%= d.trabalha ? 'checked' : '' %> onchange="pfAtualizarDia(this, <%= d.dia %>)" />
+            <span class="sv-pf-dia <%= d.trabalha ? 'on' : '' %>"><%= d.label %></span>
+          </label>
+        <% }) %>
+      </div>
+
+      <div class="sv-pf-secao-tit sv-pf-horas-tit">Horários</div>
+      <% jornada.forEach(function (d) { %>
+        <div class="sv-cartao sv-pf-hora <%= d.trabalha ? '' : 'folga' %>" id="pf-hora-<%= d.dia %>">
+          <div class="sv-pf-hora-dia"><%= d.label %></div>
+          <div class="sv-pf-hora-faixa">
+            <input class="sv-pf-hora-input" type="time" name="inicio_<%= d.dia %>" value="<%= d.horaInicio %>" aria-label="Início <%= d.label %>" />
+            <span class="sv-pf-hora-sep">às</span>
+            <input class="sv-pf-hora-input" type="time" name="fim_<%= d.dia %>" value="<%= d.horaFim %>" aria-label="Fim <%= d.label %>" />
+          </div>
+        </div>
+      <% }) %>
+
+      <div class="sv-pf-nota"><%= horarioTrabalho %></div>
+      <button type="submit" class="sv-btn sv-pf-salvar">Salvar jornada</button>
+    </form>
+
+    <div class="sv-cartao sv-cartao--escuro sv-pf-semana sv-reveal">
+      <div class="sv-pf-semana-rot">Sua semana</div>
+      <div class="sv-pf-semana-num"><%= semana.horas %></div>
+      <div class="sv-pf-semana-linha"><%= semana.linha %></div>
+    </div>
+  <% } %>
+
+  <% if (ehDono) { %>
+    <%/* O aviso de "operando como dono" e a saída para o painel-mestre viviam
+         no cabeçalho fixo, escondido neste design — moram aqui. */%>
+    <div class="sv-cartao sv-pf-dono sv-reveal">
+      <div class="sv-pf-dono-txt">
+        Você está operando <strong><%= barbeariaAtual ? barbeariaAtual.nome : 'uma barbearia' %></strong> como dono do sistema.
+      </div>
+      <form method="POST" action="/mestre/sair">
+        <button class="sv-pf-dono-btn" type="submit">← Voltar ao painel-mestre</button>
+      </form>
+    </div>
+  <% } %>
+
+  <div class="sv-pf-rodape">
+    <form method="POST" action="/logout">
+      <button class="sv-pf-sair" type="submit">Sair da conta</button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+  // Marcar/desmarcar o dia reflete NA HORA no ladrilho e no cartão de horário
+  // correspondente — sem isso o usuário só descobriria o efeito depois de
+  // salvar. A contagem no topo acompanha pelo mesmo motivo.
+  function pfAtualizarDia(input, dia) {
+    var ladrilho = input.nextElementSibling;
+    if (ladrilho) ladrilho.classList.toggle('on', input.checked);
+    var cartao = document.getElementById('pf-hora-' + dia);
+    if (cartao) cartao.classList.toggle('folga', !input.checked);
+    var marcados = document.querySelectorAll('#pf-jornada input[type=checkbox]:checked').length;
+    var conta = document.getElementById('pf-conta-dias');
+    if (conta) conta.textContent = marcados ? marcados + (marcados === 1 ? ' dia' : ' dias') : 'nenhum dia';
+  }
+</script>
+
+<script>
+  // Avisos no aparelho (Web Push).
+  //
+  // A seção nasce escondida e só aparece se este navegador souber receber
+  // avisos E o servidor tiver as chaves VAPID configuradas — oferecer um botão
+  // que não tem como funcionar é pior do que não oferecer nada.
+  //
+  // A permissão só pode ser pedida a partir de um toque do usuário: navegador
+  // nenhum concede no carregamento da página. Por isso "Ativar" é um botão de
+  // verdade, e não um interruptor que tenta se ligar sozinho.
+  (function () {
+    var secao = document.getElementById('pf-avisos');
+    if (!secao) return;
+
+    var suportado = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    if (!suportado) return;
+
+    var btnLigar = document.getElementById('pf-avisos-ligar');
+    var btnTestar = document.getElementById('pf-avisos-testar');
+    var btnDesligar = document.getElementById('pf-avisos-desligar');
+    var estado = document.getElementById('pf-avisos-estado');
+    var texto = document.getElementById('pf-avisos-texto');
+    var chavePublica = null;
+
+    function base64ParaUint8(base64) {
+      var pad = '='.repeat((4 - (base64.length % 4)) % 4);
+      var b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+      var cru = atob(b64);
+      var saida = new Uint8Array(cru.length);
+      for (var i = 0; i < cru.length; i++) saida[i] = cru.charCodeAt(i);
+      return saida;
+    }
+
+    function pintar(ligado) {
+      estado.textContent = ligado ? 'ligados' : 'desligados';
+      btnLigar.hidden = ligado;
+      btnTestar.hidden = !ligado;
+      btnDesligar.hidden = !ligado;
+      texto.textContent = ligado
+        ? 'Este aparelho vai avisar quando cair um agendamento novo na sua agenda.'
+        : 'Receba um aviso neste aparelho quando cair um agendamento novo na sua agenda.';
+    }
+
+    function inscricaoAtual() {
+      return navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription();
+      });
+    }
+
+    // Estado inicial: o navegador é a fonte da verdade sobre este aparelho.
+    // O servidor sabe quantos aparelhos existem, mas não qual é este.
+    fetch('/painel/notificacoes/chave', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (info) {
+        if (!info.configurado) return; // servidor sem VAPID: seção segue escondida
+        chavePublica = info.chave;
+        secao.hidden = false;
+        return inscricaoAtual().then(function (ins) {
+          pintar(!!ins && Notification.permission === 'granted');
+        });
+      })
+      .catch(function () { /* sem avisos: a seção só não aparece */ });
+
+    btnLigar.addEventListener('click', function () {
+      btnLigar.disabled = true;
+      Notification.requestPermission()
+        .then(function (permissao) {
+          if (permissao !== 'granted') {
+            // Negado é decisão do usuário; explicar onde reverter é mais útil
+            // do que insistir (o navegador não pergunta duas vezes).
+            texto.textContent =
+              'Os avisos foram bloqueados para este site. Para reativar, libere as notificações nas configurações do navegador e volte aqui.';
+            throw new Error('permissao negada');
+          }
+          return navigator.serviceWorker.ready;
+        })
+        .then(function (reg) {
+          return reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: base64ParaUint8(chavePublica),
+          });
+        })
+        .then(function (ins) {
+          return fetch('/painel/notificacoes/inscrever', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ inscricao: ins.toJSON(), plataforma: 'web' }),
+          });
+        })
+        .then(function (r) { if (!r.ok) throw new Error('falha ao registrar'); return r.json(); })
+        .then(function () { pintar(true); })
+        .catch(function () { /* o texto já explica */ })
+        .then(function () { btnLigar.disabled = false; });
+    });
+
+    btnDesligar.addEventListener('click', function () {
+      btnDesligar.disabled = true;
+      inscricaoAtual()
+        .then(function (ins) {
+          if (!ins) return null;
+          var endpoint = ins.endpoint;
+          // Cancela nos dois lados: só no navegador deixaria o servidor
+          // mandando para um endereço morto; só no servidor deixaria o
+          // navegador achando que está inscrito.
+          return ins.unsubscribe().then(function () {
+            return fetch('/painel/notificacoes/cancelar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ endpoint: endpoint }),
+            });
+          });
+        })
+        .then(function () { pintar(false); })
+        .catch(function () { /* silêncio: o estado é repintado ao reabrir */ })
+        .then(function () { btnDesligar.disabled = false; });
+    });
+
+    btnTestar.addEventListener('click', function () {
+      btnTestar.disabled = true;
+      var rotulo = btnTestar.textContent;
+      fetch('/painel/notificacoes/testar', { method: 'POST', credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          btnTestar.textContent = j.entregues > 0 ? 'Enviado!' : 'Nenhum aparelho';
+        })
+        .catch(function () { btnTestar.textContent = 'Falhou'; })
+        .then(function () {
+          setTimeout(function () { btnTestar.textContent = rotulo; btnTestar.disabled = false; }, 2200);
+        });
+    });
+  })();
+</script>

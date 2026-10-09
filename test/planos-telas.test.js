@@ -42,18 +42,22 @@ test('2.4 foraDoPlano(): Essencial tranca as 5 funções, Barbearia não', () =>
 
 function dadosNav(planoChave, ehAdmin) {
   const l = locaisDoPlano(planoChave);
-  return { ...l, currentPath: '/painel', ehAdmin, podeAcessar: () => true, usuarioFotoUrl: null, usuarioPrimeiroNome: 'A' };
+  return { ...l, currentPath: '/painel/mais', ehAdmin, ehDono: false, podeAcessar: () => true, usuarioFotoUrl: null, usuarioPrimeiroNome: 'A', usuario: { nome: 'Ana Lima', papel: ehAdmin ? 'admin' : 'funcionario' } };
 }
 
-test('2.4 menu: admin no Essencial vê cadeado; barbeiro não vê o item; Barbearia sem cadeado', async () => {
-  const admin = await render('partials/nav-inferior.ejs', dadosNav('essencial', true));
+// Redesign v3 (F1): os itens do antigo menu da barra foram para a tela Mais
+// (a navbar tem só as 5 seções fixas). A regra é a mesma, item a item.
+test('2.4 menu (tela Mais): admin no Essencial vê cadeado; barbeiro não vê o item; Barbearia sem cadeado', async () => {
+  const admin = await render('painel/mais.ejs', dadosNav('essencial', true));
   assert.match(admin, /Estoque \(fora do plano\)/);
-  assert.match(admin, /sv-grade-cadeado/);
-  const barbeiro = await render('partials/nav-inferior.ejs', dadosNav('essencial', false));
+  assert.match(admin, /cv-cadeado/);
+  const barbeiro = await render('painel/mais.ejs', dadosNav('essencial', false));
   assert.doesNotMatch(barbeiro, /href="\/painel\/estoque"/);
-  assert.match(barbeiro, /href="\/painel\/agenda"/);
-  const plenoAdmin = await render('partials/nav-inferior.ejs', dadosNav('barbearia', true));
-  assert.doesNotMatch(plenoAdmin, /sv-grade-cadeado/);
+  assert.doesNotMatch(barbeiro, /fora do plano/);
+  const nav = await render('partials/nav-inferior.ejs', dadosNav('essencial', false));
+  assert.match(nav, /href="\/painel\/agenda"/);
+  const plenoAdmin = await render('painel/mais.ejs', dadosNav('barbearia', true));
+  assert.doesNotMatch(plenoAdmin, /Estoque \(fora do plano\)/);
   assert.match(plenoAdmin, /href="\/painel\/estoque"/);
 });
 

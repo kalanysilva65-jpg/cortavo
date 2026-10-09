@@ -1,0 +1,78 @@
+<%/* Gestão (redesign v3, fatia F1; spec 12 §1 e §3).
+     A seção existe para todos os papéis. Enquanto os cartões-resumo com os
+     números (G1–G10, G15–G18) não chegam, ela reúne as telas que já existem,
+     com o mesmo filtro de sempre: admin vê tudo (com cadeado no que o plano
+     não libera); o barbeiro vê só o que foi liberado e nada do plano que falta.
+     Barbeiro sem nada liberado: estado vazio da spec 12, nunca 403.
+     TODO(Beto B4): seletor de período em vidro + cartões-resumo consumindo
+     /painel/api/gestao/* (fatia F5). TODO(Beto B1/B2): "Meus números" e a
+     leitura do caixa por chave (caixa_ver, numeros_barbearia) no lugar do
+     exigeAdmin. Sem esses dados, nada de número aparece aqui. */%>
+<%
+  var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
+  var pode = (typeof podeAcessar === 'function') ? podeAcessar : function () { return true; };
+  function nomeDoPlano(tranca) {
+    var m = tranca && /plano (.+?)\./.exec(tranca.texto || '');
+    return m ? m[1] : 'Barbearia';
+  }
+  function item(o) {
+    if (o.admin && !ehAdmin) return null;
+    if (!pode(o.href)) return null;
+    var tranca = fdp(o.href);
+    if (tranca && !ehAdmin) return null;
+    o.cadeadoPlano = tranca ? nomeDoPlano(tranca) : null;
+    return o;
+  }
+  function lista(itens) { return itens.map(item).filter(Boolean); }
+  var secoes = [
+    { t: ehAdmin ? 'Dinheiro' : 'Seus números', itens: lista(ehAdmin ? [
+      { href: '/painel/caixa', t: 'Caixa', s: 'Entradas, saídas e saldo do dia', ic: 'caixa', admin: true },
+      { href: '/painel/relatorios', t: 'Relatórios', s: 'Faturamento, equipe e clientes por período', ic: 'gestao', admin: true },
+      { href: '/painel/comissoes', t: 'Comissões', s: 'Quanto cada barbeiro fez', ic: 'comissao' },
+      { href: '/painel/metas', t: 'Metas', s: 'Metas do mês e o quanto falta', ic: 'meta', admin: true },
+    ] : [
+      { href: '/painel/comissoes', t: 'Minha comissão', s: 'Quanto você fez no mês', ic: 'comissao' },
+    ]) },
+    { t: 'Clientes e catálogo', itens: lista([
+      { href: '/painel/clientes', t: 'Clientes', s: 'Contatos e histórico', ic: 'cliente' },
+      { href: '/painel/servicos', t: 'Serviços', s: 'Preço e tempo de cada um', ic: 'tesoura' },
+      { href: '/painel/produtos', t: 'Produtos', s: 'O que a barbearia vende', ic: 'loja' },
+      { href: '/painel/estoque', t: 'Estoque', s: 'Quantidades de cada item', ic: 'estoque' },
+      { href: '/painel/planos', t: 'Planos de assinatura', s: 'Pacotes mensais para os clientes', ic: 'cartao' },
+    ]) },
+  ];
+  var temAlgo = secoes.some(function (s) { return s.itens.length; });
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : '';
+%>
+<header class="cv-cab"><div class="cv-cab-txt"><% if (nomeBarbearia) { %><p class="cv-cab-sup"><%= nomeBarbearia %></p><% } %><h1>Gestão</h1></div></header>
+
+<% if (!temAlgo) { %>
+  <div class="cv-secao" style="margin-top:24px">
+    <div class="cv-cartao cv-vazio" role="status">
+      <div class="marca" aria-hidden="true">
+        <svg class="cv-aneis" width="132" height="132" viewBox="0 0 132 132"><circle class="trilho" cx="66" cy="66" r="60" stroke-width="12"/><circle class="trilho" cx="66" cy="66" r="43" stroke-width="12"/><circle class="trilho" cx="66" cy="66" r="26" stroke-width="12"/></svg>
+      </div>
+      <h2>Ainda sem números para você</h2>
+      <p>A Gestão mostra números e cadastros da barbearia. Por enquanto, o responsável não liberou nenhuma parte para você.</p>
+      <div class="acoes">
+        <a class="cv-btn" href="/painel/agenda"><%- include('../partials/icone', { cvIc: 'agenda', cvCls: 'cv-ic--20' }) %>Ver minha agenda</a>
+        <p style="font-size:13px;margin-top:12px">Para liberar, peça ao responsável da barbearia.</p>
+      </div>
+    </div>
+  </div>
+<% } else { %>
+  <% secoes.forEach(function (sec, i) { if (!sec.itens.length) return; %>
+    <section class="cv-secao" style="margin-top:<%= i === 0 ? 20 : 28 %>px" aria-labelledby="gestao-<%= i %>">
+      <div class="cv-secao-cab"><h2 id="gestao-<%= i %>"><%= sec.t %></h2></div>
+      <ul class="cv-lista">
+        <% sec.itens.forEach(function (it) { %>
+          <li><a class="cv-linha<%= it.cadeadoPlano ? ' bloqueada' : '' %>" href="<%= it.href %>"<% if (it.cadeadoPlano) { %> aria-label="<%= it.t %> (fora do plano)"<% } %>>
+            <%- include('../partials/icone', { cvIc: it.ic }) %>
+            <span class="corpo"><span class="t"><%= it.t %></span><% if (it.cadeadoPlano) { %><span class="s" style="margin-top:5px"><span class="cv-cadeado"><%- include('../partials/icone', { cvIc: 'cadeado' }) %>Plano <%= it.cadeadoPlano %></span></span><% } else { %><span class="s"><%= it.s %></span><% } %></span>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </a></li>
+        <% }) %>
+      </ul>
+    </section>
+  <% }) %>
+<% } %>

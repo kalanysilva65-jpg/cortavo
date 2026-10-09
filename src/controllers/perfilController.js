@@ -14,7 +14,8 @@ function minutosDe(hhmm) {
   return (h || 0) * 60 + (m || 0);
 }
 
-// GET /painel/mais — perfil do usuário logado.
+// GET /painel/perfil — perfil do usuário logado (até a v3 era /painel/mais;
+// a tela Mais virou a lista de seções, fatia F1 do redesign).
 async function ver(req, res) {
   const usuario = req.session.usuario;
   let atendimentos = 0;
@@ -68,7 +69,7 @@ async function ver(req, res) {
       : 'Nenhum dia de trabalho definido',
   };
 
-  res.render('painel/mais', { titulo: 'Perfil', atendimentos, horarioTrabalho, jornada, semana });
+  res.render('painel/perfil', { titulo: 'Perfil', atendimentos, horarioTrabalho, jornada, semana });
 }
 
 // POST /painel/perfil/foto — o próprio usuário logado troca sua foto.
@@ -88,7 +89,7 @@ async function salvarFoto(req, res) {
 
 // POST /painel/perfil/foto/remover — tira a foto do próprio usuário logado.
 async function removerFoto(req, res) {
-  const destino = req.get('Referer') || '/painel/mais';
+  const destino = req.get('Referer') || '/painel/perfil';
   const id = req.session.usuario.id;
   const atual = await prisma.usuario.findUnique({ where: { id } });
   const anterior = atual && caminhoDoUpload(atual.fotoUrl);

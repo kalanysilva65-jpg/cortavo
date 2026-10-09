@@ -2,8 +2,14 @@
   // Precisa vir ANTES do <head>: é daqui que sai quais CSS a página carrega.
   // Telas já no design SUAVE — as demais (fidelidade, comissões, horários e os
   // formulários órfãos) seguem na pilha de CSS antiga.
-  var TELAS_SUAVE = ['/painel/meu-plano', '/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/logo', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
-  var ehSuave = TELAS_SUAVE.indexOf(currentPath) !== -1;
+  var TELAS_SUAVE = ['/painel/meu-plano', '/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/perfil', '/painel/logo', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
+  // Telas já no design v3 (redesign da Dani, 2026-10-06). Elas carregam só
+  // tokens.css + cv.css + cv-telas.css (sem styles.css nem a pilha suave) e
+  // trazem o próprio cabeçalho. A lista cresce a cada fatia do plano de
+  // migração; quando todas estiverem aqui, a pilha antiga sai (fatia F11).
+  var TELAS_V3 = ['/painel/mais', '/painel/gestao'];
+  var ehV3 = TELAS_V3.indexOf(currentPath) !== -1;
+  var ehSuave = !ehV3 && TELAS_SUAVE.indexOf(currentPath) !== -1;
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -32,7 +38,7 @@
         '/painel/produtos': 'sv-catalogo',
         '/painel/estoque': 'sv-catalogo',
         '/painel/planos': 'sv-planos-perfil',
-        '/painel/mais': 'sv-planos-perfil',
+        '/painel/perfil': 'sv-planos-perfil',
         '/painel/logo': 'sv-planos-perfil',
         '/painel/meu-plano': 'sv-planos-perfil',
         '/painel/metas': 'sv-metas',
@@ -45,7 +51,7 @@
     %>
     <%/* `styles.css` fica nos dois caminhos: dele vêm os resets de base
          (html/body/a/img/input) que o suave.css pressupõe em vez de repetir. */%>
-    <link rel="stylesheet" href="/css/styles.css?v=<%= assetV %>" />
+    <% if (!ehV3) { %><link rel="stylesheet" href="/css/styles.css?v=<%= assetV %>" /><% } %>
     <%/* v3 (fatia F0): tokens e componentes da Dani. tokens.css vem DEPOIS do
          styles.css porque os dois definem --fonte (vale a Plus Jakarta Sans);
          cv.css traz a base nativa (mobile-native) e as classes cv-. Só o peso
@@ -53,7 +59,9 @@
     <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/css/tokens.css?v=<%= assetV %>" />
     <link rel="stylesheet" href="/css/cv.css?v=<%= assetV %>" />
-    <% if (ehSuave) { %>
+    <% if (ehV3) { %>
+      <%/* Tela v3: nada da pilha antiga. */%>
+    <% } else if (ehSuave) { %>
       <link rel="stylesheet" href="/css/suave.css?v=<%= assetV %>" />
       <% if (cssDaTela) { %><link rel="stylesheet" href="/css/<%= cssDaTela %>.css?v=<%= assetV %>" /><% } %>
       <%/* Por ULTIMO: so contem uma media query de min-width 1024px, e precisa
@@ -67,6 +75,9 @@
       <link rel="stylesheet" href="/css/painel-app.css?v=<%= assetV %>" />
       <link rel="stylesheet" href="/css/painel-novo.css?v=<%= assetV %>" />
     <% } %>
+    <%/* Por último: casca v3 (navbar, avisos) com especificidade acima das
+         regras antigas (.pg-sv a) e as peças de tela das telas v3. */%>
+    <link rel="stylesheet" href="/css/cv-telas.css?v=<%= assetV %>" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -109,10 +120,18 @@
        cada uma (o hero só existe na Home, por exemplo). */%>
   <%
     // Telas de tela cheia, sem a barra de navegação (pedido do dono, 2026-09-30).
-    var semNav = ['/painel/ia', '/painel/conversas', '/painel/mais', '/painel/logo'].indexOf(currentPath) !== -1;
+    // v3: a navbar é fixa em todas as seções (spec 12); só as telas cheias de
+    // conversa (campo de texto no rodapé) e a de logo ficam sem ela.
+    var semNav = ['/painel/ia', '/painel/conversas', '/painel/logo'].indexOf(currentPath) !== -1;
   %>
-  <body class="app-painel <%= ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %><%= semNav ? ' sem-nav' : '' %>">
+  <body class="app-painel <%= ehV3 ? 'pg-cv' : ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %><%= semNav ? ' sem-nav' : '' %>">
     <%- include('../partials/splash') %>
+    <% if (ehV3) { %>
+    <%/* .cv-palco recua quando uma folha abre (M4); o aviso do servidor vira
+         o aviso em vidro preto acima da navbar. */%>
+    <div class="cv-palco"><main class="cv-tela" id="tela"><%- body %></main></div>
+    <%- include('../partials/flash', { flashCv: true }) %>
+    <% } else { %>
     <div class="app-topo-fixo">
       <%- include('../partials/header-painel') %>
     </div>
@@ -122,9 +141,11 @@
       <% } %>
       <%- include('../partials/flash') %> <%- body %>
     </main>
+    <% } %>
     <%- include('../partials/nav-inferior') %>
   <script src="/js/aviso-conexao.js" defer></script>
 <script src="/js/foto-comprimir.js" defer></script>
 <script src="/js/folha-arrastar.js" defer></script>
+<script src="/js/cv-casca.js?v=<%= assetV %>" defer></script>
 </body>
 </html>

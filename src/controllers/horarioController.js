@@ -136,7 +136,7 @@ async function salvarJornada(req, res) {
   // que salva pela mesma rota — `retorno` diz de onde veio para não jogar o
   // usuário numa tela que saiu do menu. Lista fechada de propósito: `retorno`
   // vem do formulário, e redirecionar para valor livre seria porta aberta.
-  const RETORNOS = { perfil: '/painel/mais', horarios: '/painel/horarios' };
+  const RETORNOS = { perfil: '/painel/perfil', horarios: '/painel/horarios' };
   const voltarPara = RETORNOS[req.body.retorno] || '/painel/horarios';
 
   const barbeiroId = req.ehAdmin && req.body.barbeiroId ? Number(req.body.barbeiroId) : req.session.usuario.id;

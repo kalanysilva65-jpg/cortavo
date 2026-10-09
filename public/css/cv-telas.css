@@ -1,0 +1,74 @@
+/* =========================================================================
+   Cortavo v3 · telas do painel (Fabio, a partir de redesign/v3/mockups/app.css)
+   Depende de tokens.css e cv.css. Aqui ficam:
+   1. a casca (navbar, avisos) com especificidade suficiente para valer
+      também nas telas antigas, que ainda carregam regras como `.pg-sv a`;
+   2. as peças de tela que o mockup definia em app.css (o resto daquele
+      arquivo só simulava a barra de status do iPhone e não entra no app).
+   Nomes com prefixo cv- para não colidir com o CSS antigo (.tabela etc.).
+   ========================================================================= */
+
+/* ---- 1. Casca ----------------------------------------------------------- */
+.pg-cv { background: var(--c-pagina); }
+.pg-cv .cv-tela { display: block; min-height: 100dvh; padding-bottom: var(--area-nav); }
+.pg-cv.sem-nav .cv-tela { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.pg-cv .cv-cab { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+body.sem-nav .cv-navbar { display: none; }
+
+/* Telas antigas fora da pilha suave reservam o espaço da navbar flutuante */
+.app-painel:not(.pg-sv):not(.pg-cv) .conteudo { padding-bottom: var(--area-nav); }
+
+/* Navbar: as regras antigas `.pg-sv a { color: inherit; transition: ... }`
+   têm especificidade (0,1,1) e venceriam `.cv-nav-item` (0,1,0). */
+.cv-navbar .cv-nav-item { color: var(--c-tinta-2); transition: transform var(--d-press-out) var(--ease-out); }
+.cv-navbar .cv-nav-item[aria-current="page"] { color: var(--c-tinta); }
+.cv-navbar .cv-nav-item:active { transform: scale(.94); transition-duration: var(--d-press-in); }
+.cv-navbar .cv-mais { color: #fff; transition: transform var(--d-press-out) var(--ease-out); }
+.cv-navbar .cv-mais:active { transform: scale(.94); transition-duration: var(--d-press-in); }
+/* Sem JS (ou antes de medir) a seção ativa já aparece: a lente vira o fundo do item */
+.cv-navbar .cv-lente { opacity: 0; }
+.cv-navbar.com-lente .cv-lente { opacity: 1; }
+.cv-navbar:not(.com-lente) .cv-nav-item[aria-current="page"] { background: rgba(17,17,17,.075); }
+/* Pop-up aberto nas telas antigas: a barra não serve para nada e atrapalha */
+body.modal-aberto .cv-navbar,
+body:has(.sv-folha-fundo:not([hidden])) .cv-navbar { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .cv-navbar .cv-nav-item:active, .cv-navbar .cv-mais:active { transform: none; opacity: .7; }
+}
+
+/* Aviso do servidor (flash) */
+.cv-aviso[data-flash] { cursor: pointer; }
+.cv-aviso--erro .ok { background: var(--c-perigo); }
+.cv-aviso b { overflow-wrap: anywhere; }
+
+/* PC: até a fatia F13 (menu lateral), a tela v3 fica numa coluna central */
+@media (min-width: 1024px) {
+  .pg-cv .cv-tela { max-width: 560px; margin: 0 auto; }
+}
+
+/* ---- 2. Peças de tela --------------------------------------------------- */
+
+/* Linha em botão ou formulário (Sair): herda a aparência da linha de lista */
+.cv-lista form { margin: 0; }
+button.cv-linha { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.cv-lista > li + li > form > .cv-linha::before { content: ""; position: absolute; top: 0; right: 0; left: var(--recuo, 58px); border-top: .5px solid var(--c-fio-forte); }
+.cv-linha .t .cv-cadeado { font-size: var(--t-legenda); }
+.cv-linha--perigo .t { color: var(--c-perigo); }
+
+/* Mais: cartão do perfil e objeto do plano */
+.cv-perfil { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.cv-perfil .cv-avatar { width: 52px; height: 52px; font-size: 17px; }
+.cv-perfil .cv-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cv-perfil .corpo { flex: 1; min-width: 0; }
+.cv-perfil .corpo b { display: block; font-size: 17px; font-weight: 600; letter-spacing: -.012em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-perfil .corpo span { display: block; font-size: 14px; color: var(--c-apoio); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-plano-obj { display: block; padding: 18px 20px; }
+.cv-plano-obj .linha { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.cv-plano-obj .nome { font-size: 24px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; overflow-wrap: anywhere; }
+.cv-plano-obj .rot--normal { display: block; margin-top: 8px; font-weight: 400; }
+.cv-nota-dono { display: grid; gap: 12px; font-size: 15px; line-height: 1.45; color: var(--c-tinta-2); }
+.cv-nota-dono strong { color: var(--c-tinta); }
+
+/* A voz do Cortavo: uma frase de fato, sem promessa */
+.cv-frase { margin: 10px var(--margem) 0; font-size: 17px; line-height: 1.45; letter-spacing: -.012em; color: var(--c-tinta-2); max-width: 34ch; text-wrap: pretty; }
+.cv-frase b { color: var(--c-tinta); font-weight: 600; font-variant-numeric: tabular-nums; }

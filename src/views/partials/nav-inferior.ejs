@@ -1,378 +1,45 @@
 <%
-  // Telas já no design novo ganham a barra nova (pílula clara + "Mais" com
-  // painel de vidro escuro) — é assim no HTML original. As telas que ainda
-  // não foram convertidas continuam com a barra antiga (escura, rolável),
-  // pra não misturar os dois temas na mesma tela. Mesma lista de
-  // src/views/layouts/painel.ejs (TELAS_NOVAS).
-  var TELAS_NOVAS_PATHS = ['/painel', '/painel/agenda', '/painel/estoque', '/painel/servicos', '/painel/produtos', '/painel/planos', '/painel/clientes', '/painel/equipe', '/painel/caixa', '/painel/relatorios', '/painel/fidelidade'];
-  var navNovo = TELAS_NOVAS_PATHS.indexOf(currentPath) !== -1;
-  // Design "suave" (2026-07-31): mesma lista de src/views/layouts/painel.ejs.
-  var TELAS_SUAVE_PATHS = ['/painel/meu-plano', '/painel', '/painel/caixa', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/agenda', '/painel/clientes', '/painel/equipe', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
-  var navSuave = TELAS_SUAVE_PATHS.indexOf(currentPath) !== -1;
-  // Plano da Cortavo (fase 2.4): função fora do plano. Admin vê o item com
-  // cadeado (ao tocar, o servidor mostra a tela "fora do plano"); barbeiro não
-  // vê o item. Sem o helper (tela fora do painel), nada fica trancado.
-  var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
-  function mostraItem(item) {
-    return (!item.admin || ehAdmin) && podeAcessar(item.href) && (ehAdmin || !fdp(item.href));
+  // Navbar v3 (fatia F1, spec 12 §1): 5 seções FIXAS para todos os papéis,
+  // em qualquer combinação de permissões. O que muda é o conteúdo dentro de
+  // cada seção, nunca a barra. Substitui as barras "suave", "nova" e "antiga"
+  // e as listas TELAS_*_PATHS. Os itens que moravam no menu (cadastros,
+  // equipe, secretária...) estão na tela Mais (painel/mais.ejs), com o mesmo
+  // filtro de permissão e de plano.
+  //
+  // Cada tela do painel pertence a uma seção; a seção ativa ganha
+  // aria-current e a lente (M5). Caminho que não está listado cai em "Mais",
+  // que é onde moram os cadastros e as configurações.
+  var SECOES_NAV = {
+    agenda: ['/painel/agenda', '/painel/horarios'],
+    gestao: ['/painel/gestao', '/painel/caixa', '/painel/relatorios', '/painel/comissoes', '/painel/metas'],
+  };
+  function secaoDe(caminho) {
+    var c = String(caminho || '').toLowerCase().replace(/\/+$/, '') || '/painel';
+    if (c === '/painel') return 'inicio';
+    var achou = 'mais';
+    Object.keys(SECOES_NAV).forEach(function (s) {
+      SECOES_NAV[s].forEach(function (p) { if (c === p || c.indexOf(p + '/') === 0) achou = s; });
+    });
+    return achou;
   }
-  var CADEADO = '<svg class="ic-cadeado" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.5a4.8 4.8 0 0 0-4.8 4.8v2.4H6.4A2.4 2.4 0 0 0 4 12.1v7A2.4 2.4 0 0 0 6.4 21.5h11.2a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-.8V7.3A4.8 4.8 0 0 0 12 2.5zm2.6 7.2V7.3a2.6 2.6 0 1 0-5.2 0v2.4z"/></svg>';
+  var secaoAtual = secaoDe(typeof currentPath !== 'undefined' ? currentPath : '');
+  var ITENS_NAV = [
+    { s: 'inicio', href: '/painel', nome: 'Início', ic: 'inicio' },
+    { s: 'agenda', href: '/painel/agenda', nome: 'Agenda', ic: 'agenda' },
+    null, // o "+" (Novo) fica no meio
+    { s: 'gestao', href: '/painel/gestao', nome: 'Gestão', ic: 'gestao' },
+    { s: 'mais', href: '/painel/mais', nome: 'Mais', ic: 'menu' },
+  ];
 %>
-
-<% if (navSuave) { %>
-  <%
-    // Barra "suave": pílula BRANCA FLUTUANTE (não encosta nas bordas), com
-    // sombra alta. A aba ativa ganha fundo cinza e mostra o rótulo AO LADO do
-    // ícone — as inativas ficam só com o ícone. O 4º botão abre a folha
-    // inferior com o resto do menu.
-    var svAbas = [
-      { href: '/painel', nome: 'Início', exato: true },
-      { href: '/painel/agenda', nome: 'Agenda' },
-    ];
-    // Grade de ladrilhos (referência, linhas 1882-1931). Cada item traz o
-    // próprio ícone porque na grade o desenho é o que identifica — o rótulo de
-    // 11px é só apoio. "Perfil" fica FORA da grade: é o cartão escuro do pé.
-    // Ícones PREENCHIDOS (dono, 2026-09-02: "volte os icons preenchidos como
-    // antes"). Conteúdo interno dos SVGs enviados. A grade renderiza com
-    // fill=currentColor (sem stroke) — ver .sv-grade-caixa svg no CSS.
-    // (Os arquivos vinham com nome trocado; mapeados pelo <title>/desenho.)
-    var svMenu = [
-      { href: '/painel/caixa', nome: 'Caixa', admin: true, icone: '<path fill-rule="evenodd" d="M4.5 6h15A2.5 2.5 0 0 1 22 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 15.5v-7A2.5 2.5 0 0 1 4.5 6zM12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z"/>' },
-      { href: '/painel/ia', nome: 'Assistente', icone: '<path d="M13 2.4l1.95 5.15L20.1 9.5l-5.15 1.95L13 16.6l-1.95-5.15L5.9 9.5l5.15-1.95z"/><path d="M18.4 13.8l.95 2.55 2.55.95-2.55.95-.95 2.55-.95-2.55-2.55-.95 2.55-.95z"/>' },
-      { href: '/painel/conversas', nome: 'Conversas', icone: '<path fill-rule="evenodd" d="M4 3.4h16A2.6 2.6 0 0 1 22.6 6v8.5a2.6 2.6 0 0 1-2.6 2.6H9.9l-4.5 3.6a1 1 0 0 1-1.6-.8V17H4A2.6 2.6 0 0 1 1.4 14.5V6A2.6 2.6 0 0 1 4 3.4zm3 5.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zm5 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zm5 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/>' },
-      { href: '/painel/secretaria', nome: 'Secretária', admin: true, icone: '<path fill-rule="evenodd" d="M12 2.2a5 5 0 0 0-5 5v1.2a5 5 0 1 0 10 0V7.2a5 5 0 0 0-5-5zM4.2 20.2c.5-3.6 3.7-5.7 7.8-5.7s7.3 2.1 7.8 5.7c.1 1-.6 1.6-1.5 1.6H5.7c-.9 0-1.6-.6-1.5-1.6z"/>' },
-      { href: '/painel/servicos', nome: 'Serviços', icone: '<path d="M19.06 3.44a1.2 1.2 0 0 1 1.7 1.7L8.9 17a1.2 1.2 0 0 1-1.7-1.7z"/><path d="M13.2 13.1 20.76 20.66a1.2 1.2 0 0 1-1.7 1.7L11.5 14.8z"/><path fill-rule="evenodd" d="M6.2 2.4a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm0 2.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z"/><path fill-rule="evenodd" d="M6.2 14a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm0 2.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z"/>' },
-      { href: '/painel/produtos', nome: 'Produtos', icone: '<path d="M9.8 2.2h4.4v3.1H9.8z"/><path fill-rule="evenodd" d="M9.2 6.6h5.6l1.7 3.6v10a1.6 1.6 0 0 1-1.6 1.6H9.1a1.6 1.6 0 0 1-1.6-1.6v-10zm-.1 6.4v2.9h5.8V13z"/>' },
-      { href: '/painel/estoque', nome: 'Estoque', icone: '<path d="M12 2.4 21 6.5 12 10.6 3 6.5z"/><path d="M2.6 8.5 11 12.2v9.4l-8.4-3.8z"/><path d="M21.4 8.5 13 12.2v9.4l8.4-3.8z"/>' },
-      { href: '/painel/clientes', nome: 'Clientes', icone: '<circle cx="9.3" cy="8" r="3.7"/><path d="M9.3 13.5c3 0 5.4 1.7 6.1 4.6.3 1.2-.3 2.3-1.6 2.3H4.8c-1.3 0-1.9-1.1-1.6-2.3.7-2.9 3.1-4.6 6.1-4.6z"/><path d="M16.6 4.4a3.6 3.6 0 0 1 0 7.2 1 1 0 0 1 0-2 1.6 1.6 0 0 0 0-3.2 1 1 0 0 1 0-2z"/><path d="M17 14.1c2.6.3 4.3 2 4.8 4.3.2 1.1-.4 2-1.5 2h-2.6c.3-2.3-.2-4.4-1.5-6.2z"/>' },
-      { href: '/painel/equipe', nome: 'Equipe', admin: true, icone: '<path fill-rule="evenodd" d="M9 2.2h6v1.6h4.4A2.6 2.6 0 0 1 22 6.4v12.4a2.6 2.6 0 0 1-2.6 2.6H4.6A2.6 2.6 0 0 1 2 18.8V6.4a2.6 2.6 0 0 1 2.6-2.6H9zm3 5.1a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4zm0 6.6c-2.9 0-5.1 1.7-5.1 4.4h10.2c0-2.7-2.2-4.4-5.1-4.4z"/>' },
-      { href: '/painel/relatorios', nome: 'Relatórios', admin: true, icone: '<path d="M3.5 19.2h17a1.15 1.15 0 0 1 0 2.3h-17a1.15 1.15 0 0 1 0-2.3z"/><path d="M5.9 11.3h2.4v6.2H5.9zM10.8 5.9h2.4v11.6h-2.4zM15.7 12.8h2.4v4.7h-2.4z"/>' },
-      { href: '/painel/metas', nome: 'Metas', admin: true, icone: '<path fill-rule="evenodd" d="M12 2.6a9.4 9.4 0 1 0 0 18.8 9.4 9.4 0 0 0 0-18.8zm0 3.1a6.3 6.3 0 1 1 0 12.6 6.3 6.3 0 0 1 0-12.6zm0 3.1a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4z"/>' },
-      { href: '/painel/planos', nome: 'Planos', icone: '<path fill-rule="evenodd" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm3 2.9v1.6h10V8.9zm0 4.6v1.6h10v-1.6zM2 9.7a2.3 2.3 0 0 1 0 4.6zm20 0a2.3 2.3 0 0 0 0 4.6z"/>' },
-    ];
-    // Fidelidade, Comissões e Horários saíram do menu (pedido do dono,
-    // 2026-08-01). A jornada, que era o conteúdo de Horários, passou a ser
-    // editada no próprio Perfil — é ela que define o que o cliente vê como
-    // horário livre no agendamento público.
-    // Ícones de CONTORNO (design "Glass" do dono, 2026-09-02). Paths exatos do
-    // mockup (nav-glass-template). Renderizam com fill=none stroke=currentColor
-    // — a cor (ativo #0E0E0E / inativo #7B7B7B) vem do .sv-nav-item no CSS.
-    var svIcones = {
-      'Início': '<path d="M3 10.5 12 3.5l9 7V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9.5 21v-6h5v6"/>',
-      'Agenda': '<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/>',
-      'Caixa': '<rect x="2.5" y="6.5" width="19" height="11" rx="2"/><circle cx="12" cy="12" r="2.7"/><path d="M6 10.4v3.2M18 10.4v3.2"/>',
-    };
-    function svAtiva(aba) {
-      return aba.exato ? currentPath === aba.href : currentPath.indexOf(aba.href) === 0;
-    }
-  %>
-  <nav class="sv-nav" aria-label="Navegação do painel">
-    <% svAbas.forEach(function (aba) { %>
-      <% if (mostraItem(aba)) { %>
-        <% var ativa = svAtiva(aba); %>
-        <a href="<%= aba.href %>" class="sv-nav-item <%= ativa ? 'ativo' : '' %>" title="<%= aba.nome %>" aria-label="<%= aba.nome %>" <%= ativa ? 'aria-current="page"' : '' %>>
-          <svg class="sv-nav-ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- svIcones[aba.nome] %></svg>
-          <span class="sv-nav-label"><%= aba.nome %></span>
-        </a>
-      <% } %>
-    <% }) %>
-    <button type="button" class="sv-nav-item" id="sv-menu-btn" title="Mais" aria-label="Mais" aria-haspopup="true" aria-expanded="false">
-      <svg class="sv-nav-ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.2" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.8" cy="12" r="1.4"/></svg>
-      <span class="sv-nav-label">Mais</span>
-    </button>
-  </nav>
-
-  <div class="sv-folha-fundo" id="sv-menu-fundo" hidden>
-    <aside class="sv-folha" id="sv-menu-folha" aria-label="Menu">
-      <div class="sv-folha-puxador"></div>
-      <div class="sv-folha-topo">
-        <div class="sv-folha-titulo">Menu</div>
-        <button type="button" class="sv-folha-x" id="sv-menu-x" aria-label="Fechar menu">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        </button>
-      </div>
-
-      <div class="sv-grade">
-        <% svMenu.forEach(function (item) { %>
-          <% if (mostraItem(item)) { %>
-            <% var tranca = fdp(item.href); %>
-            <a href="<%= item.href %>" class="sv-grade-item<%= tranca ? ' sv-grade-item--trancado' : '' %>"<% if (tranca) { %> title="<%= tranca.texto %>" aria-label="<%= item.nome %> (fora do plano)"<% } %>>
-              <span class="sv-grade-caixa">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><%- item.icone %></svg>
-                <% if (tranca) { %><span class="sv-grade-cadeado"><%- CADEADO %></span><% } %>
-              </span>
-              <span class="sv-grade-rot"><%= item.nome %></span>
-            </a>
-          <% } %>
-        <% }) %>
-      </div>
-
-      <%/* Perfil não entra na grade: na referência ele é o cartão escuro do
-           rodapé, com o resumo da casa. */%>
-      <a href="/painel/mais" class="sv-folha-perfil">
-        <span class="sv-folha-perfil-av">
-          <% if (usuarioFotoUrl) { %><img src="<%= usuarioFotoUrl %>" alt="" /><% } else { %><%= (usuarioPrimeiroNome || '?').slice(0, 2).toUpperCase() %><% } %>
-        </span>
-        <span class="sv-folha-perfil-corpo">
-          <span class="sv-folha-perfil-nome"><%= usuarioPrimeiroNome %></span>
-          <span class="sv-folha-perfil-sub">Ver perfil e conta</span>
-        </span>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-      </a>
-    </aside>
-  </div>
-
-  <script>
-    (function () {
-      var btn = document.getElementById('sv-menu-btn');
-      var fundo = document.getElementById('sv-menu-fundo');
-      var folha = document.getElementById('sv-menu-folha');
-      if (!btn || !fundo || !folha) return;
-      function abrir() {
-        fundo.hidden = false;
-        btn.classList.add('ativo');
-        btn.setAttribute('aria-expanded', 'true');
-      }
-      function fecha() {
-        fundo.hidden = true;
-        btn.classList.remove('ativo');
-        btn.setAttribute('aria-expanded', 'false');
-      }
-      btn.addEventListener('click', function () {
-        if (fundo.hidden) abrir(); else fecha();
-      });
-      var x = document.getElementById('sv-menu-x');
-      if (x) x.addEventListener('click', fecha);
-      // Só o fundo fecha — clique DENTRO da folha não deve fechá-la.
-      fundo.addEventListener('click', function (e) { if (e.target === fundo) fecha(); });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') fecha();
-      });
-    })();
-  </script>
-<% } else if (navNovo) { %>
-  <%
-    // Barra simplificada de 3 botões (pedido do dono, 2026-07-21, inspirado
-    // num app de referência): só os 2 destinos mais usados no dia a dia
-    // (Início e Agenda) nos cantos + "Mais" em destaque no meio (botão maior,
-    // preto, flutuando sobre a barra) abrindo o painel com o resto — Clientes
-    // e Financeiro, que antes eram atalhos diretos, entraram no "Mais".
-    // Vale pra admin e funcionário igual (não é mais um recurso só do admin).
-    var abasPrincipais = [
-      { href: '/painel', nome: 'Início', exato: true },
-      { href: '/painel/agenda', nome: 'Agenda' },
-    ];
-    var abasMais = [
-      { href: '/painel/clientes', nome: 'Clientes' },
-      { href: '/painel/caixa', nome: 'Financeiro', admin: true },
-      { href: '/painel/servicos', nome: 'Serviços' },
-      { href: '/painel/produtos', nome: 'Produtos' },
-      { href: '/painel/estoque', nome: 'Estoque' },
-      { href: '/painel/planos', nome: 'Planos' },
-      { href: '/painel/equipe', nome: 'Equipe', admin: true },
-      { href: '/painel/relatorios', nome: 'Relatórios', admin: true },
-      { href: '/painel/fidelidade', nome: 'Fidelidade', admin: true },
-      { href: '/painel/comissoes', nome: 'Comissões' },
-      { href: '/painel/horarios', nome: 'Horários' },
-      { href: '/painel/mais', nome: 'Perfil' },
-    ];
-    var iconesPrincipais = {
-      'Início': '<path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
-      'Agenda': '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/>',
-    };
-    var iconesMais = {
-      'Clientes': '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.5M20.5 20a5 5 0 0 0-3.5-4.7"/>',
-      'Financeiro': '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-      'Serviços': '<path d="M6 4h12l1 4H5z"/><path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 12a3 3 0 0 0 6 0"/>',
-      'Produtos': '<path d="M20 7 12 3 4 7v10l8 4 8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/>',
-      'Estoque': '<path d="M20 12V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4M2 12h20v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/><path d="M12 12v8"/>',
-      'Planos': '<path d="m12 2 3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/>',
-      'Equipe': '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20a6 6 0 0 1 12 0M15.5 20a5 5 0 0 1 5.5-5"/>',
-      'Relatórios': '<path d="M4 19V5a1 1 0 0 1 1-1h9l6 6v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M13 4v6h6M8 15h8M8 11h4"/>',
-      'Fidelidade': '<path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/>',
-      'Comissões': '<circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/><path d="M18 6 6 18"/>',
-      'Horários': '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
-      'Perfil': '<circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/>',
-    };
-    function ativaPrincipal(aba) {
-      return aba.exato ? currentPath === aba.href : currentPath.indexOf(aba.href) === 0;
-    }
-    var algumaAtivaPrincipal = abasPrincipais.some(ativaPrincipal);
-  %>
-  <div class="nav-novo-wrap">
-    <nav class="nav-novo nav-novo--3" aria-label="Navegação do painel">
-      <a href="<%= abasPrincipais[0].href %>" class="nav-novo-item <%= ativaPrincipal(abasPrincipais[0]) ? 'ativo' : '' %>" <%= ativaPrincipal(abasPrincipais[0]) ? 'aria-current="page"' : '' %>>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><%- iconesPrincipais[abasPrincipais[0].nome] %></svg>
-        <span class="nav-novo-label"><%= abasPrincipais[0].nome %></span>
-      </a>
-      <a href="<%= abasPrincipais[1].href %>" class="nav-novo-item <%= ativaPrincipal(abasPrincipais[1]) ? 'ativo' : '' %>" <%= ativaPrincipal(abasPrincipais[1]) ? 'aria-current="page"' : '' %>>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><%- iconesPrincipais[abasPrincipais[1].nome] %></svg>
-        <span class="nav-novo-label"><%= abasPrincipais[1].nome %></span>
-      </a>
-    </nav>
-    <button type="button" class="nav-novo-fab <%= !algumaAtivaPrincipal ? 'ativo' : '' %>" id="nav-novo-mais-btn" title="Mais" aria-label="Mais opções" aria-haspopup="true" aria-expanded="false">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
-    </button>
-  </div>
-
-  <div class="nav-novo-overlay" id="nav-novo-overlay" hidden></div>
-  <div class="nav-novo-mais-painel" id="nav-novo-mais-painel" hidden>
-    <% abasMais.forEach(function (aba) { %>
-      <% if (mostraItem(aba)) { %>
-        <% var tranca = fdp(aba.href); %>
-        <a href="<%= aba.href %>" class="nav-novo-mais-item"<% if (tranca) { %> title="<%= tranca.texto %>" aria-label="<%= aba.nome %> (fora do plano)" style="opacity:.6"<% } %>><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" aria-hidden="true"><%- iconesMais[aba.nome] %></svg><span><%= aba.nome %></span><% if (tranca) { %> <%- CADEADO %><% } %></a>
-      <% } %>
-    <% }) %>
-  </div>
-
-  <script>
-    (function () {
-      var btn = document.getElementById('nav-novo-mais-btn');
-      var painel = document.getElementById('nav-novo-mais-painel');
-      var overlay = document.getElementById('nav-novo-overlay');
-      if (!btn || !painel || !overlay) return;
-      function abrir() {
-        painel.hidden = false;
-        overlay.hidden = false;
-        btn.setAttribute('aria-expanded', 'true');
-      }
-      function fechar() {
-        painel.hidden = true;
-        overlay.hidden = true;
-        btn.setAttribute('aria-expanded', 'false');
-      }
-      btn.addEventListener('click', function () {
-        if (painel.hidden) abrir(); else fechar();
-      });
-      overlay.addEventListener('click', fechar);
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') fechar();
-      });
-    })();
-  </script>
-<% } else { %>
-  <%
-    // Abas do painel (barra antiga, escura). `admin: true` = só o dono/admin
-    // enxerga.
-    // Os ícones não têm rótulo visível, então `title` e `aria-label` são a
-    // única forma de descobrir o destino — nunca remova os dois.
-    var abas = [
-      { href: '/painel',           nome: 'Início',     exato: true },
-      { href: '/painel/agenda',    nome: 'Agenda' },
-      { href: '/painel/servicos',  nome: 'Serviços' },
-      { href: '/painel/produtos',  nome: 'Produtos' },
-      { href: '/painel/estoque',   nome: 'Estoque' },
-      { href: '/painel/planos',    nome: 'Planos' },
-      { href: '/painel/caixa',     nome: 'Financeiro', admin: true },
-      { href: '/painel/comissoes', nome: 'Comissões' },
-      { href: '/painel/horarios',  nome: 'Horários' },
-      { href: '/painel/clientes',  nome: 'Clientes' },
-      { href: '/painel/mais',      nome: 'Perfil' },
-    ];
-
-    // Ícones sólidos. Os que têm "furos" (Agenda, Planos, Financeiro, Horários)
-    // usam <mask> em vez de pintar o furo com a cor do fundo: a barra é
-    // translúcida, então um furo opaco apareceria como uma mancha sobre o
-    // conteúdo que passa por trás.
-    function comFuro(id, corpo, furos) {
-      return (
-        '<mask id="ic-' + id + '" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">' +
-        '<g fill="#fff" stroke="#fff">' + corpo + '</g>' +
-        '<g fill="#000" stroke="#000">' + furos + '</g>' +
-        '</mask>' +
-        '<rect width="24" height="24" fill="currentColor" mask="url(#ic-' + id + ')"/>'
-      );
-    }
-
-    var icones = {
-      'Início': '<path d="M12 3.2l8 6.4v10.4a1 1 0 0 1-1 1h-4.5v-6.5h-5V21H5a1 1 0 0 1-1-1V9.6l8-6.4z"/>',
-
-      'Agenda': comFuro('agenda',
-        '<rect x="3.5" y="5.5" width="17" height="15" rx="4" stroke="none"/>',
-        '<circle cx="8" cy="12.5" r="1.3" stroke="none"/><circle cx="12" cy="12.5" r="1.3" stroke="none"/><circle cx="16" cy="12.5" r="1.3" stroke="none"/>'),
-
-      'Serviços': '<circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/>' +
-        '<path d="M7.8 7.6L18 17.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>' +
-        '<path d="M7.8 16.4L18 6.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>',
-
-      'Produtos': '<path d="M20.6 7.3L12 3l-8.6 4.3v9.4L12 21l8.6-4.3V7.3z" stroke="none"/>' +
-        '<path d="M3.4 7.3L12 11.6l8.6-4.3M12 11.6V21" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
-
-      'Estoque': '<path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/>',
-
-      'Planos': comFuro('planos',
-        '<rect x="3" y="6.5" width="18" height="11" rx="3" stroke="none"/>',
-        '<rect x="6" y="10" width="6" height="2" rx="1" stroke="none"/>'),
-
-      'Financeiro': comFuro('financeiro',
-        '<circle cx="12" cy="12" r="9" stroke="none"/>',
-        '<path d="M12 7.2v9.6M15 9.6c-.7-.6-1.9-1-3-1-2 0-3.2.9-3.2 2.1 0 3 6.4 1.3 6.4 4.2 0 1.3-1.3 2.1-3.2 2.1-1.2 0-2.4-.4-3.2-1.1" stroke-width="1.6" fill="none" stroke-linecap="round"/>'),
-
-      // O desenho enviado para Comissões era a MESMA pessoa do Perfil (diferença
-      // de 0,5px). Sem rótulo os dois seriam indistinguíveis — aqui vai o símbolo
-      // de porcentagem, que é o que a tela mostra.
-      'Comissões': '<circle cx="6.6" cy="6.6" r="2.9"/><circle cx="17.4" cy="17.4" r="2.9"/>' +
-        '<path d="M18.4 4.5L5.6 19.5" stroke="currentColor" stroke-width="2.1" fill="none" stroke-linecap="round"/>',
-
-      'Horários': comFuro('horarios',
-        '<circle cx="12" cy="12" r="9" stroke="none"/>',
-        '<path d="M12 7v5.3l3.6 2.1" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'),
-
-      'Clientes': '<circle cx="8.5" cy="8" r="3.5"/>' +
-        '<path d="M2 21c0-4 2.9-6.3 6.5-6.3S15 17 15 21a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/>' +
-        '<circle cx="17" cy="8.5" r="2.8" opacity="0.55"/>' +
-        '<path d="M15.7 14.9c2.6.5 4.3 2.5 4.3 5.6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.55"/>',
-
-      'Perfil': '<circle cx="12" cy="8" r="4.3"/><path d="M4 21.5c0-4.7 3.6-7.5 8-7.5s8 2.8 8 7.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>',
-    };
-
-    function ativa(aba) {
-      return aba.exato ? currentPath === aba.href : currentPath.indexOf(aba.href) === 0;
-    }
-  %>
-  <nav class="nav-inf" aria-label="Navegação do painel">
-    <div class="nav-inf-scroll">
-      <% abas.forEach(function (aba) { %>
-        <% if (mostraItem(aba)) { %>
-          <%
-            var ehAtiva = ativa(aba);
-            var tranca = fdp(aba.href);
-            var svg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + icones[aba.nome] + '</svg>';
-          %>
-          <a
-            href="<%= aba.href %>"
-            class="nav-inf-item <%= ehAtiva ? 'ativo' : '' %>"
-            title="<%= tranca ? aba.nome + ': ' + tranca.texto : aba.nome %>"
-            aria-label="<%= tranca ? aba.nome + ' (fora do plano)' : aba.nome %>"
-            <%= tranca ? 'style=opacity:.55' : '' %>
-            <%= ehAtiva ? 'aria-current="page"' : '' %>
-          >
-            <% if (ehAtiva) { %>
-              <span class="nav-inf-pill"><%- svg %><span class="nav-inf-label"><%= aba.nome %></span></span>
-            <% } else { %>
-              <%- svg %>
-            <% } %>
-          </a>
-        <% } %>
-      <% }) %>
-    </div>
-  </nav>
-
-  <script>
-    // A barra mostra ~3 ícones por vez. Cada página é um carregamento novo, então
-    // ela nasceria sempre no início: centraliza a aba ativa já na 1ª renderização.
-    (function () {
-      var el = document.querySelector('.nav-inf-scroll');
-      if (!el) return;
-      var ativa = el.querySelector('.nav-inf-item.ativo');
-      if (!ativa) return;
-      var alvo = ativa.offsetLeft - (el.clientWidth - ativa.offsetWidth) / 2;
-      // Sem 'auto' o scroll-snap disputa com o ajuste inicial e a aba ativa
-      // desliza para o lado assim que a página abre.
-      var antes = el.style.scrollSnapType;
-      el.style.scrollSnapType = 'none';
-      el.scrollLeft = Math.max(0, Math.min(alvo, el.scrollWidth - el.clientWidth));
-      requestAnimationFrame(function () { el.style.scrollSnapType = antes || ''; });
-    })();
-  </script>
-<% } %>
+<nav class="cv-navbar" aria-label="Seções do painel" data-secao="<%= secaoAtual %>">
+  <span class="cv-lente" aria-hidden="true"></span>
+  <% ITENS_NAV.forEach(function (it) { %>
+    <% if (!it) { %>
+      <%/* Novo: até a folha de ações (fatia F2) entrar, leva direto ao novo
+           agendamento, a única ação que todo papel sempre tem. */%>
+      <a class="cv-mais" id="btn-novo" href="/painel/agenda/novo" aria-label="Novo agendamento"><%- include('icone', { cvIc: 'mais' }) %></a>
+    <% } else { %>
+      <a class="cv-nav-item" href="<%= it.href %>" data-nav="<%= it.s %>"<% if (it.s === secaoAtual) { %> aria-current="page"<% } %>><%- include('icone', { cvIc: it.ic }) %><span><%= it.nome %></span></a>
+    <% } %>
+  <% }) %>
+</nav>

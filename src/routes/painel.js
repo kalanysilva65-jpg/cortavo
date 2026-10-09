@@ -173,8 +173,16 @@ router.post('/perfil/foto/remover', perfilController.removerFoto);
 // errar. O `retorno=perfil` do formulário traz o usuário de volta pra cá.
 router.post('/perfil/jornada', horarioController.salvarJornada);
 
-// "Mais" — menu com as demais seções (acesso pela navegação inferior).
-router.get('/mais', perfilController.ver);
+// Redesign v3 (fatia F1): a navbar tem 5 seções fixas para todos (spec 12).
+// "Mais" virou a lista de seções (cadastros, equipe, conta) e o perfil com
+// foto e jornada mudou para /painel/perfil. "Gestão" reúne caixa, relatórios,
+// comissões, metas e cadastros; para quem não tem nada liberado mostra o
+// estado vazio da spec 12 (nunca 403). Os itens são filtrados na view pelas
+// mesmas regras de antes (podeAcessar, exigeAdmin, plano).
+// TODO(Beto B4): cartões-resumo da Gestão com /painel/api/gestao/*.
+router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Mais' }));
+router.get('/perfil', perfilController.ver);
+router.get('/gestao', (req, res) => res.render('painel/gestao', { titulo: 'Gestão' }));
 // Fase 2.4: plano da Cortavo da barbearia (só admin/dono; barbeiro não vê plano).
 router.get('/meu-plano', exigeAdmin, meuPlanoController.ver);
 
