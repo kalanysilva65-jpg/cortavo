@@ -1,40 +1,68 @@
 <%
   var nomesServicos = agendamento.itens.map(function (it) { return it.servico.nome; }).join(' + ');
+  var _marca = (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : '';
+  var _ini = (_marca.replace(/^Barbearia\s+(d[aeo]s?\s+|e\s+)?/i, '') || _marca || 'C').charAt(0).toUpperCase();
+  var _logo = (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) ? marcaLogoUrl : null;
+  var LOGO_D = 'M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z';
 %>
 
-<%/* SUAVE (pedido do dono, 2026-07-31): a manchete de 80px do Turno 6 desceu
-     pros 46px da referência (ainda "Está / marcado", uma palavra por linha,
-     subindo) e o combinado saiu dos fios soltos pra dentro de um cartão
-     branco — o resumo passa a ser um objeto só, e não uma tabela. */%>
-<div class="sv-ag6-pronto">
-  <div>
-    <div class="sv-ag6-pronto-manchete">
-      <span>Está</span>
-      <span>marcado</span>
-    </div>
-
-    <div class="sv-ag6-pronto-cartao">
-      <div class="sv-ag6-pronto-quando"><%= dataExtenso %> · <%= agendamento.horaInicio %></div>
-      <div class="sv-ag6-pronto-oque"><%= nomesServicos %> · com <%= agendamento.usuario.nomePublico || agendamento.usuario.nome %></div>
-
-      <div class="sv-ag6-pronto-linhas">
-        <div class="sv-ag6-pronto-linha">
-          <span class="sv-ag6-pronto-rot">Cliente</span>
-          <span class="sv-ag6-pronto-val"><%= agendamento.clienteNome %></span>
-        </div>
-        <div class="sv-ag6-pronto-linha">
-          <span class="sv-ag6-pronto-rot"><%= agendamento.itens.length === 1 ? 'Valor' : 'Total' %></span>
-          <span class="sv-ag6-pronto-val"><%= usouPlano ? 'Via plano' : fmtT6(agendamento.valorTotal) %></span>
-        </div>
-      </div>
-
-      <div class="sv-ag6-pronto-nota">
-        Enviamos a confirmação no WhatsApp <%= fmtTelefone(agendamento.clienteTelefone) %>. Chegue 5 minutos antes.
-      </div>
-    </div>
+<%/* v3 (F12) "Está marcado": o selo M1 com o LOGO DA BARBEARIA (área segura
+     de 62% do disco, "contain": logo com texto nunca é cortado; sem logo, a
+     inicial) e o check branco fora dessa área. A animação sai do botão
+     Confirmar (cv-movimento/cv-mola); com movimento reduzido, só esmaece. */%>
+<div class="ap-pronto">
+  <div class="ap-selo" id="ap-selo" aria-hidden="true">
+    <span class="anel"></span>
+    <span class="disco"><% if (_logo) { %><img src="<%= _logo %>" alt="" /><% } else { %><span class="ini"><%= _ini %></span><% } %></span>
+    <span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.4 4.4L19 7.2" pathLength="1" style="stroke-dasharray:1 1;stroke-dashoffset:0"/></svg></span>
   </div>
+
+  <h1 class="ap-manchete"><span style="display:block">Está</span><span style="display:block">marcado.</span></h1>
+  <%- include('_aviso') %>
+
+  <div class="ap-cartao">
+    <div class="ap-quando"><%= dataExtenso %> às <%= agendamento.horaInicio %></div>
+    <div class="ap-oque"><%= nomesServicos %> com <%= agendamento.usuario.nomePublico || agendamento.usuario.nome %></div>
+    <div class="ap-linhas" style="margin-top:12px">
+      <div><span>Cliente</span><b><%= agendamento.clienteNome %></b></div>
+      <div><span><%= agendamento.itens.length === 1 ? 'Valor' : 'Total' %></span><b><%= usouPlano ? 'Via plano' : fmtT6(agendamento.valorTotal) %></b></div>
+    </div>
+    <div class="ap-nota">Enviamos a confirmação no WhatsApp <%= fmtTelefone(agendamento.clienteTelefone) %>. Chegue 5 minutos antes.</div>
+  </div>
+
+  <div style="display:grid;gap:6px;margin-top:16px">
+    <a class="cv-btn cv-btn--2 cv-btn--largo cv-btn--outro" href="/agendar">Marcar outro horário</a>
+  </div>
+  <p class="ap-feito ap-feito-cel"><svg viewBox="150 240 770 545" aria-hidden="true"><path fill="currentColor" d="<%= LOGO_D %>"/></svg>feito com Cortavo</p>
 </div>
 
-<div class="sv-ag6-barra">
-  <a class="sv-ag6-acao sv-ag6-acao--simples" href="/agendar">Marcar outro horário</a>
-</div>
+<script>
+  // M1 da agenda pública (mockup agenda-publica.js, animarPronto): o disco
+  // nasce de baixo (onde estava o Confirmar), o check desenha, o anel gira
+  // uma vez e o texto sobe. Movimento reduzido: só esmaece.
+  (function () {
+    function rodar() {
+      var selo = document.getElementById('ap-selo');
+      if (!selo || !selo.animate) return;
+      var disco = selo.querySelector('.disco'), ok = selo.querySelector('.ok'), anel = selo.querySelector('.anel'), path = selo.querySelector('.ok path');
+      var titulo = document.querySelectorAll('.ap-manchete span');
+      var resto = document.querySelectorAll('.ap-pronto .ap-cartao, .ap-pronto .cv-btn, .ap-pronto .ap-feito');
+      var reduz = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduz) {
+        [selo, titulo[0].parentNode].concat([].slice.call(resto)).forEach(function (x) { x.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 }); });
+        return;
+      }
+      var r = selo.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var M = window.Mola, m = M ? M.mola(M.MOLAS.selo) : { duracao: 700, easing: 'cubic-bezier(0.23,1,0.32,1)' };
+      disco.animate([{ transform: 'translate(0px,' + (innerHeight - 40 - cy) + 'px) scale(' + (52 / 128) + ')' }, { transform: 'none' }], { duration: m.duracao, easing: m.easing, fill: 'backwards' });
+      ok.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: 380, delay: 420, easing: M ? M.mola({ resposta: .32, amortecimento: .7 }).easing : 'ease-out', fill: 'backwards' });
+      path.style.strokeDashoffset = 1;
+      path.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 300, delay: 560, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' });
+      setTimeout(function () { try { navigator.vibrate && navigator.vibrate(12); } catch (e) {} }, 860);
+      anel.animate([{ opacity: 0, transform: 'rotate(-90deg)' }, { opacity: 1, transform: 'rotate(0)', offset: .35 }, { opacity: 1, transform: 'rotate(200deg)', offset: .75 }, { opacity: 0, transform: 'rotate(270deg)' }], { duration: 900, delay: 620, easing: 'cubic-bezier(0.77,0,0.175,1)' });
+      titulo.forEach(function (t, i) { t.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 760 + i * 90, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'backwards' }); });
+      [].forEach.call(resto, function (t, i) { t.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: 980 + i * 60, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'backwards' }); });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', rodar); else rodar();
+  })();
+</script>

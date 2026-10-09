@@ -9,52 +9,43 @@
   }
 %>
 
-<%/* SUAVE (pedido do dono, 2026-07-31): mesma gramática dos outros passos —
-     título de 28px, o campo dentro de um cartão branco e a consulta na pílula
-     preta do rodapé. Os planos encontrados viram cartões, como os serviços. */%>
-<form method="GET" action="/agendar/plano" class="sv-ag6-corpo">
-  <div class="sv-ag6-rolagem">
-    <div class="sv-ag6-cabeca">
-      <div class="sv-ag6-titulo">Meu plano</div>
-      <div class="sv-ag6-sub">Informe seu telefone para verificarmos seu plano ativo.</div>
-    </div>
-
-    <div class="sv-ag6-cartao" style="margin-top:18px">
-      <label class="sv-ag6-campo-rot" for="telefone">Telefone / WhatsApp</label>
-      <input class="sv-ag6-input" id="telefone" name="telefone" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000" value="<%= telefoneDigitado %>" required autofocus />
+<%/* v3 (F12): mesma gramática dos passos: título, o campo num cartão branco
+     e a consulta no botão da barra de vidro. Os planos encontrados viram
+     cartões, como os serviços. */%>
+<form method="GET" action="/agendar/plano" id="ap-form-plano">
+  <h1 class="ap-h1">Meu plano</h1>
+  <p class="ap-sub">Informe seu telefone para verificarmos seu plano ativo.</p>
+  <div class="ap-conteudo">
+    <%- include('_aviso') %>
+    <div class="ap-cartao">
+      <div class="cv-campo">
+        <label for="telefone">Telefone / WhatsApp</label>
+        <input class="cv-entrada" id="telefone" name="telefone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000" value="<%= telefoneDigitado %>" required autofocus />
+      </div>
     </div>
 
     <% if (resultado) { %>
       <% if (resultado.assinaturas.length === 0) { %>
-        <div class="sv-ag6-aviso">Nenhum plano ativo encontrado para esse telefone.</div>
-        <div class="sv-ag6-cabeca" style="padding-top:16px">
-          <a href="/agendar" class="sv-ag6-chip">Agendar sem plano</a>
-        </div>
+        <div class="ap-cartao ap-vazio"><b>Nenhum plano ativo</b><p>Nenhum plano ativo encontrado para esse telefone.</p><a href="/agendar" class="cv-btn cv-btn--2">Agendar sem plano</a></div>
       <% } else { %>
-        <div class="sv-ag6-secao">
-          <div class="sv-ag6-secao-tit">Olá, <%= resultado.cliente.nome.split(' ')[0] %></div>
-          <div class="sv-ag6-secao-val"><%= resultado.assinaturas.length %> plano<%= resultado.assinaturas.length > 1 ? 's' : '' %></div>
-        </div>
-        <div class="sv-ag6-lista">
-          <% resultado.assinaturas.forEach(function (a, i) { %>
-            <a class="sv-ag6-item" href="<%= a.plano.servicos.length === 1 ? '/agendar/barbeiro?servicoId=' + a.plano.servicos[0].servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
-              <span>
-                <span class="sv-ag6-item-nome"><%= a.plano.nome %></span>
-                <span class="sv-ag6-item-sub">
-                  <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : (a.usosPorServico ? (function(){ try { var m = JSON.parse(a.usosPorServico); return a.plano.servicos.filter(function(x){ return x.servicoId in m; }).map(function(x){ return x.servico.nome + ': ' + m[x.servicoId]; }).join(' · '); } catch (e) { return a.usosRestantes + ' uso(s) restante(s)'; } })() : a.usosRestantes + ' uso(s) restante(s)') %>
-                  · até <%= fmtData(a.dataFim) %><%= a.plano.servicos.length ? ' · ' + a.plano.servicos.map(function (x) { return x.servico.nome; }).join(' + ') : '' %>
-                </span>
-              </span>
-              <span class="sv-ag6-item-acao">Usar →</span>
-            </a>
-          <% }) %>
-        </div>
+        <div class="ap-bloco-cab"><b>Olá, <%= resultado.cliente.nome.split(' ')[0] %></b><span><%= resultado.assinaturas.length %> plano<%= resultado.assinaturas.length > 1 ? 's' : '' %></span></div>
+        <% resultado.assinaturas.forEach(function (a) { %>
+          <a class="ap-item" href="<%= a.plano.servicos.length === 1 ? '/agendar/barbeiro?servicoId=' + a.plano.servicos[0].servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>">
+            <span class="txt">
+              <b><%= a.plano.nome %></b>
+              <small>
+                <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : (a.usosPorServico ? (function(){ try { var m = JSON.parse(a.usosPorServico); return a.plano.servicos.filter(function(x){ return x.servicoId in m; }).map(function(x){ return x.servico.nome + ': ' + m[x.servicoId]; }).join(' · '); } catch (e) { return a.usosRestantes + ' uso(s) restante(s)'; } })() : a.usosRestantes + ' uso(s) restante(s)') %>
+                · até <%= fmtData(a.dataFim) %><%= a.plano.servicos.length ? ' · ' + a.plano.servicos.map(function (x) { return x.servico.nome; }).join(' + ') : '' %>
+              </small>
+            </span>
+            <span class="ap-usar">Usar</span>
+          </a>
+        <% }) %>
       <% } %>
     <% } %>
-    <div style="height:20px"></div>
   </div>
 
-  <div class="sv-ag6-barra">
-    <button class="sv-ag6-acao sv-ag6-acao--simples" type="submit">Consultar</button>
+  <div class="ap-barra ap-barra--so" role="region" aria-label="Consultar">
+    <button class="cv-btn" type="submit">Consultar</button>
   </div>
 </form>

@@ -1,0 +1,11 @@
+<%/* Aviso do servidor na agenda pública (F12): erro vira o cartão vermelho
+     claro do mockup (ap-erro, role="alert"), logo abaixo do título do passo;
+     sucesso, a nota cinza. Fica no lugar (não some sozinho): quem chegou aqui
+     por um erro precisa ler. */-%>
+<% if (typeof flash !== 'undefined' && flash) { %>
+  <% if (flash.tipo === 'erro') { %>
+    <div class="ap-erro ap-erro-caixa" role="alert"><%- include('../partials/icone', { cvIc: 'alerta', cvCls: 'cv-ic--20' }) %><span><%= flash.texto %><% if (typeof passo !== 'undefined' && Number(passo) === 4 && /hor[aá]rio/i.test(flash.texto) && typeof voltarHref !== 'undefined' && voltarHref) { %><a class="acao" href="<%= voltarHref %>">Ver horários livres</a><% } %></span></div>
+  <% } else { %>
+    <p class="ap-aviso" role="status"><%= flash.texto %></p>
+  <% } %>
+<% } %>

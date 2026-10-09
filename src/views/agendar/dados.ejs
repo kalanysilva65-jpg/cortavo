@@ -1,108 +1,95 @@
-<%/* SUAVE (pedido do dono, 2026-07-31): os campos sem caixa (rótulo em caixa
-     alta + fio embaixo) viraram um CARTÃO branco com os campos em ladrilho
-     cinza claro, no tamanho de digitação da referência (16px). O resumo
-     continua sendo o único bloco preto da tela, agora arredondado e com
-     sombra alta, fechando a conta logo acima do confirmar. */%>
-<form method="POST" action="/agendar/confirmar" id="ag6-form-dados" class="sv-ag6-corpo">
+<%/* v3 (F12): campos no cartão branco (cv-campo/cv-entrada) e o resumo no
+     objeto preto gravado, fechando a conta logo acima do confirmar. Erro do
+     envio (ex.: horário ocupado no meio do caminho) aparece logo abaixo do
+     título, no cartão vermelho claro. */%>
+<% var totalTxt = assinatura ? 'Plano' : (typeof aPartirDe !== 'undefined' && aPartirDe ? 'a partir de ' : '') + fmtT6(valorTotal); %>
+<form method="POST" action="/agendar/confirmar" id="ag6-form-dados">
   <input type="hidden" name="servicoIds" value="<%= servicoIdsStr %>" />
   <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
   <input type="hidden" name="data" value="<%= data %>" />
   <input type="hidden" name="hora" value="<%= hora %>" />
   <% if (assinatura) { %><input type="hidden" name="assinatura" value="<%= assinatura.id %>" /><% } %>
 
-  <div class="sv-ag6-rolagem">
-    <div class="sv-ag6-cabeca">
-      <div class="sv-ag6-titulo">Seus dados</div>
-    </div>
+  <h1 class="ap-h1">Seus dados</h1>
+  <p class="ap-sub">Para a barbearia confirmar pelo WhatsApp.</p>
+  <div class="ap-conteudo">
+    <%- include('_aviso') %>
 
     <% if (!assinatura) { %>
-      <div class="sv-ag6-cartao" style="margin-top:18px">
-        <div class="sv-ag6-campos">
-          <div>
-            <label class="sv-ag6-campo-rot" for="cliente_nome">Nome</label>
-            <input class="sv-ag6-input" id="cliente_nome" name="cliente_nome" placeholder="Como te chamamos" autocomplete="name" required autofocus />
-          </div>
-          <div>
-            <label class="sv-ag6-campo-rot" for="cliente_telefone">WhatsApp</label>
-            <input class="sv-ag6-input" id="cliente_telefone" name="cliente_telefone" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000" required />
-          </div>
-          <div>
-            <label class="sv-ag6-campo-rot" for="cliente_nascimento">Data de nascimento</label>
-            <%/* Não é <input type="date">: o calendário nativo destoa do resto
-                 e obriga 3 toques pra digitar um ano. Texto com máscara
-                 dd/mm/aaaa (o controlador aceita os dois formatos). */%>
-            <input class="sv-ag6-input" id="cliente_nascimento" name="cliente_nascimento" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" />
-            <div class="sv-ag6-campo-dica">Opcional — é só pra lembrarmos do seu aniversário.</div>
-          </div>
+      <div class="ap-cartao">
+        <div class="cv-campo">
+          <label for="cliente_nome">Nome</label>
+          <input class="cv-entrada" id="cliente_nome" name="cliente_nome" placeholder="Como te chamamos…" autocomplete="name" required autofocus />
+        </div>
+        <div class="cv-campo">
+          <label for="cliente_telefone">WhatsApp</label>
+          <input class="cv-entrada" id="cliente_telefone" name="cliente_telefone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000" required />
+        </div>
+        <div class="cv-campo">
+          <label for="cliente_nascimento">Data de nascimento <span class="op">(opcional)</span></label>
+          <%/* Não é <input type="date">: o calendário nativo destoa e obriga 3
+               toques pra digitar um ano. Máscara dd/mm/aaaa (o controlador
+               aceita os dois formatos). */%>
+          <input class="cv-entrada" id="cliente_nascimento" name="cliente_nascimento" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" aria-describedby="ajuda-nasc" />
+          <span class="cv-ajuda" id="ajuda-nasc">É só para lembrarmos do seu aniversário.</span>
         </div>
       </div>
     <% } else { %>
-      <div class="sv-ag6-cartao" style="margin-top:18px">
-        <span class="sv-ag6-campo-rot">Cliente do plano</span>
-        <div class="sv-ag6-campo-val"><%= assinatura.cliente.nome %></div>
-        <div class="sv-ag6-campo-dica"><%= fmtTelefone(assinatura.cliente.telefone) %> · plano <%= assinatura.plano.nome %></div>
+      <div class="ap-cartao ap-cliente-plano">
+        <span class="ap-rot">Cliente do plano</span>
+        <b><%= assinatura.cliente.nome %></b>
+        <small><%= fmtTelefone(assinatura.cliente.telefone) %> · plano <%= assinatura.plano.nome %></small>
       </div>
     <% } %>
 
-    <div class="sv-ag6-resumo">
-      <% servicos.forEach(function (s) { %>
-        <div class="sv-ag6-resumo-linha">
-          <span class="sv-ag6-resumo-rot"><%= s.nome %></span>
-          <span class="sv-ag6-resumo-val"><%= assinatura ? 'Incluso' : fmtT6(s.valor) %></span>
-        </div>
-      <% }) %>
-      <div class="sv-ag6-resumo-linha sv-ag6-resumo-linha--sep">
-        <span class="sv-ag6-resumo-rot">Barbeiro</span>
-        <span class="sv-ag6-resumo-val"><%= barbeiro.nomePublico || barbeiro.nome %></span>
+    <section class="cv-objeto cv-gravada" aria-label="Resumo do agendamento">
+      <div class="ap-conta">
+        <% servicos.forEach(function (s) { %>
+          <div><span><%= s.nome %></span><b><%= assinatura ? 'Incluso' : fmtT6(s.valor) %></b></div>
+        <% }) %>
+        <div><span>Barbeiro</span><b><%= barbeiro.nomePublico || barbeiro.nome %></b></div>
+        <div><span>Quando</span><b><%= dataExtenso %> · <%= hora %></b></div>
       </div>
-      <div class="sv-ag6-resumo-linha">
-        <span class="sv-ag6-resumo-rot">Quando</span>
-        <span class="sv-ag6-resumo-val"><%= dataExtenso %> · <%= hora %></span>
-      </div>
-      <div class="sv-ag6-resumo-linha sv-ag6-resumo-linha--sep sv-ag6-resumo-linha--total">
-        <span class="sv-ag6-resumo-rot">Total</span>
-        <span class="sv-ag6-resumo-total"><%= assinatura ? 'Plano' : (typeof aPartirDe !== 'undefined' && aPartirDe ? 'a partir de ' : '') + fmtT6(valorTotal) %></span>
-      </div>
-    </div>
-    <div style="height:20px"></div>
+      <div class="ap-total"><span>Total</span><b class="ap-total-val"><%= totalTxt %></b></div>
+    </section>
   </div>
 
-  <div class="sv-ag6-barra">
-    <button class="sv-ag6-acao sv-ag6-acao--simples <%= assinatura ? '' : 'sv-ag6-inerte' %>" type="submit" id="ag6-confirmar" <%= assinatura ? '' : 'disabled' %>>
-      <%= assinatura ? 'Confirmar agendamento' : 'Preencha nome e WhatsApp' %>
-    </button>
+  <div class="ap-barra" role="region" aria-label="Resumo e confirmar">
+    <span class="info"><b><%= totalTxt %></b><span><%= dataExtenso %> · <%= hora %></span></span>
+    <button class="cv-btn" type="submit" id="ag6-confirmar" <%= assinatura ? '' : 'disabled' %>><%= assinatura ? 'Confirmar' : 'Preencha seus dados' %></button>
   </div>
 </form>
 
-<% if (!assinatura) { %>
-  <script>
-    // O botão só acende com nome e WhatsApp preenchidos — mesma ideia do CTA
-    // da referência, que troca o rótulo em vez de mostrar erro depois.
-    (function () {
-      var nome = document.getElementById('cliente_nome');
-      var tel = document.getElementById('cliente_telefone');
-      var nasc = document.getElementById('cliente_nascimento');
-      var btn = document.getElementById('ag6-confirmar');
+<script>
+  // O botão só acende com nome e WhatsApp preenchidos: troca o rótulo em vez
+  // de mostrar erro depois. Ao enviar, trava (evita agendamento em dobro).
+  (function () {
+    var form = document.getElementById('ag6-form-dados');
+    var btn = document.getElementById('ag6-confirmar');
+    var nome = document.getElementById('cliente_nome');
+    form.addEventListener('submit', function () { setTimeout(function () { btn.disabled = true; btn.textContent = 'Confirmando…'; }, 0); });
+    // Voltar pelo navegador restaura a página do cache: destrava o botão.
+    window.addEventListener('pageshow', function () { if (nome) revisar(); else { btn.disabled = false; btn.textContent = 'Confirmar'; } });
+    if (!nome) return;
+    var tel = document.getElementById('cliente_telefone');
+    var nasc = document.getElementById('cliente_nascimento');
 
-      function revisar() {
-        var ok = nome.value.trim() !== '' && tel.value.trim() !== '';
-        btn.disabled = !ok;
-        btn.classList.toggle('sv-ag6-inerte', !ok);
-        btn.textContent = ok ? 'Confirmar agendamento' : 'Preencha nome e WhatsApp';
-      }
-      nome.addEventListener('input', revisar);
-      tel.addEventListener('input', revisar);
+    function revisar() {
+      var ok = nome.value.trim() !== '' && tel.value.trim() !== '';
+      btn.disabled = !ok;
+      btn.textContent = ok ? 'Confirmar' : 'Preencha seus dados';
+    }
+    nome.addEventListener('input', revisar);
+    tel.addEventListener('input', revisar);
 
-      // Máscara dd/mm/aaaa: guarda só dígitos e reinsere as barras, pra
-      // digitação e apagamento caírem sempre no mesmo formato.
-      nasc.addEventListener('input', function () {
-        var d = nasc.value.replace(/\D/g, '').slice(0, 8);
-        nasc.value = d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4)
-          : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2)
-          : d;
-      });
+    // Máscara dd/mm/aaaa: guarda só dígitos e reinsere as barras.
+    nasc.addEventListener('input', function () {
+      var d = nasc.value.replace(/\D/g, '').slice(0, 8);
+      nasc.value = d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4)
+        : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2)
+        : d;
+    });
 
-      revisar();
-    })();
-  </script>
-<% } %>
+    revisar();
+  })();
+</script>

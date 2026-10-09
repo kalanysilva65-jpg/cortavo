@@ -9,101 +9,94 @@
   var livresManha = horariosManha.filter(function (h) { return h.livre; }).length;
   var livresTarde = horariosTarde.filter(function (h) { return h.livre; }).length;
   var nomesServicos = servicos.map(function (s) { return s.nome; }).join(' + ');
+  var nomeBarb = barbeiro.nomePublico || barbeiro.nome;
+  var temGrade = horariosManha.length + horariosTarde.length > 0;
+  var esgotadoSel = !!dataSel && livresManha + livresTarde === 0;
+  var diaSel = datas.filter(function (d) { return d.iso === dataSel; })[0];
+  var rotSel = diaSel ? (diaSel.dow === 'Hoje' || diaSel.dow === 'Amanhã' ? diaSel.dow : diaSel.dow + ', ' + diaSel.dia) : 'Este dia';
+  var proximo = (typeof proximoDiaLivre !== 'undefined' && proximoDiaLivre) ? proximoDiaLivre : null;
+  var hrefDia = function (iso) { return '/agendar/horario?servicoIds=' + servicoIdsStr + '&barbeiroId=' + barbeiro.id + '&data=' + iso + qsPlano; };
+  var totalTxt = assinatura ? 'Incluso' : (typeof aPartirDe !== 'undefined' && aPartirDe ? 'a partir de ' : '') + fmtT6(valorTotal);
 %>
 
-<%/* SUAVE (pedido do dono, 2026-07-31): a manchete de 36px virou o cartão
-     branco de resumo da referência (22px), os dias viraram ladrilhos de canto
-     arredondado e os horários, pílulas. Ocupado fica no cinza fio-claro e
-     riscado — sem sombra, então afunda no fundo em vez de sumir.
-
-     Os horários continuam sendo LINKS: um toque marca, sem passo extra de
-     "confirmar" (a referência tem um CTA aí porque o protótipo guarda o
-     horário em estado; aqui o próprio toque já navega). */%>
-<div class="sv-ag6-rolagem">
-  <div class="sv-ag6-cartao" style="margin-top:6px">
-    <div class="sv-ag6-cartao-tit"><%= nomesServicos %></div>
-    <div class="sv-ag6-cartao-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %> · com <%= barbeiro.nomePublico || barbeiro.nome %></div>
+<%/* v3 (F12): dias em ladrilhos, horários em grade de 4 (6 no PC). Dias e
+     horários continuam sendo LINKS: um toque marca, sem passo extra, e tudo
+     funciona sem JS. Ocupado fica listrado e riscado. Dia sem horário livre
+     vira "esgotado" e ganha o atalho para o próximo dia com horário livre
+     (proximoDiaLivre, calculado no servidor e no horarios.json). */%>
+<h1 class="ap-h1">Quando?</h1>
+<div class="ap-conteudo">
+  <%- include('_aviso') %>
+  <div class="ap-resumo-linha">
+    <%- include('../partials/icone', { cvIc: 'tesoura' }) %>
+    <span class="t"><b><%= nomesServicos %></b><span><%= _duracao(duracaoTotal) %> com <%= nomeBarb %></span></span>
   </div>
 
   <% if (diasPlanoLabel) { %>
-    <div class="sv-ag6-aviso">Plano <strong><%= assinatura.plano.nome %></strong>: agendamento só <strong><%= diasPlanoLabel %></strong>.</div>
+    <p class="ap-aviso">Plano <strong><%= assinatura.plano.nome %></strong>: agendamento só <strong><%= diasPlanoLabel %></strong>.</p>
   <% } %>
 
   <% if (datas.length === 0) { %>
-    <p class="sv-ag6-vazio">Sem datas disponíveis<%= diasPlanoLabel ? ' (' + diasPlanoLabel + ')' : '' %>.</p>
+    <div class="ap-cartao ap-vazio"><div class="listra"></div><b>Sem datas disponíveis</b><p>Sem datas disponíveis<%= diasPlanoLabel ? ' (' + diasPlanoLabel + ')' : '' %>. Fale direto com a barbearia.</p></div>
   <% } else { %>
-    <div class="sv-ag6-secao" style="animation-delay:0.08s">
-      <div class="sv-ag6-secao-tit">Dia</div>
-    </div>
-    <div class="sv-ag6-dias sv-ag6-sem-sb" id="ag6-dias">
-      <% datas.forEach(function (d, i) { %>
-        <a href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= qsPlano %>" data-iso="<%= d.iso %>" class="sv-ag6-dia <%= d.iso === dataSel ? 'sel' : '' %>" style="animation-delay:<%= (0.12 + i * 0.04).toFixed(2) %>s">
-          <div class="sv-ag6-dia-dow"><%= d.dow %></div>
-          <div class="sv-ag6-dia-num"><%= d.dia %></div>
+    <div class="ap-dias" id="ag6-dias" role="group" aria-label="Dia" style="margin-top:16px">
+      <% datas.forEach(function (d) { var sel = d.iso === dataSel; var esg = sel && esgotadoSel; %>
+        <a href="<%= hrefDia(d.iso) %>" data-iso="<%= d.iso %>" class="ap-dia<%= sel ? ' sel' : '' %><%= esg ? ' esgotado' : '' %>"<% if (sel) { %> aria-current="date"<% } %><% if (esg) { %> aria-label="<%= d.dow %> <%= d.dia %>, esgotado"<% } %>>
+          <small><%= d.dow %></small><b><%= d.dia %></b><% if (esg) { %><em>Esgotado</em><% } %>
         </a>
       <% }) %>
     </div>
 
-    <%/* Container isolado: trocar de dia reescreve SÓ ele (ver script no fim
-         do arquivo), em vez de recarregar a tela inteira. */%>
-    <div id="ag6-slots" data-iso="<%= dataSel %>">
-    <% if (horariosManha.length === 0 && horariosTarde.length === 0) { %>
-      <p class="sv-ag6-vazio">Sem horários nesta data. Tente outra.</p>
+    <%/* Container isolado: trocar de dia reescreve SÓ ele (script no fim). */%>
+    <div id="ag6-slots" data-iso="<%= dataSel %>" aria-live="polite">
+    <% if (esgotadoSel) { %>
+      <div class="ap-cartao ap-vazio" style="margin-top:16px">
+        <div class="listra"></div>
+        <% if (temGrade) { %>
+          <b><%= rotSel %> está esgotado</b>
+          <p>Todos os horários com <%= barbeiro.id === 'any' || nomeBarb === 'Qualquer disponível' ? 'a equipe' : nomeBarb %> já foram marcados.<% if (proximo) { %> O próximo dia com horário livre é <%= proximo.rotulo %>.<% } %></p>
+        <% } else { %>
+          <b>Sem horários nesta data</b>
+          <p>Sem horários nesta data. Tente outra.<% if (proximo) { %> O próximo dia com horário livre é <%= proximo.rotulo %>.<% } %></p>
+        <% } %>
+        <% if (proximo) { %><a class="cv-btn" data-ir-dia="<%= proximo.data %>" href="<%= hrefDia(proximo.data) %>">Ver <%= proximo.rotulo %></a><% } %>
+      </div>
     <% } else { %>
-      <%/* Manhã e Tarde continuam separadas (o app tem expediente com almoço
-           no meio; a referência tem uma grade só porque o protótipo não tem
-           intervalo). A contagem de livres vai no canto direito da seção. */%>
+      <%/* Manhã e Tarde separadas (expediente com almoço no meio). */%>
       <% [['Manhã', horariosManha, livresManha], ['Tarde', horariosTarde, livresTarde]].forEach(function (bloco) { %>
         <% if (bloco[1].length > 0) { %>
-          <div class="sv-ag6-secao" style="animation-delay:0.14s">
-            <div class="sv-ag6-secao-tit"><%= bloco[0] %></div>
-            <div class="sv-ag6-secao-val"><%= bloco[2] %> livre<%= bloco[2] === 1 ? '' : 's' %></div>
-          </div>
-          <div class="sv-ag6-horarios">
-            <% bloco[1].forEach(function (h, i) { %>
+          <div class="ap-bloco-cab"><b><%= bloco[0] %></b><span><%= bloco[2] ? bloco[2] + (bloco[2] === 1 ? ' livre' : ' livres') : 'esgotado' %></span></div>
+          <div class="ap-horas">
+            <% bloco[1].forEach(function (h) { %>
               <% if (h.livre) { %>
-                <a class="sv-ag6-hora" style="animation-delay:<%= (0.2 + i * 0.018).toFixed(3) %>s" href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h.hora %><%= qsPlano %>"><%= h.hora %></a>
+                <a class="ap-hora" href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h.hora %><%= qsPlano %>"><%= h.hora %></a>
               <% } else { %>
-                <span class="sv-ag6-hora sv-ag6-hora--ocupado" style="animation-delay:<%= (0.2 + i * 0.018).toFixed(3) %>s"><%= h.hora %></span>
+                <span class="ap-hora ocupado" aria-label="<%= h.hora %>, ocupado"><%= h.hora %></span>
               <% } %>
             <% }) %>
           </div>
         <% } %>
       <% }) %>
-      <div style="height:22px"></div>
     <% } %>
     </div>
   <% } %>
 </div>
 
-<%/* O rodapé não é um botão: é o lembrete do que já foi escolhido (e de quanto
-     vai custar) enquanto o cliente decide o horário. Cartão branco, e não o
-     cinza inerte da ação — cinza ali leria como botão desligado. */%>
-<div class="sv-ag6-barra">
-  <div class="sv-ag6-lembrete">
-    <span>
-      <span class="sv-ag6-lembrete-rot">Toque num horário livre</span>
-      <span class="sv-ag6-lembrete-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %></span>
-    </span>
-    <span class="sv-ag6-lembrete-total"><%= assinatura ? 'Incluso' : (typeof aPartirDe !== 'undefined' && aPartirDe ? 'a partir de ' : '') + fmtT6(valorTotal) %></span>
-  </div>
+<%/* O rodapé não é um botão: tocar no horário já avança. Ele lembra o que
+     foi escolhido e quanto vai custar. */%>
+<div class="ap-barra" role="region" aria-label="Resumo">
+  <span class="info"><b>Toque num horário livre</b><span><%= totalTxt %> · <%= _duracao(duracaoTotal) %></span></span>
 </div>
 
 <script>
-  // Traz o dia selecionado pra vista, CENTRALIZADO: com janela de 14/60 dias a
-  // tira fica longa e o dia selecionado pode nascer fora da tela.
-  //
-  // Usa getBoundingClientRect em vez de offsetLeft: a tira é position:static, e
-  // offsetLeft mede em relação ao offsetParent (um ancestral posicionado), não à
-  // tira — era isso que rolava pro dia errado (o cliente tinha que voltar pra
-  // esquerda). Roda no parse, num rAF e no load, porque o layout da tira pode
-  // não estar pronto ainda (fontes, transição de tela).
+  // Traz o dia selecionado pra vista, CENTRALIZADO (janela de 14/60 dias).
+  // getBoundingClientRect em vez de offsetLeft: a tira é position:static.
   (function () {
     var tira = document.getElementById('ag6-dias');
     if (!tira) return;
     function centrar() {
-      var sel = tira.querySelector('.sv-ag6-dia.sel');
-      if (!sel) return;
+      var sel = tira.querySelector('.ap-dia.sel');
+      if (!sel || tira.scrollWidth <= tira.clientWidth) return;
       var rTira = tira.getBoundingClientRect();
       var rSel = sel.getBoundingClientRect();
       var delta = (rSel.left - rTira.left) - (tira.clientWidth - sel.offsetWidth) / 2;
@@ -114,19 +107,15 @@
     window.addEventListener('load', centrar);
   })();
 
-  // Troca de dia sem recarregar a tela.
-  //
-  // Os ladrilhos continuam sendo <a href> de verdade: se o JS falhar, se a rede
-  // cair no meio ou se o navegador for antigo, o clique navega como antes e a
-  // tela funciona igual. Aqui só interceptamos quando dá para fazer melhor —
-  // buscar os horários da data e reescrever a lista, sem pagar a transição de
-  // tela, o re-render completo e as animações de entrada de tudo de novo.
+  // Troca de dia sem recarregar a tela. Os ladrilhos continuam sendo <a href>
+  // de verdade: se o JS ou a rede falhar, o clique navega como antes.
   (function () {
     var tira = document.getElementById('ag6-dias');
     var alvo = document.getElementById('ag6-slots');
     if (!tira || !alvo || !window.fetch) return;
 
     var BASE = <%- JSON.stringify('servicoIds=' + servicoIdsStr + '&barbeiroId=' + barbeiro.id + qsPlano) %>;
+    var NOME = <%- JSON.stringify(nomeBarb === 'Qualquer disponível' ? 'a equipe' : nomeBarb) %>;
     var emVoo = null;
 
     function esc(s) {
@@ -134,48 +123,58 @@
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
       });
     }
+    function hrefDia(iso) { return '/agendar/horario?' + BASE + '&data=' + encodeURIComponent(iso); }
 
-    // Mesma marcação (e mesmos atrasos de animação) que o EJS gera no servidor,
-    // para o bloco reescrito entrar igual ao que veio na carga inicial.
+    // Mesma marcação que o EJS gera no servidor.
     function bloco(titulo, lista) {
       if (!lista.length) return '';
       var livres = lista.filter(function (h) { return h.livre; }).length;
-      var html =
-        '<div class="sv-ag6-secao" style="animation-delay:0.14s">' +
-        '<div class="sv-ag6-secao-tit">' + esc(titulo) + '</div>' +
-        '<div class="sv-ag6-secao-val">' + livres + ' livre' + (livres === 1 ? '' : 's') + '</div>' +
-        '</div><div class="sv-ag6-horarios">';
-      lista.forEach(function (h, i) {
-        var atraso = 'animation-delay:' + (0.2 + i * 0.018).toFixed(3) + 's';
+      var html = '<div class="ap-bloco-cab"><b>' + esc(titulo) + '</b><span>' + (livres ? livres + (livres === 1 ? ' livre' : ' livres') : 'esgotado') + '</span></div><div class="ap-horas">';
+      lista.forEach(function (h) {
         if (h.livre) {
           var href = '/agendar/dados?' + BASE + '&data=' + encodeURIComponent(alvo.dataset.iso) + '&hora=' + encodeURIComponent(h.hora);
-          html += '<a class="sv-ag6-hora" style="' + atraso + '" href="' + esc(href) + '">' + esc(h.hora) + '</a>';
+          html += '<a class="ap-hora" href="' + esc(href) + '">' + esc(h.hora) + '</a>';
         } else {
-          html += '<span class="sv-ag6-hora sv-ag6-hora--ocupado" style="' + atraso + '">' + esc(h.hora) + '</span>';
+          html += '<span class="ap-hora ocupado" aria-label="' + esc(h.hora) + ', ocupado">' + esc(h.hora) + '</span>';
         }
       });
       return html + '</div>';
     }
 
-    function pintar(dados) {
-      if (!dados.manha.length && !dados.tarde.length) {
-        alvo.innerHTML = '<p class="sv-ag6-vazio">Sem horários nesta data. Tente outra.</p>';
+    function pintar(dados, tile) {
+      var todos = dados.manha.concat(dados.tarde);
+      var temLivre = dados.temLivre !== undefined ? dados.temLivre : todos.some(function (h) { return h.livre; });
+      tira.querySelectorAll('.ap-dia.esgotado').forEach(function (e) {
+        e.classList.remove('esgotado');
+        var em = e.querySelector('em'); if (em) em.remove();
+        e.removeAttribute('aria-label');
+      });
+      if (temLivre) {
+        alvo.innerHTML = bloco('Manhã', dados.manha) + bloco('Tarde', dados.tarde);
         return;
       }
-      alvo.innerHTML = bloco('Manhã', dados.manha) + bloco('Tarde', dados.tarde) + '<div style="height:22px"></div>';
+      var rot = tile.querySelector('small').textContent;
+      if (rot !== 'Hoje' && rot !== 'Amanhã') rot += ', ' + tile.querySelector('b').textContent;
+      tile.classList.add('esgotado');
+      tile.insertAdjacentHTML('beforeend', '<em>Esgotado</em>');
+      tile.setAttribute('aria-label', rot + ', esgotado');
+      var p = dados.proximoDiaLivre;
+      var html = '<div class="ap-cartao ap-vazio" style="margin-top:16px"><div class="listra"></div>';
+      if (todos.length) html += '<b>' + esc(rot) + ' está esgotado</b><p>Todos os horários com ' + esc(NOME) + ' já foram marcados.';
+      else html += '<b>Sem horários nesta data</b><p>Sem horários nesta data. Tente outra.';
+      if (p) html += ' O próximo dia com horário livre é ' + esc(p.rotulo) + '.';
+      html += '</p>';
+      if (p) html += '<a class="cv-btn" data-ir-dia="' + esc(p.data) + '" href="' + esc(hrefDia(p.data)) + '">Ver ' + esc(p.rotulo) + '</a>';
+      alvo.innerHTML = html + '</div>';
     }
 
-    tira.addEventListener('click', function (ev) {
-      var tile = ev.target.closest ? ev.target.closest('.sv-ag6-dia') : null;
-      if (!tile || !tile.dataset.iso) return;
-      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button) return; // abrir em nova aba: deixa o navegador
-      if (tile.classList.contains('sel')) { ev.preventDefault(); return; }
-
-      ev.preventDefault();
+    function irPara(tile, ev) {
+      if (ev) ev.preventDefault();
       var iso = tile.dataset.iso;
-
-      tira.querySelectorAll('.sv-ag6-dia.sel').forEach(function (e) { e.classList.remove('sel'); });
+      tira.querySelectorAll('.ap-dia.sel').forEach(function (e) { e.classList.remove('sel'); e.removeAttribute('aria-current'); });
       tile.classList.add('sel');
+      tile.setAttribute('aria-current', 'date');
+      if (tile.scrollIntoView) tile.scrollIntoView({ block: 'nearest', inline: 'center' });
       alvo.dataset.iso = iso;
       alvo.style.opacity = '0.45';
 
@@ -184,16 +183,31 @@
       fetch(url, { headers: { Accept: 'application/json' } })
         .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
         .then(function (dados) {
-          if (meu !== emVoo) return; // o cliente já clicou noutro dia: descarta o antigo
-          pintar(dados);
+          if (meu !== emVoo) return; // já clicou noutro dia: descarta o antigo
+          pintar(dados, tile);
           alvo.style.opacity = '';
-          history.replaceState(null, '', '/agendar/horario?' + BASE + '&data=' + encodeURIComponent(iso));
+          history.replaceState(null, '', hrefDia(iso));
         })
         .catch(function () {
-          // Qualquer falha: cai no comportamento antigo (navegação completa),
-          // que sempre funcionou — nunca deixa o cliente numa tela quebrada.
+          // Qualquer falha: navegação completa, que sempre funcionou.
           window.location.href = tile.href;
         });
+    }
+
+    tira.addEventListener('click', function (ev) {
+      var tile = ev.target.closest ? ev.target.closest('.ap-dia') : null;
+      if (!tile || !tile.dataset.iso) return;
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button) return; // nova aba: deixa o navegador
+      if (tile.classList.contains('sel')) { ev.preventDefault(); return; }
+      irPara(tile, ev);
+    });
+
+    // "Ver <próximo dia>": se o dia está na tira, troca no lugar; senão, navega.
+    alvo.addEventListener('click', function (ev) {
+      var a = ev.target.closest ? ev.target.closest('[data-ir-dia]') : null;
+      if (!a) return;
+      var tile = tira.querySelector('.ap-dia[data-iso="' + a.dataset.irDia + '"]');
+      if (tile) irPara(tile, ev);
     });
   })();
 </script>

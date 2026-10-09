@@ -9,72 +9,61 @@
   }
 %>
 
-<%/* SUAVE (pedido do dono, 2026-07-31): a lista separada por fios do Turno 6
-     (nome do serviço a 34px) virou uma pilha de CARTÕES brancos com sombra
-     suave, nome a 17px e um seletor redondo à direita. O selecionado inverte
-     pra preto — na referência é o único uso do preto na área de conteúdo. */%>
-<div class="sv-ag6-rolagem">
+<%/* v3 (F12): cartões brancos; o escolhido vira o objeto preto. Foto do
+     serviço é OPCIONAL: com foto, miniatura 72px à direita (fotoMiniUrl, a
+     versão leve; cai na fotoUrl se não houver), com a faixa listrada do M3 até
+     a imagem chegar; sem foto, o cartão fica como antes (sem buraco). */%>
+<%
+  function _fotoServ(s) {
+    var u = s.fotoMiniUrl || s.fotoUrl;
+    if (!u) return '';
+    return '<span class="ap-foto"><img src="' + String(u).replace(/"/g, '&quot;') + '" alt="" width="72" height="72" loading="lazy" decoding="async" onload="this.parentNode.classList.add(&quot;carregada&quot;)" onerror="this.parentNode.remove()"></span>';
+  }
+%>
+<h1 class="ap-h1">O que vamos fazer?</h1>
+<p class="ap-sub"><%= assinatura ? 'Escolha o serviço do seu plano.' : 'Escolha um ou mais serviços.' %><% if (!assinatura) { %> <span id="ag6-conta" aria-live="polite"></span><% } %></p>
+<div class="ap-conteudo">
+  <%- include('_aviso') %>
   <% if (assinatura) { %>
-    <div class="sv-ag6-aviso">
+    <p class="ap-aviso">
       Usando o plano <strong><%= assinatura.plano.nome %></strong><%= assinatura.usosRestantes !== null ? ' · ' + (assinatura.usosPorServico ? (function(){ try { var m = JSON.parse(assinatura.usosPorServico); return assinatura.plano.servicos.filter(function(x){ return x.servicoId in m; }).map(function(x){ return x.servico.nome + ': ' + m[x.servicoId]; }).join(' · '); } catch (e) { return assinatura.usosRestantes + ' uso(s) restante(s)'; } })() : assinatura.usosRestantes + ' uso(s) restante(s)') : ' · ilimitado (' + _diasPlanoLabelServico(assinatura.plano.diasSemana) + ')' %>.
       <a href="/agendar">Agendar sem plano</a>
-    </div>
-  <% } else { %>
-    <%/* A porta de entrada do plano fica ANTES da lista: quem tem plano não
-         deve percorrer os serviços com preço pra depois descobrir o atalho. */%>
-    <div class="sv-ag6-cabeca">
-      <a href="/agendar/plano" class="sv-ag6-chip sv-ag6-chip--plano">Já tenho um plano</a>
-    </div>
+    </p>
+  <% } else if (servicos.length > 0) { %>
+    <%/* A porta do plano fica ANTES da lista: quem tem plano não deve
+         percorrer os preços pra depois descobrir o atalho. */%>
+    <a href="/agendar/plano" class="ap-plano"><%- include('../partials/icone', { cvIc: 'cartao', cvCls: 'cv-ic--18' }) %>Já tenho um plano</a>
   <% } %>
 
   <% if (servicos.length === 0) { %>
-    <p class="sv-ag6-vazio">Nenhum serviço disponível no momento.</p>
+    <div class="ap-cartao ap-vazio"><div class="listra"></div><b>Nenhum serviço disponível agora</b><p>A barbearia ainda está montando a agenda. Volte mais tarde ou fale direto com eles.</p></div>
   <% } else if (assinatura) { %>
-    <%/* Plano: seleção única e direta por link — o plano cobre um serviço por
-         agendamento, então não há o que somar nem barra de total. */%>
-    <div class="sv-ag6-secao">
-      <div class="sv-ag6-secao-tit">Escolha o serviço</div>
-    </div>
-    <div class="sv-ag6-lista">
-      <% servicos.forEach(function (s, i) { %>
-        <a class="sv-ag6-servico" href="/agendar/barbeiro?servicoIds=<%= s.id %>&assinatura=<%= assinatura.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
-          <span class="sv-ag6-servico-txt">
-            <span class="sv-ag6-servico-nome"><%= s.nome %></span>
-            <span class="sv-ag6-servico-meta"><%= s.duracaoMin %> min · Incluso</span>
-          </span>
-          <% if (s.fotoUrl) { %><span class="sv-ag6-servico-foto"><img src="<%= s.fotoUrl %>" alt="" /></span><% } %>
-          <span class="sv-ag6-servico-check">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-          </span>
-        </a>
-      <% }) %>
-    </div>
+    <%/* Plano: seleção única e direta por link (o plano cobre um serviço por
+         agendamento: nada a somar). */%>
+    <% servicos.forEach(function (s) { %>
+      <a class="ap-serv" href="/agendar/barbeiro?servicoIds=<%= s.id %>&assinatura=<%= assinatura.id %>">
+        <span class="txt"><b><%= s.nome %></b><small><%= s.duracaoMin %> min · Incluso</small></span>
+        <%- _fotoServ(s) %>
+        <span class="marca"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></span>
+      </a>
+    <% }) %>
   <% } else { %>
     <form id="form-servicos" action="/agendar/barbeiro" method="GET" onsubmit="return validarSelecao()">
       <input type="hidden" name="servicoIds" id="servicoIds-input" value="" />
-      <div class="sv-ag6-secao">
-        <div class="sv-ag6-secao-tit">Escolha os serviços</div>
-        <div class="sv-ag6-secao-val" id="ag6-conta">toque para escolher</div>
-      </div>
-      <div class="sv-ag6-lista" id="lista-servicos">
-        <% servicos.forEach(function (s, i) {
+      <div id="lista-servicos" style="display:grid;gap:10px">
+        <% servicos.forEach(function (s) {
              /* Preço pode variar por barbeiro: aqui o barbeiro ainda não foi
                 escolhido, então mostra "a partir de" o menor valor. */
              var fx = (typeof faixas !== 'undefined' && faixas[s.id]) || { min: s.valor, max: s.valor };
              var varia = fx.min !== fx.max; %>
-          <button type="button" class="sv-ag6-servico" data-id="<%= s.id %>" data-valor="<%= fx.min %>" data-varia="<%= varia ? '1' : '' %>" data-min="<%= s.duracaoMin %>" data-encaixe="<%= s.ehEncaixe ? '1' : '' %>" onclick="toggleServico(this)" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
-            <span class="sv-ag6-servico-txt">
-              <span class="sv-ag6-servico-nome"><%= s.nome %></span>
-              <span class="sv-ag6-servico-meta"><%= s.duracaoMin %> min · <%= varia ? 'a partir de ' : '' %><%= fmtT6(fx.min) %></span>
-              <% if (s.descricao) { %>
-                <%/* Descrição escondida: abre quando o serviço é selecionado (.sel). */%>
-                <span class="sv-ag6-servico-desc"><%= s.descricao %></span>
-              <% } %>
+          <button type="button" class="ap-serv" aria-pressed="false" data-id="<%= s.id %>" data-valor="<%= fx.min %>" data-varia="<%= varia ? '1' : '' %>" data-min="<%= s.duracaoMin %>" data-encaixe="<%= s.ehEncaixe ? '1' : '' %>" onclick="toggleServico(this)">
+            <span class="txt">
+              <b><%= s.nome %></b>
+              <small><%= s.duracaoMin %> min · <%= varia ? 'a partir de ' : '' %><%= fmtT6(fx.min) %></small>
+              <% if (s.descricao) { %><span class="desc"><%= s.descricao %></span><% } %>
             </span>
-            <% if (s.fotoUrl) { %><span class="sv-ag6-servico-foto"><img src="<%= s.fotoUrl %>" alt="" /></span><% } %>
-            <span class="sv-ag6-servico-check">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-            </span>
+            <%- _fotoServ(s) %>
+            <span class="marca"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
           </button>
         <% }) %>
       </div>
@@ -83,22 +72,14 @@
 </div>
 
 <% if (!assinatura && servicos.length > 0) { %>
-  <%/* A barra fica SEMPRE visível (a referência esconde enquanto nada está
-       escolhido). Aqui ela é o próprio submit do formulário, então some-la
-       tiraria a única pista de "e agora?" de quem abriu a tela. Sem seleção,
-       ela usa o par de cores inerte fio/apoio claro. */%>
-  <div class="sv-ag6-barra">
-    <button class="sv-ag6-acao sv-ag6-inerte" type="submit" form="form-servicos" id="btn-continuar" disabled>
-      <span class="sv-ag6-acao-vazio" id="ag6-cta-vazio">Escolha um serviço para continuar</span>
-      <span class="sv-ag6-acao-info" id="ag6-cta-info" hidden>
-        <span class="sv-ag6-acao-total" id="ag6-cta-total">R$0</span>
-        <span class="sv-ag6-acao-sub" id="ag6-cta-sub"></span>
-      </span>
-      <span class="sv-ag6-acao-cta" id="ag6-cta-cta" hidden>
-        Continuar
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-      </span>
-    </button>
+  <%/* Barra de vidro sempre visível: é o submit do formulário. Sem escolha,
+       o botão fica cinza e a info diz o que fazer. */%>
+  <div class="ap-barra" role="region" aria-label="Resumo e continuar">
+    <span class="info">
+      <span id="ag6-cta-vazio"><b>Nenhum serviço</b><span>Toque para escolher</span></span>
+      <span id="ag6-cta-info" hidden><b id="ag6-cta-total">R$0</b><span id="ag6-cta-sub"></span></span>
+    </span>
+    <button class="cv-btn" type="submit" form="form-servicos" id="btn-continuar" disabled><span id="ag6-cta-cta">Continuar</span></button>
   </div>
 
   <script>
@@ -110,7 +91,7 @@
     const duracoes = {};
     const encaixes = {};
     const variam = {};
-    document.querySelectorAll('#lista-servicos .sv-ag6-servico').forEach(function (el) {
+    document.querySelectorAll('#lista-servicos .ap-serv').forEach(function (el) {
       precos[el.dataset.id] = Number(el.dataset.valor);
       variam[el.dataset.id] = el.dataset.varia === '1';
       duracoes[el.dataset.id] = Number(el.dataset.min);
@@ -123,8 +104,7 @@
       ids.forEach(function (id) { if (encaixes[id]) enc += duracoes[id]; else regular += duracoes[id]; });
       return regular > 0 ? regular : enc;
     }
-    // "R$40" — sem centavos e sem espaço, porque o total aparece a 22px na
-    // barra e ",00" só rouba largura.
+    // "R$40": sem centavos e sem espaço (a barra é estreita).
     function fmtT6Local(centavos) {
       return 'R$' + Math.round(centavos / 100).toLocaleString('pt-BR');
     }
@@ -143,13 +123,13 @@
         selecionados.add(id);
         el.classList.add('sel');
       }
+      el.setAttribute('aria-pressed', selecionados.has(id) ? 'true' : 'false');
       document.getElementById('servicoIds-input').value = Array.from(selecionados).join(',');
 
       const n = selecionados.size;
       const btn = document.getElementById('btn-continuar');
       btn.disabled = n === 0;
-      btn.classList.toggle('sv-ag6-inerte', n === 0);
-      document.getElementById('ag6-conta').textContent = n ? n + ' selecionado' + (n > 1 ? 's' : '') : 'toque para escolher';
+      document.getElementById('ag6-conta').textContent = n ? n + ' selecionado' + (n > 1 ? 's' : '') + '.' : '';
 
       const ids = Array.from(selecionados);
       const total = ids.reduce(function (s, id) { return s + precos[id]; }, 0);
@@ -162,7 +142,6 @@
       // Vazio (nada escolhido) x info + "Continuar" (com escolha).
       document.getElementById('ag6-cta-vazio').hidden = n > 0;
       document.getElementById('ag6-cta-info').hidden = n === 0;
-      document.getElementById('ag6-cta-cta').hidden = n === 0;
     }
     function validarSelecao() {
       return selecionados.size > 0;

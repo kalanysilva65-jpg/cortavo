@@ -1,0 +1,272 @@
+/* Cortavo v3 · agenda pública (F12). Copiado de redesign/v3/mockups/agenda-publica.css;
+   as adaptações para as views reais (links em vez de botões de estado) ficam no fim.
+   Cortavo v3 · agenda pública (o link que o cliente final abre, sem login).
+   A barbearia é a protagonista; o Cortavo aparece só no rodapé ("feito com Cortavo").
+   Mesmo sistema: tokens + componentes. Vidro só na barra flutuante do rodapé. */
+body.ap { background: var(--c-pagina); }
+.ap-tela { max-width: 520px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; padding-bottom: 132px; }
+
+/* Marca da barbearia */
+.ap-marca { padding: calc(var(--sat) + 14px) var(--margem) 0; display: flex; align-items: center; gap: 14px; }
+.ap-logo { width: 56px; height: 56px; border-radius: 18px; flex-shrink: 0; overflow: hidden; display: grid; place-items: center; background: var(--c-objeto); color: #fff; box-shadow: var(--s-objeto); }
+.ap-logo svg { width: 100%; height: 100%; display: block; }
+.ap-logo .ini { font-size: 24px; font-weight: 800; letter-spacing: -.03em; }
+.ap-marca-txt { min-width: 0; flex: 1; }
+.ap-marca-txt b { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.025em; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ap-marca-txt span { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--c-apoio); font-weight: 600; margin-top: 2px; }
+.ap-marca-txt span i { width: 7px; height: 7px; border-radius: 50%; background: var(--c-tinta); box-shadow: 0 0 0 3px rgba(17,17,17,.1); }
+.ap-voltar { flex-shrink: 0; }
+
+/* Trilha dos 4 passos: segmentos, o atual é preto, os feitos cinza-escuro */
+.ap-trilha { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 18px var(--margem) 0; }
+.ap-trilha i { height: 4px; border-radius: 2px; background: var(--c-bloco-2); position: relative; overflow: hidden; }
+.ap-trilha i.feito { background: var(--d-2); }
+.ap-trilha i.atual { background: var(--c-tinta); }
+.ap-passo-rot { display: flex; justify-content: space-between; margin: 8px calc(var(--margem) + 2px) 0; font-size: 13px; font-weight: 600; color: var(--c-apoio); }
+.ap-passo-rot b { color: var(--c-tinta); font-weight: 600; }
+.ap-h1 { margin: 22px var(--margem) 0; font-size: 30px; line-height: 1.1; letter-spacing: -.035em; font-weight: 800; }
+.ap-sub { margin: 6px var(--margem) 0; font-size: 15px; color: var(--c-tinta-2); line-height: 1.45; }
+.ap-conteudo { padding: 0 var(--margem); margin-top: 18px; }
+.ap-conteudo > * + * { margin-top: 10px; }
+
+/* Serviços: cartões; selecionado vira o objeto preto */
+.ap-serv { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px 16px 16px 18px; border-radius: 22px; background: var(--c-superficie); box-shadow: var(--s-cartao); text-align: left; transition: transform var(--d-press-out) var(--ease-out), background-color var(--d-curta) var(--ease-out), color var(--d-curta) var(--ease-out); }
+.ap-serv:active { transform: scale(.985); transition-duration: var(--d-press-in); }
+.ap-serv .txt { flex: 1; min-width: 0; }
+.ap-serv b { display: block; font-size: 17px; font-weight: 600; letter-spacing: -.012em; overflow-wrap: anywhere; }
+.ap-serv small { display: block; font-size: 14px; color: var(--c-apoio); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ap-serv .desc { display: none; font-size: 13px; line-height: 1.45; color: var(--c-sobre-objeto-2); margin-top: 8px; }
+.ap-serv .marca { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 0 0 1.5px var(--c-fio-forte); display: grid; place-items: center; }
+.ap-serv .marca svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.ap-serv[aria-pressed="true"] { background: var(--c-objeto); color: #fff; box-shadow: var(--s-objeto); }
+.ap-serv[aria-pressed="true"] small { color: var(--c-sobre-objeto-2); }
+.ap-serv[aria-pressed="true"] .desc { display: block; }
+.ap-serv[aria-pressed="true"] .marca { background: #fff; color: #111; box-shadow: none; }
+.ap-serv[aria-pressed="true"] .marca svg { opacity: 1; }
+.ap-plano { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); font-size: 14px; font-weight: 600; }
+
+/* Barbeiros: ladrilhos com retrato */
+.ap-barbs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ap-barb { text-align: left; border-radius: 22px; overflow: hidden; background: var(--c-superficie); box-shadow: var(--s-cartao); transition: transform var(--d-press-out) var(--ease-out); display: flex; flex-direction: column; }
+.ap-barb:active { transform: scale(.98); transition-duration: var(--d-press-in); }
+.ap-retrato { aspect-ratio: 1 / 1; position: relative; display: grid; place-items: center; background: radial-gradient(80% 70% at 30% 20%, #FAFAFA, #E3E3E3); overflow: hidden; }
+.ap-retrato .ini { font-size: 44px; font-weight: 800; letter-spacing: -.05em; color: #BDBDBD; }
+.ap-retrato svg.sil { position: absolute; bottom: -6%; width: 78%; color: #CFCFCF; }
+.ap-barb .rod { padding: 12px 14px 14px; }
+.ap-barb b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ap-barb small { display: block; font-size: 13px; color: var(--c-apoio); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ap-barb[aria-pressed="true"] { background: var(--c-objeto); color: #fff; box-shadow: var(--s-objeto); }
+.ap-barb[aria-pressed="true"] small { color: var(--c-sobre-objeto-2); }
+.ap-barb[aria-pressed="true"] .ap-retrato { background: radial-gradient(80% 70% at 30% 20%, #3a3a3a, #1c1c1c); }
+.ap-barb[aria-pressed="true"] .ap-retrato .ini { color: #fff; }
+.ap-barb--qualquer .ap-retrato { background: var(--c-bloco); }
+.ap-sel-marca { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #111; display: none; place-items: center; }
+.ap-barb[aria-pressed="true"] .ap-sel-marca { display: grid; }
+
+/* Resumo do que já foi escolhido */
+.ap-resumo-linha { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: var(--c-superficie); box-shadow: var(--s-cartao); }
+.ap-resumo-linha .t { flex: 1; min-width: 0; }
+.ap-resumo-linha b { display: block; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.ap-resumo-linha span { display: block; font-size: 13px; color: var(--c-apoio); }
+
+/* Dias e horários */
+.ap-dias { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--margem)); padding: 2px var(--margem) 4px; scroll-snap-type: x proximity; }
+.ap-dias::-webkit-scrollbar { display: none; }
+.ap-dia { flex-shrink: 0; width: 64px; height: 76px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: var(--c-superficie); box-shadow: var(--s-cartao); scroll-snap-align: start; transition: transform var(--d-press-out) var(--ease-out); }
+.ap-dia small { font-size: 12px; font-weight: 600; color: var(--c-apoio); }
+.ap-dia b { font-size: 21px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.ap-dia em { font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--c-apoio); }
+.ap-dia[aria-pressed="true"] { background: var(--c-objeto); color: #fff; box-shadow: var(--s-preto); }
+.ap-dia[aria-pressed="true"] small, .ap-dia[aria-pressed="true"] em { color: var(--c-sobre-objeto-2); }
+.ap-dia.esgotado { background: var(--listra-bloqueado); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.ap-dia.esgotado b { color: var(--c-tinta-2); }
+.ap-dia:active { transform: scale(.95); transition-duration: var(--d-press-in); }
+.ap-bloco-cab { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 2px 10px; }
+.ap-bloco-cab b { font-size: 17px; font-weight: 800; letter-spacing: -.015em; }
+.ap-bloco-cab span { font-size: 13px; color: var(--c-apoio); font-weight: 600; }
+.ap-horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ap-hora { height: 48px; border-radius: 14px; background: var(--c-superficie); box-shadow: var(--s-cartao); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; transition: transform var(--d-press-out) var(--ease-out), background-color var(--d-curta) var(--ease-out); }
+.ap-hora:active { transform: scale(var(--press)); transition-duration: var(--d-press-in); }
+.ap-hora[aria-pressed="true"] { background: var(--c-tinta); color: #fff; }
+.ap-hora[disabled] { background: var(--listra-bloqueado); color: var(--c-apoio); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); text-decoration: line-through; text-decoration-thickness: 1px; }
+
+/* Dados */
+.ap-cartao { background: var(--c-superficie); border-radius: 24px; padding: 20px; box-shadow: var(--s-cartao); }
+.ap-erro { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 18px; background: var(--c-perigo-fundo); color: var(--c-perigo); font-size: 15px; line-height: 1.45; font-weight: 600; }
+.ap-erro svg { flex-shrink: 0; margin-top: 1px; }
+.ap-erro .acao { display: block; margin-top: 8px; color: var(--c-tinta); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+.ap-conta div { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; font-size: 15px; color: var(--c-sobre-objeto-2); }
+.ap-conta div b { color: #fff; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.ap-conta div + div { border-top: .5px solid var(--c-fio-objeto); }
+.ap-total { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; padding-top: 14px; border-top: .5px solid var(--c-fio-objeto); }
+.ap-total > span:first-child { font-size: 15px; color: var(--c-sobre-objeto-2); font-weight: 600; }
+.ap-total .cv-num .moeda, .ap-total .cv-num .cent { color: var(--c-sobre-objeto-2); }
+
+/* Barra flutuante do rodapé (único vidro da página) */
+.ap-barra { position: fixed; z-index: var(--z-nav); left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); max-width: 496px; margin: 0 auto; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 20px; border-radius: 30px;
+  background: var(--vidro); -webkit-backdrop-filter: var(--vidro-blur); backdrop-filter: var(--vidro-blur); box-shadow: var(--vidro-aro), var(--s-flutua); isolation: isolate; }
+.ap-barra .info { flex: 1; min-width: 0; }
+.ap-barra .info b { display: block; font-size: 15px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--c-tinta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-barra .info span { display: block; font-size: 12.5px; font-weight: 600; color: var(--c-tinta-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-barra .cv-btn { min-height: 52px; flex-shrink: 0; }
+.ap-barra .cv-btn[disabled] { opacity: 1; background: var(--c-bloco-2); color: var(--c-tinta-2); box-shadow: none; }
+.ap-barra .cv-btn[disabled]::before { display: none; }
+
+/* Pronto */
+.ap-pronto { padding: calc(var(--sat) + 30px) var(--margem) 0; text-align: center; }
+.ap-selo { position: relative; width: 128px; height: 128px; margin: 0 auto; }
+.ap-selo .disco { position: absolute; inset: 0; border-radius: 50%; background: var(--c-objeto); display: grid; place-items: center; box-shadow: var(--s-objeto); overflow: hidden; color: #fff; }
+.ap-selo .disco svg.logo-b { width: 100%; height: 100%; }
+.ap-selo .ok { position: absolute; right: -2px; bottom: 2px; width: 44px; height: 44px; border-radius: 50%; background: #fff; display: grid; place-items: center; box-shadow: 0 6px 16px -4px rgba(17,17,17,.35), 0 0 0 3px var(--c-pagina); }
+.ap-selo .ok svg { width: 24px; height: 24px; }
+.ap-selo .anel { position: absolute; inset: -14px; border-radius: 50%; background: var(--listra-poste); opacity: 0;
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 7px), #000 calc(100% - 6px), #000 calc(100% - 1px), transparent 100%), conic-gradient(from 0deg, transparent 0deg, #000 200deg, #000 360deg); -webkit-mask-composite: source-in;
+  mask: radial-gradient(closest-side, transparent calc(100% - 7px), #000 calc(100% - 6px), #000 calc(100% - 1px), transparent 100%), conic-gradient(from 0deg, transparent 0deg, #000 200deg, #000 360deg); mask-composite: intersect; }
+.ap-manchete { font-size: 46px; line-height: .98; letter-spacing: -.05em; font-weight: 800; margin: 26px 0 0; }
+.ap-pronto .ap-cartao { text-align: left; margin-top: 22px; }
+.ap-quando { font-size: 22px; font-weight: 800; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+.ap-oque { font-size: 15px; color: var(--c-tinta-2); margin-top: 4px; line-height: 1.45; overflow-wrap: anywhere; }
+.ap-linhas div { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; font-size: 15px; border-top: .5px solid var(--c-fio-forte); }
+.ap-linhas div span { color: var(--c-apoio); } .ap-linhas div b { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.ap-nota { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--c-bloco); font-size: 14px; line-height: 1.45; color: var(--c-tinta-2); }
+
+/* Assinatura discreta do Cortavo */
+.ap-feito { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 34px 0 0; font-size: 12px; font-weight: 600; color: var(--c-apoio); }
+.ap-feito svg { width: 15px; height: 11px; }
+
+/* Vazio */
+.ap-vazio { text-align: center; padding: 28px 22px; }
+.ap-vazio b { display: block; font-size: 19px; letter-spacing: -.02em; }
+.ap-vazio p { margin: 6px auto 16px; color: var(--c-apoio); font-size: 15px; line-height: 1.45; max-width: 30ch; }
+.ap-vazio .listra { height: 56px; border-radius: 14px; background: var(--listra-bloqueado); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); margin-bottom: 18px; }
+
+/* Movimento entre passos: empurra na direção do avanço (direction-aware) */
+@media (prefers-reduced-motion: reduce) { .ap-serv, .ap-barb, .ap-hora, .ap-dia { transition: none; } }
+
+/* ---- Desktop: a marca vira o painel da esquerda; o resumo mora nele ---- */
+.ap-lado { display: none; }
+@media (min-width: 1024px) {
+  body.ap { --sat: 0px; }
+  .ap-grade { display: grid; grid-template-columns: 440px minmax(0, 1fr); min-height: 100dvh; }
+  .ap-lado { display: flex; flex-direction: column; position: sticky; top: 0; height: 100dvh; padding: 40px; background: var(--c-objeto); color: #fff; overflow: hidden; isolation: isolate; }
+  .ap-lado::after { content: ""; position: absolute; z-index: -1; top: 0; right: 0; width: 70%; height: 60%; background: var(--listra-gravada); -webkit-mask: radial-gradient(100% 100% at 100% 0, #000, transparent 70%); mask: radial-gradient(100% 100% at 100% 0, #000, transparent 70%); }
+  .ap-lado .ap-logo { width: 88px; height: 88px; border-radius: 26px; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+  .ap-lado h1 { font-size: 40px; line-height: 1.05; letter-spacing: -.045em; font-weight: 800; margin: 28px 0 10px; overflow-wrap: anywhere; }
+  .ap-lado .info { color: var(--c-sobre-objeto-2); font-size: 15px; line-height: 1.6; }
+  .ap-lado .escolha { margin-top: auto; }
+  .ap-lado .escolha h2 { font-size: 13px; font-weight: 600; color: var(--c-sobre-objeto-2); margin: 0 0 10px; }
+  .ap-lado .ap-feito { justify-content: flex-start; margin-top: 24px; color: #8C8C8C; }
+  .ap-tela { max-width: 640px; width: 100%; padding: 40px 48px 140px; margin: 0 auto; }
+  .ap-tela > .ap-marca { display: none; }
+  .ap-tela .ap-trilha, .ap-tela .ap-passo-rot, .ap-tela .ap-h1, .ap-tela .ap-sub { margin-left: 0; margin-right: 0; }
+  .ap-tela .ap-conteudo { padding: 0; }
+  .ap-tela .ap-feito-cel { display: none; }
+  .ap-barbs { grid-template-columns: repeat(3, 1fr); }
+  .ap-horas { grid-template-columns: repeat(6, 1fr); }
+  .ap-dias { margin: 0; padding: 2px 0 4px; flex-wrap: wrap; overflow: visible; }
+  .ap-barra { left: calc(440px + max(0px, (100vw - 440px - 640px) / 2) + 48px); right: auto; width: 544px; max-width: none; margin: 0; bottom: 28px; }
+  .ap-dia { width: 60px; } .ap-dias { gap: 6px; flex-wrap: nowrap; }
+  .ap-pronto { padding-top: 60px; }
+}
+@media (min-width: 1024px) { .ap-status { display: none; } }
+
+.ap-voltar { width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; }
+.ap-retrato svg.sil { position: absolute; left: 11%; bottom: -4%; width: 78%; height: auto; color: #CDCDCD; }
+.ap-barb[aria-pressed="true"] .ap-retrato svg.sil { color: #555; }
+/* break-ui: valor nunca quebra; descrição do barbeiro em até 2 linhas */
+.ap-conta div span { min-width: 0; }
+.ap-conta div b { white-space: nowrap; flex-shrink: 0; }
+.ap-conta div:has(b:not(:empty)) span { overflow-wrap: anywhere; }
+.ap-barb .rod small .d { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+body.inteira .ap-barra { position: absolute; }
+
+/* ---- Foto opcional do serviço (2026-10-06) ----------------------------------
+   Com foto: miniatura 1:1 de 72 px à DIREITA do texto, recorte "cover" centralizado.
+   Sem foto: o cartão fica como antes (nada de buraco ou placeholder): o texto começa
+   sempre no mesmo lugar, então a lista misturada continua alinhada.
+   Carregando: o quadrado mostra a faixa listrada do M3 até a imagem chegar (200 ms de esmaecer). */
+.ap-foto { position: relative; width: 72px; height: 72px; border-radius: 16px; overflow: hidden; flex-shrink: 0; background: var(--c-bloco-2); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.ap-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; opacity: 0; transition: opacity 200ms var(--ease-out); }
+.ap-foto.carregada img { opacity: 1; }
+.ap-foto::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, rgba(255,255,255,0) 0 6px, rgba(255,255,255,.55) 6px 9px); -webkit-mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); transform: translateX(-100%); animation: cvEsq 1.4s var(--ease-in-out) infinite; }
+.ap-foto.carregada::after { display: none; }
+.ap-serv[aria-pressed="true"] .ap-foto { box-shadow: 0 0 0 2px rgba(255,255,255,.9); }
+.ap-serv:has(.ap-foto) { padding-top: 12px; padding-bottom: 12px; min-height: 96px; }
+@media (prefers-reduced-motion: reduce) { .ap-foto::after { animation: none; transform: translateX(20%); } .ap-foto img { transition: none; } }
+@media (min-width: 1024px) { .ap-foto { width: 84px; height: 84px; border-radius: 18px; } }
+
+/* ---- Área segura do selo (logos com texto nunca são cortados) ----------------
+   O logo da barbearia cabe num quadrado de 62% do diâmetro, centralizado, "contain".
+   O selo branco do check fica fora desse quadrado. */
+.ap-selo .disco svg.logo-b, .ap-selo .disco img { width: 62%; height: 62%; object-fit: contain; }
+.ap-selo .disco .ini { font-size: 46px; font-weight: 800; letter-spacing: -.04em; }
+.ap-selo .ok { right: -10px; bottom: -6px; width: 42px; height: 42px; }
+
+/* ==== Adaptações para o app (F12) =========================================
+   Nos mockups tudo é botão com estado; no app os dias e horários são LINKS
+   (navegam sem JS) e o ocupado é <span>. As classes .sel/.ativo continuam
+   sendo as dos scripts das views. */
+body.ap { --sat: env(safe-area-inset-top, 0px); color: var(--c-tinta); font-family: var(--fonte, "Plus Jakarta Sans", system-ui, sans-serif); margin: 0; -webkit-font-smoothing: antialiased; }
+:where(body.ap) a { color: inherit; text-decoration: none; }
+:where(body.ap) button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+.ap-logo img { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
+.ap-marca-link { display: contents; }
+.ap-aviso { margin: 14px var(--margem) 0; padding: 12px 14px; border-radius: 14px; background: var(--c-bloco); font-size: 14px; line-height: 1.45; color: var(--c-tinta-2); }
+.ap-aviso a { text-decoration: underline; text-underline-offset: 3px; font-weight: 600; color: var(--c-tinta); }
+.ap-aviso--demo { margin: 0; border-radius: 0; text-align: center; }
+.ap-erro-caixa { margin: 16px var(--margem) 0; }
+.ap-tela .ap-conteudo .ap-erro-caixa { margin: 0; }
+.ap-serv.sel { background: var(--c-objeto); color: #fff; box-shadow: var(--s-objeto); }
+.ap-serv.sel small { color: var(--c-sobre-objeto-2); }
+.ap-serv.sel .desc { display: block; }
+.ap-serv.sel .marca { background: #fff; color: #111; box-shadow: none; }
+.ap-serv.sel .marca svg { opacity: 1; }
+.ap-serv.sel .ap-foto { box-shadow: 0 0 0 2px rgba(255,255,255,.9); }
+a.ap-serv .marca svg { opacity: 1; }
+.ap-plano svg { flex-shrink: 0; }
+.ap-retrato img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ap-barb.ativo { background: var(--c-objeto); color: #fff; box-shadow: var(--s-objeto); }
+.ap-barb.ativo small { color: var(--c-sobre-objeto-2); }
+.ap-barb.ativo .ap-retrato { background: radial-gradient(80% 70% at 30% 20%, #3a3a3a, #1c1c1c); }
+.ap-barb.ativo .ap-retrato svg.sil { color: #555; }
+.ap-barb.ativo .ap-sel-marca { display: grid; }
+.ap-barb--qualquer .ap-retrato .cv-ic { width: 44px; height: 44px; color: #9A9A9A; }
+.ap-resumo-linha > .cv-ic { flex-shrink: 0; }
+.ap-dia.sel { background: var(--c-objeto); color: #fff; box-shadow: var(--s-preto); }
+.ap-dia.sel small, .ap-dia.sel em { color: var(--c-sobre-objeto-2); }
+.ap-dia.esgotado.sel { background: var(--listra-bloqueado); color: var(--c-tinta); box-shadow: inset 0 0 0 2px var(--c-tinta); }
+.ap-dia.esgotado.sel small, .ap-dia.esgotado.sel em { color: var(--c-tinta-2); }
+.ap-barra { min-height: 68px; box-sizing: border-box; }
+a.ap-hora, span.ap-hora { display: grid; place-items: center; }
+.ap-hora.ocupado { background: var(--listra-bloqueado); color: var(--c-apoio); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); text-decoration: line-through; text-decoration-thickness: 1px; }
+#ap-slots { transition: opacity var(--d-curta) var(--ease-out); }
+.ap-vazio .cv-btn { margin: 0 auto; }
+.ap-cartao .cv-campo + .cv-campo { margin-top: 14px; }
+.ap-cartao .cv-campo label .op { font-weight: 400; color: var(--c-apoio); }
+.ap-cliente-plano b { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.02em; margin-top: 4px; overflow-wrap: anywhere; }
+.ap-cliente-plano small { display: block; color: var(--c-apoio); font-size: 14px; margin-top: 4px; }
+.ap-rot { font-size: 13px; font-weight: 600; color: var(--c-apoio); }
+.ap-item { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 22px; background: var(--c-superficie); box-shadow: var(--s-cartao); }
+.ap-item .txt { flex: 1; min-width: 0; }
+.ap-item b { display: block; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.ap-item small { display: block; font-size: 14px; color: var(--c-apoio); margin-top: 2px; line-height: 1.4; }
+.ap-item .cv-ic { flex-shrink: 0; color: var(--c-apoio); }
+.ap-barra .cv-btn { padding: 0 22px; }
+.ap-barra--so { padding: 8px; }
+.ap-barra--so .cv-btn { flex: 1; }
+.ap-pronto .ap-feito { margin-bottom: 24px; }
+.ap-selo .disco .ini { color: #fff; }
+.ap-pronto .cv-btn--outro { background: var(--c-superficie); box-shadow: var(--s-cartao); color: var(--c-tinta); }
+.ap-lado .ap-conta { margin: 0; }
+.ap-lado .ap-total .cv-num { color: #fff; }
+.ap-lado .vazio { margin: 0; color: #A8A8A8; font-size: 15px; }
+.ap-lado .ap-marca-link { display: block; }
+@media (min-width: 1024px) { .ap-tela .ap-aviso, .ap-tela .ap-erro-caixa { margin-left: 0; margin-right: 0; } }
+@media (prefers-reduced-transparency: reduce) { .ap-barra { background: var(--c-superficie); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-contrast: more) { .ap-serv, .ap-barb, .ap-dia, .ap-hora, .ap-cartao, .ap-item { box-shadow: inset 0 0 0 1px var(--c-tinta); } }
+.ap-total-val { font-size: 22px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: #fff; }
+.ap-barra [hidden] { display: none !important; }
+.ap-sub #ag6-conta:not(:empty) { font-weight: 600; color: var(--c-tinta); }
+.ap-conteudo .ap-aviso, .ap-conteudo .ap-erro-caixa { margin-left: 0; margin-right: 0; }
+.ap-conteudo > .ap-aviso:first-child, .ap-conteudo > .ap-erro-caixa:first-child { margin-top: 0; }
+.ap-usar { flex-shrink: 0; height: 36px; padding: 0 14px; border-radius: 999px; display: inline-grid; place-items: center; background: var(--c-tinta); color: #fff; font-size: 14px; font-weight: 600; }

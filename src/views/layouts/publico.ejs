@@ -1,84 +1,96 @@
 <%
-  // Cabeçalho do design SUAVE (2026-07-31): a marca vai pro CENTRO (a
-  // referência dedica 112px a ela) e "Voltar" vira uma pílula branca no canto
-  // direito. O passo 0 é a consulta de plano — fica FORA da trilha de 4 etapas
-  // do agendamento, então não acende tracinho nenhum. O passo 5 (sucesso)
-  // fecha os quatro.
+  // Agenda pública v3 (F12): a barbearia é a protagonista; o Cortavo aparece só
+  // no rodapé ("feito com Cortavo"). Passo 0 = consulta de plano (fora da
+  // trilha de 4 etapas); passo 5 = pronto (sem cabeçalho: o selo é o topo).
   var AG_NOMES = { 0: 'Plano', 1: 'Serviços', 2: 'Barbeiro', 3: 'Horário', 4: 'Dados', 5: 'Pronto' };
   var agPasso = (typeof passo !== 'undefined' && passo !== null) ? Number(passo) : 0;
   var agNome = AG_NOMES[agPasso] || '';
-  var agAtual = Math.min(Math.max(agPasso, 1), 4);
-  // O destino do "Voltar" muda por passo (e carrega a querystring do fluxo),
-  // então quem sabe dele é o controlador — a view só desenha.
   var agVoltar = (typeof voltarHref !== 'undefined' && voltarHref) ? voltarHref : null;
   var agMarca = (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Agendamento';
+  var agLogo = (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) ? marcaLogoUrl : null;
+  // Inicial sem o "Barbearia " da frente (mesma regra do mockup).
+  var agIni = (agMarca.replace(/^Barbearia\s+(d[aeo]s?\s+|e\s+)?/i, '') || agMarca).charAt(0).toUpperCase();
+  var agHoje = (typeof horarioHoje !== 'undefined' && horarioHoje) ? horarioHoje : null;
+  var agFmt = typeof fmtT6 === 'function' ? fmtT6 : function (c) { return 'R$' + Math.round(c / 100); };
+
+  // Resumo do painel da esquerda (PC): vem dos mesmos locais do passo.
+  var ladoLinhas = [];
+  var ladoTotal = null;
+  var temAss = typeof assinatura !== 'undefined' && assinatura;
+  if (agPasso >= 2 && agPasso <= 4 && typeof servicos !== 'undefined' && servicos && servicos.length) {
+    servicos.forEach(function (s) { ladoLinhas.push([s.nome, temAss ? 'Incluso' : agFmt(s.valor)]); });
+    if (agPasso >= 3 && typeof barbeiro !== 'undefined' && barbeiro) ladoLinhas.push(['Barbeiro', barbeiro.nomePublico || barbeiro.nome]);
+    if (agPasso === 4 && typeof dataExtenso !== 'undefined') ladoLinhas.push(['Quando', dataExtenso + ' · ' + hora]);
+    if (typeof valorTotal !== 'undefined') ladoTotal = temAss ? 'Plano' : ((typeof aPartirDe !== 'undefined' && aPartirDe) ? 'a partir de ' : '') + agFmt(valorTotal);
+  }
+  var LOGO_D = 'M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z';
+  var feitoHTML = '<p class="ap-feito"><svg viewBox="150 240 770 545" aria-hidden="true"><path fill="currentColor" d="' + LOGO_D + '"/></svg>feito com Cortavo</p>';
+  function logoHTML() {
+    return agLogo ? '<img src="' + String(agLogo).replace(/"/g, '&quot;') + '" alt="" />' : '<span class="ini">' + agIni.replace(/</g, '&lt;') + '</span>';
+  }
 %>
 <!DOCTYPE html>
-<html lang="pt-BR" class="sv-ag-html">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= agMarca %></title>
-    <%/* 'Overused Grotesk' agora vem do próprio pacote (public/fonts) — o
-         @font-face está em agendamento-novo.css. Sem Google Fonts: uma ida à
-         rede a menos antes do primeiro quadro, e a fonte certa mesmo offline. */%>
-    <link rel="stylesheet" href="/css/styles.css" />
-    <link rel="stylesheet" href="/css/tema-minimal.css" />
-    <link rel="stylesheet" href="/css/agendamento-novo.css" />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/cv.css" />
+    <link rel="stylesheet" href="/css/cv-agendar.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#f2f2f2" />
+    <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script src="/js/cv-mola.js" defer></script>
+    <script src="/js/cv-movimento.js" defer></script>
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <body class="sv-ag-body">
-    <div class="sv-ag6-tela">
-      <%/* Aviso fixo das barbearias de demonstração (spec 03). */%>
-      <% if (typeof barbearia !== 'undefined' && barbearia && ['demo', 'vitrine'].includes(barbearia.slug)) { %>
-        <p class="sv-ag6-aviso-demo" role="note" style="margin:0;padding:10px 16px;font-size:14px;text-align:center;background:#f3efe7;color:#2b2620;border-bottom:1px solid #e4ddd0">
-          Barbearia de demonstração: pode marcar à vontade, ninguém vai aparecer.
-        </p>
-      <% } %>
-      <header class="sv-ag6-topo">
-        <%
-          var _logoAlinh = (typeof marcaLogoAlinhamento !== 'undefined' && marcaLogoAlinhamento) || 'centro';
-          var _logoTam = (typeof marcaLogoTamanho !== 'undefined' && marcaLogoTamanho) || 168;
-          var _temLogo = typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl;
-        %>
-        <div class="sv-ag6-marca-linha sv-ag6-marca-linha--<%= _temLogo ? _logoAlinh : 'centro' %>" style="--logo-tam:<%= _logoTam %>px">
-          <%/* O acesso da equipe (login) saiu do topo público a pedido do dono
-               (2026-09-06): a página é do cliente, e o atalho da equipe poluía.
-               A equipe entra por cortavo.com.br/login direto. */%>
-          <a href="/agendar" class="sv-ag6-marca">
-            <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
-              <img class="sv-ag6-marca-logo" src="<%= marcaLogoUrl %>" alt="<%= agMarca %>" />
-            <% } else { %>
-              <span class="sv-ag6-marca-inicial"><%= agMarca.charAt(0).toUpperCase() %></span>
-              <span class="sv-ag6-marca-nome"><%= agMarca %></span>
-            <% } %>
-          </a>
-          <% if (agVoltar) { %>
-            <a class="sv-ag6-pilula sv-ag6-pilula--canto <%= _temLogo && _logoAlinh === 'direita' ? 'sv-ag6-pilula--esq' : 'sv-ag6-pilula--dir' %>" href="<%= agVoltar %>">Voltar</a>
+  <body class="ap">
+    <%/* Aviso fixo das barbearias de demonstração (spec 03). */%>
+    <% if (typeof barbearia !== 'undefined' && barbearia && ['demo', 'vitrine'].includes(barbearia.slug)) { %>
+      <p class="ap-aviso ap-aviso--demo" role="note">Barbearia de demonstração: pode marcar à vontade, ninguém vai aparecer.</p>
+    <% } %>
+    <div class="ap-grade">
+      <aside class="ap-lado" aria-label="Barbearia">
+        <a class="ap-marca-link" href="/agendar" aria-label="<%= agMarca %>, início"><span class="ap-logo"><%- logoHTML() %></span></a>
+        <h1><%= agMarca %></h1>
+        <p class="info"><% if (agHoje) { %><%= agHoje.texto %><br><% } %>Agende em menos de um minuto. A confirmação chega no seu WhatsApp.</p>
+        <div class="escolha">
+          <h2>Seu agendamento</h2>
+          <% if (ladoLinhas.length) { %>
+            <div class="ap-conta">
+              <% ladoLinhas.forEach(function (l) { %><div><span><%= l[0] %></span><b><%= l[1] %></b></div><% }) %>
+            </div>
+            <% if (ladoTotal) { %><div class="ap-total"><span>Total</span><b class="ap-total-val"><%= ladoTotal %></b></div><% } %>
+          <% } else { %>
+            <p class="vazio"><%= agPasso === 5 ? 'Tudo certo. Até já!' : 'Escolha os serviços para começar.' %></p>
           <% } %>
         </div>
+        <%- feitoHTML %>
+      </aside>
 
-        <div class="sv-ag6-topo-linha">
-          <div class="sv-ag6-ticks">
-            <% for (var i = 1; i <= 4; i++) { %>
-              <span class="sv-ag6-tick <%= i < agAtual || agPasso === 5 ? 'feito' : '' %> <%= i === agAtual && agPasso >= 1 && agPasso <= 4 ? 'atual' : '' %>"></span>
+      <main class="ap-tela">
+        <% if (agPasso !== 5) { %>
+          <header class="ap-marca">
+            <a class="ap-marca-link" href="/agendar" aria-label="<%= agMarca %>, início"><span class="ap-logo"><%- logoHTML() %></span></a>
+            <span class="ap-marca-txt"><b><%= agMarca %></b><% if (agHoje) { %><span><% if (agHoje.aberto) { %><i></i><% } %><%= agHoje.texto %></span><% } %></span>
+            <% if (agVoltar) { %>
+              <a class="cv-redondo ap-voltar" href="<%= agVoltar %>" aria-label="Voltar"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--20' }) %></a>
             <% } %>
-          </div>
-          <% if (agNome) { %><div class="sv-ag6-passo-nome"><%= agNome %></div><% } %>
-        </div>
-      </header>
-
-      <main class="sv-ag6-corpo">
-        <%- include('../partials/flash') %>
+          </header>
+          <% if (agPasso >= 1 && agPasso <= 4) { %>
+            <div class="ap-trilha" role="progressbar" aria-valuemin="1" aria-valuemax="4" aria-valuenow="<%= agPasso %>" aria-label="Passo <%= agPasso %> de 4">
+              <% for (var i = 1; i <= 4; i++) { %><i class="<%= i < agPasso ? 'feito' : (i === agPasso ? 'atual' : '') %>"></i><% } %>
+            </div>
+            <div class="ap-passo-rot"><b><%= agNome %></b><span><%= agPasso %> de 4</span></div>
+          <% } %>
+        <% } %>
         <%- body %>
+        <% if (agPasso !== 5) { %><div class="ap-feito-cel"><%- feitoHTML %></div><% } %>
       </main>
     </div>
-  <script src="/js/aviso-conexao.js" defer></script>
-<script src="/js/folha-arrastar.js" defer></script>
-</body>
+    <script src="/js/aviso-conexao.js" defer></script>
+  </body>
 </html>

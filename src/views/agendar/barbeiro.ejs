@@ -13,125 +13,75 @@
     return h + 'h' + (r ? String(r).padStart(2, '0') : '');
   }
   var qsBase = 'servicoIds=' + servicoIdsStr + (assinatura ? '&assinatura=' + assinatura.id : '');
-  var resumoServicos = servicos.length + ' serviço' + (servicos.length > 1 ? 's' : '') + ' · ' + _duracao(duracaoTotal);
 %>
 
-<%/* SUAVE (pedido do dono, 2026-07-31): o carrossel de retratos de 280px com
-     encaixe virou a TIRA DE LADRILHOS da referência — 104px, retrato de 64px,
-     nome e papel miúdos embaixo. Toda a equipe cabe na tela de uma vez, então
-     escolher deixou de exigir arrasto (e os tracinhos do carrossel, que só
-     existiam pra dizer "tem mais ao lado", saíram junto).
-
-     O ladrilho escolhido inverte pra preto e o cartão abaixo mostra o nome
-     completo, que não cabe em 104px. "Qualquer disponível" continua sendo o
-     PRIMEIRO ladrilho — mesma gramática das outras opções. */%>
-<% if (barbeiros.length === 0) { %>
-  <div class="sv-ag6-rolagem">
-    <p class="sv-ag6-vazio">Nenhum barbeiro disponível no momento.</p>
-  </div>
-<% } else { %>
-  <div class="sv-ag6-rolagem">
-    <div class="sv-ag6-secao" style="animation-delay:0s">
-      <div class="sv-ag6-secao-tit">Escolha o barbeiro</div>
-    </div>
-
-    <%
-      // Pílula de ação do rodapé do card: "Escolher" quando não marcado,
-      // "Selecionado" (com check) quando marcado. Os dois estados vão no HTML;
-      // o CSS mostra o certo conforme a classe .ativo.
-    %>
-    <div class="sv-ag6-bc-lista" id="ag6-trilho">
-      <%/* Barbeiros primeiro; o 1o já vem selecionado. "Qualquer disponível" vai
-           por ÚLTIMO (pedido do dono, 2026-09-06), como alternativa ao final. */%>
+<%/* v3 (F12): ladrilhos com retrato (2 colunas no celular, 3 no PC). O 1º
+     barbeiro já vem escolhido; "Qualquer disponível" fica por ÚLTIMO (pedido
+     do dono, 2026-09-06). O toque só marca: quem avança é a barra de vidro. */%>
+<% var SIL = '<svg class="sil" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="36" r="19" fill="currentColor"/><path d="M10 100c3-24 20-38 40-38s37 14 40 38z" fill="currentColor"/></svg>'; %>
+<h1 class="ap-h1">Com quem?</h1>
+<p class="ap-sub"><%= servicos.map(function (s) { return s.nome; }).join(' + ') %></p>
+<div class="ap-conteudo">
+  <%- include('_aviso') %>
+  <% if (barbeiros.length === 0) { %>
+    <div class="ap-cartao ap-vazio"><div class="listra"></div><b>Nenhum barbeiro disponível agora</b><p>Volte mais tarde ou fale direto com a barbearia.</p></div>
+  <% } else { %>
+    <div class="ap-barbs" id="ag6-trilho" role="group" aria-label="Barbeiro">
       <% barbeiros.forEach(function (b, i) { %>
         <% var totalB = (typeof totais !== 'undefined' && totais[b.id] !== undefined) ? totais[b.id] : valorTotal; %>
-        <button type="button" class="sv-ag6-bc <%= i === 0 ? 'ativo' : '' %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" data-total="<%= assinatura ? 'Incluso' : fmtT6(totalB) %>" style="animation-delay:<%= (0.06 + i * 0.06).toFixed(2) %>s">
-          <div class="sv-ag6-bc-foto">
+        <button type="button" class="ap-barb <%= i === 0 ? 'ativo' : '' %>" aria-pressed="<%= i === 0 ? 'true' : 'false' %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" data-total="<%= assinatura ? 'Incluso' : fmtT6(totalB) %>" data-nome="com <%= b.nomePublico || b.nome %>">
+          <span class="ap-retrato">
             <% if (b.fotoUrl) { %>
-              <img src="<%= b.fotoUrl %>" alt="<%= b.nomePublico || b.nome %>"<% if (b.fotoPos) { %> style="object-position: <%= b.fotoPos %>"<% } %> />
-            <% } else { %>
-              <span class="sv-ag6-bc-silhueta" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M4 21a8 8 0 0 1 16 0" /><circle cx="12" cy="8" r="4.2" /></svg>
-              </span>
-            <% } %>
-            <div class="sv-ag6-bc-scrim"></div>
-            <div class="sv-ag6-bc-topo">
-              <div class="sv-ag6-bc-nome"><%= b.nomePublico || b.nome %></div>
-              <% if (b.descricao) { %><div class="sv-ag6-bc-desc"><%= b.descricao %></div><% } %>
-            </div>
-          </div>
-          <div class="sv-ag6-bc-rodape">
-            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Disponível<% if (!assinatura) { %> · <strong class="sv-ag6-bc-preco"><%= fmtT6(totalB) %></strong><% } %></span>
-            <span class="sv-ag6-bc-acao">
-              <span class="sv-ag6-bc-acao-e">Escolher</span>
-              <span class="sv-ag6-bc-acao-s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Selecionado</span>
-            </span>
-          </div>
+              <img src="<%= b.fotoUrl %>" alt="" loading="lazy"<% if (b.fotoPos) { %> style="object-position: <%= b.fotoPos %>"<% } %> />
+            <% } else { %><%- SIL %><% } %>
+            <span class="ap-sel-marca"><%- include('../partials/icone', { cvIc: 'check', cvCls: 'cv-ic--16' }) %></span>
+          </span>
+          <span class="rod">
+            <b><%= b.nomePublico || b.nome %></b>
+            <small><% if (b.descricao) { %><span class="d"><%= b.descricao %></span><% } %><%= assinatura ? 'Incluso' : fmtT6(totalB) %></small>
+          </span>
         </button>
       <% }) %>
       <% if (mostrarQualquer) { %>
         <% var totalAny = (typeof totalQualquer !== 'undefined') ? totalQualquer : valorTotal;
            var rotAny = assinatura ? 'Incluso' : ((typeof qualquerVaria !== 'undefined' && qualquerVaria) ? 'a partir de ' : '') + fmtT6(totalAny); %>
-        <button type="button" class="sv-ag6-bc sv-ag6-bc--any" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any" data-total="<%= rotAny %>" style="animation-delay:<%= (0.06 + barbeiros.length * 0.06).toFixed(2) %>s">
-          <div class="sv-ag6-bc-foto">
-            <span class="sv-ag6-bc-icone" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 20a7 7 0 0 1 14 0" /><circle cx="12" cy="8" r="4" /></svg>
-            </span>
-            <div class="sv-ag6-bc-topo">
-              <div class="sv-ag6-bc-nome">Qualquer disponível</div>
-              <div class="sv-ag6-bc-papel">Mais rápido para agendar</div>
-            </div>
-          </div>
-          <div class="sv-ag6-bc-rodape">
-            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Vários barbeiros<% if (!assinatura) { %> · <strong class="sv-ag6-bc-preco"><%= rotAny %></strong><% } %></span>
-            <span class="sv-ag6-bc-acao">
-              <span class="sv-ag6-bc-acao-e">Escolher</span>
-              <span class="sv-ag6-bc-acao-s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Selecionado</span>
-            </span>
-          </div>
+        <button type="button" class="ap-barb ap-barb--qualquer" aria-pressed="false" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any" data-total="<%= rotAny %>" data-nome="Qualquer disponível">
+          <span class="ap-retrato"><%- include('../partials/icone', { cvIc: 'equipe' }) %><span class="ap-sel-marca"><%- include('../partials/icone', { cvIc: 'check', cvCls: 'cv-ic--16' }) %></span></span>
+          <span class="rod"><b>Qualquer disponível</b><small>Mais rápido para agendar</small></span>
         </button>
       <% } %>
     </div>
+  <% } %>
+</div>
 
-    <div class="sv-ag6-secao">
-      <div class="sv-ag6-secao-tit">Escolhido</div>
-      <div class="sv-ag6-secao-val"><%= servicos.map(function (s) { return s.nome; }).join(' + ') %></div>
-    </div>
-    <div style="height:22px"></div>
-  </div>
-
-  <div class="sv-ag6-barra">
-    <a class="sv-ag6-acao" id="ag6-barb-cta" href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= barbeiros[0].id %>">
-      <span class="sv-ag6-acao-info">
-        <span class="sv-ag6-acao-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
-        <span class="sv-ag6-acao-sub"><%= resumoServicos %></span>
-      </span>
-      <span class="sv-ag6-acao-cta">
-        Continuar
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-      </span>
-    </a>
+<% if (barbeiros.length > 0) { %>
+  <div class="ap-barra" role="region" aria-label="Resumo e continuar">
+    <span class="info"><b id="ag6-barb-total"><%= assinatura ? 'Incluso' : fmtT6((typeof totais !== 'undefined' && totais[barbeiros[0].id] !== undefined) ? totais[barbeiros[0].id] : valorTotal) %></b><span id="ag6-barb-sub">com <%= barbeiros[0].nomePublico || barbeiros[0].nome %> · <%= _duracao(duracaoTotal) %></span></span>
+    <a class="cv-btn" id="ag6-barb-cta" href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= barbeiros[0].id %>">Continuar</a>
   </div>
 
   <script>
-    // O toque no ladrilho só marca a escolha (destaque + destino da barra
-    // preta); quem segue pro horário continua sendo a barra — um só jeito de
-    // avançar, igual aos outros passos.
+    // O toque no ladrilho só marca a escolha (destaque + destino da barra);
+    // quem segue pro horário é a barra, igual aos outros passos.
     (function () {
       var trilho = document.getElementById('ag6-trilho');
       if (!trilho) return;
-      var tiles = Array.prototype.slice.call(trilho.querySelectorAll('.sv-ag6-bc'));
+      var tiles = Array.prototype.slice.call(trilho.querySelectorAll('.ap-barb'));
       var cta = document.getElementById('ag6-barb-cta');
-      var totalEl = cta ? cta.querySelector('.sv-ag6-acao-total') : null;
+      var totalEl = document.getElementById('ag6-barb-total');
+      var subEl = document.getElementById('ag6-barb-sub');
+      var dur = <%- JSON.stringify(_duracao(duracaoTotal)) %>;
 
       tiles.forEach(function (tile) {
         tile.addEventListener('click', function () {
-          tiles.forEach(function (t) { t.classList.toggle('ativo', t === tile); });
+          tiles.forEach(function (t) {
+            t.classList.toggle('ativo', t === tile);
+            t.setAttribute('aria-pressed', t === tile ? 'true' : 'false');
+          });
           cta.href = tile.dataset.href;
           // O preço pode variar por barbeiro: a barra mostra o total de quem foi escolhido.
           if (totalEl && tile.dataset.total) totalEl.textContent = tile.dataset.total;
-          // Traz o card escolhido inteiro pra vista.
-          if (tile.scrollIntoView) tile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          if (subEl && tile.dataset.nome) subEl.textContent = tile.dataset.nome + ' · ' + dur;
         });
       });
     })();
