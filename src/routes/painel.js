@@ -4,6 +4,7 @@ const router = express.Router();
 const { exigeLogin, exigeAdmin } = require('../middlewares/auth');
 const { exigeBarbeariaPainel } = require('../middlewares/tenant');
 const { exigeFuncaoDoPlano } = require('../middlewares/planoCortavo');
+const { exige } = require('../middlewares/permissao');
 const planoCortavo = require('../services/planoCortavo');
 const testeGratis = require('../services/testeGratis');
 const prisma = require('../config/db');
@@ -29,6 +30,8 @@ const secretariaController = require('../controllers/secretariaController');
 const logoController = require('../controllers/logoController');
 const meuPlanoController = require('../controllers/meuPlanoController');
 const conversasController = require('../controllers/conversasController');
+const gestaoApiController = require('../controllers/gestaoApiController');
+const caixaApiController = require('../controllers/caixaApiController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
 const upload = require('../middlewares/upload');
@@ -45,12 +48,17 @@ function uploadMidiaWa(req, res, next) {
 }
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
+// Serviços aceitam, além da `foto`, a miniatura quadrada `fotoMini` (redesign
+// v3); o controller continua lendo a foto em `req.file` e a miniatura em `req.fileMini`.
 function uploadFoto(req, res, next) {
-  upload.single('foto')(req, res, (err) => {
+  upload.fields([{ name: 'foto', maxCount: 1 }, { name: 'fotoMini', maxCount: 1 }])(req, res, (err) => {
     if (err) {
       req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
       return res.redirect('/painel/servicos');
     }
+    const f = req.files || {};
+    req.file = (f.foto && f.foto[0]) || undefined;
+    req.fileMini = (f.fotoMini && f.fotoMini[0]) || undefined;
     next();
   });
 }
@@ -130,6 +138,11 @@ router.use(async (req, res, next) => {
   // Telas que ESTE funcionário não pode abrir (escolhidas pelo admin na Equipe).
   // Admin/dono nunca é restringido.
   const bloqueados = req.ehAdmin ? new Set() : permissoes.bloqueadosDe(usuarioDb);
+  // Spec 12 (B1): contexto de permissões da requisição (chaves de telas E de
+  // dados, já cruzadas com o plano da barbearia). Rotas e controllers perguntam
+  // `req.permissoes.pode('caixa_ver')` / `req.permissoes.escopo()`.
+  req.permissoes = permissoes.contexto(u, usuarioDb, planoCortavo.planoDe(barbearia && barbearia.planoCortavo));
+  res.locals.pode = req.permissoes.pode;
   res.locals.podeAcessar = (href) => {
     const mod = permissoes.moduloDoCaminho(String(href || '').replace(/^\/painel/, '') || '/');
     return !mod || !bloqueados.has(mod.chave);
@@ -158,8 +171,30 @@ router.use(async (req, res, next) => {
 // Plano da Cortavo (fase 2.2): rotas fora do plano param aqui, no servidor.
 router.use(exigeFuncaoDoPlano);
 
+// Para rotas de API cujo caminho não é o da tela (/api/...): a função do plano
+// é dita explicitamente.
+function exigeFuncaoPlanoApi(funcao) {
+  return (req, res, next) => {
+    if (planoCortavo.libera(res.locals.planoCortavo || planoCortavo.planoDe(null), funcao)) return next();
+    return res.status(403).json({ erro: planoCortavo.textoForaDoPlano(funcao), foraDoPlano: true });
+  };
+}
+
 // Painel (dashboard).
 router.get('/', dashboardController.ver);
+
+// --- API da Gestão (spec 12, B4) -------------------------------------------
+// Um endpoint por cartão. A permissão é conferida DENTRO de cada cálculo
+// (services/metricas.js -> contextoCalculo), porque depende do cartão e do
+// filtro de barbeiro; sem permissão, 403 sem dado. Documentação para o front:
+// squads/app-cortavo/output/gestao-dados-apis.md.
+// Home "Painel vivo" (B6): anéis, horas livres, próximos e destaques.
+router.get('/api/home', gestaoApiController.inicio);
+router.get('/api/gestao/cartoes', gestaoApiController.cartoes);
+router.get('/api/gestao/:metrica', gestaoApiController.metrica);
+// Baixa de comissão (B5): só admin, e só se o plano tem Comissões.
+router.post('/api/gestao/comissoes/baixa', exigeAdmin, exigeFuncaoPlanoApi('comissoes'), gestaoApiController.baixarComissao);
+router.post('/api/gestao/comissoes/baixa/:id/desfazer', exigeAdmin, exigeFuncaoPlanoApi('comissoes'), gestaoApiController.desfazerBaixaComissao);
 
 // Foto do próprio usuário logado (hero do painel).
 router.get('/logo', exigeAdmin, logoController.ver);
@@ -272,6 +307,7 @@ router.post('/agenda/itens/:id/valor', agendaController.alterarValorItem); // pr
 router.post('/agenda/itens/:id/remover', agendaController.removerItem);
 router.post('/agenda/:id/status', agendaController.mudarStatus);
 router.post('/agenda/:id/excluir', agendaController.excluir);
+router.post('/agenda/:id/desfazer', agendaController.desfazer); // "Desfazer" logo depois de criar (janela de 30 s)
 // Bloqueios direto da agenda: barbeiro bloqueia a PRÓPRIA agenda (escopado no controller).
 router.post('/agenda/bloqueios', agendaController.criarBloqueio);
 router.post('/agenda/bloqueios/:id/remover', agendaController.removerBloqueio);
@@ -357,11 +393,17 @@ router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 // Equipe (barbeiros) e Marca são gerenciadas apenas no painel-mestre (dono do
 // sistema), em /mestre/barbearias/:id — por isso não há rotas delas aqui.
 
-// --- Caixa (somente admin) ------------------------------------------------
+// --- Caixa -----------------------------------------------------------------
+// Spec 12 (B2, R4): ver e lançar passam a valer para o barbeiro com a chave
+// (caixa_ver / caixa_lancar; admin sempre). Excluir lançamento continua só admin.
 // Específicas (/config, /categorias) antes das paramétricas (/:id).
-router.get('/caixa', exigeAdmin, caixaController.ver);
-router.post('/caixa', exigeAdmin, caixaController.criar);
+router.get('/caixa', exige('caixa_ver'), caixaController.ver);
+router.post('/caixa', exige('caixa_lancar'), caixaController.criar);
 router.post('/caixa/:id/remover', exigeAdmin, caixaController.remover);
+// Caixa do dia e fechamento (redesign v3, F6): ver com caixa_ver; fechar com caixa_lancar.
+router.get('/api/caixa/dia', exige('caixa_ver'), caixaApiController.dia);
+router.get('/api/caixa/fechamentos', exige('caixa_ver'), caixaApiController.fechamentos);
+router.post('/api/caixa/fechar', exige('caixa_lancar'), caixaApiController.fechar);
 
 // --- Relatórios (somente admin) --------------------------------------------
 router.get('/relatorios', exigeAdmin, relatorioController.ver);

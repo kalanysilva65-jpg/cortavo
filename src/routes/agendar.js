@@ -7,6 +7,8 @@ const { limiteAgendar } = require('../middlewares/rateLimit');
 
 // Toda a área pública precisa de uma barbearia válida no contexto (subdomínio).
 router.use(exigeBarbeariaPublica);
+// Redesign v3 (F12): "Aberto hoje, 9h às 19h" disponível em todas as páginas.
+router.use(c.contextoPublico);
 
 router.get('/plano', c.passoPlano); // consulta de plano por telefone
 router.get('/', c.passoServico); // passo 1: serviço

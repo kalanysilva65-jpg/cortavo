@@ -384,7 +384,7 @@ async function toolCancelarAgendamento(ctx, args) {
   if (!id) return { erro: 'Use meus_agendamentos para pegar o id do agendamento antes de cancelar.' };
   const chk = await agendamentoDoCliente(ctx, id);
   if (chk.erro) return { erro: chk.erro };
-  const r = await agendamentoSeguro.cancelarAgendamento(ctx.barbeariaId, { agendamentoId: id });
+  const r = await agendamentoSeguro.cancelarAgendamento(ctx.barbeariaId, { agendamentoId: id, canceladoPor: 'secretaria' });
   if (r.ok) return { ok: true, cancelado: true, uso_do_plano_devolvido: !!r.usoDevolvido };
   return { ok: false, motivo: r.mensagem };
 }

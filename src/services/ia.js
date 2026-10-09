@@ -9,6 +9,7 @@
 // nunca como instrução (dito no system prompt).
 const prisma = require('../config/db');
 const { horariosDisponiveis, duracaoComEncaixe } = require('./disponibilidade');
+const { INATIVOS: STATUS_INATIVOS } = require('../config/statusAgendamento');
 
 const Anthropic = require('@anthropic-ai/sdk');
 const AnthropicCtor = Anthropic.default || Anthropic;
@@ -324,7 +325,7 @@ async function execFerramenta(nome, args, ctx) {
       return { barbeiroId, data: args.data, horarios_livres: livres };
     }
     case 'buscar_agendamentos': {
-      const w = escopoAg(ctx, { status: { not: 'cancelado' } });
+      const w = escopoAg(ctx, { status: { notIn: STATUS_INATIVOS } });
       if (args.data) { const d = dataLocal(args.data); if (d) w.data = d; }
       let ags = await prisma.agendamento.findMany({
         where: w,

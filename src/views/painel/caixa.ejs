@@ -15,10 +15,12 @@
   <div class="sv-cx-cab sv-reveal">
     <div class="sv-cx-cab-linha">
       <div class="sv-titulo">Caixa</div>
+      <% if (typeof podeLancarCaixa === 'undefined' || podeLancarCaixa) { %>
       <button type="button" class="sv-cx-lancar" onclick="cxFolha('novo', true)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         <span>Lançar</span>
       </button>
+      <% } %>
     </div>
 
     <div class="sv-cx-periodos">
@@ -124,11 +126,13 @@
                 <div class="sv-cx-valor <%= ex.entrada ? '' : 'sv-cx-valor--saida' %>"><%= ex.entrada ? '+' : '−' %><%= fmtBRL(ex.valor) %></div>
                 <div class="sv-cx-acum"><%= fmtBRL(ex.saldo) %></div>
               </div>
+              <% if (typeof podeRemoverCaixa === 'undefined' || podeRemoverCaixa) { %>
               <form method="POST" action="/painel/caixa/<%= ex.id %>/remover" onsubmit="return confirm('Excluir este lançamento?')">
                 <input type="hidden" name="inicio" value="<%= inicioStr %>" />
                 <input type="hidden" name="fim" value="<%= fimStr %>" />
                 <button class="sv-cx-x" title="Excluir lançamento" aria-label="Excluir lançamento">×</button>
               </form>
+              <% } %>
             </div>
           <% }) %>
         </div>

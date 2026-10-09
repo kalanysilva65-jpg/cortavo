@@ -8,9 +8,21 @@ const precos = require('../services/precos');
 const { dataLocal, paraMinutos, duracaoEfetiva, todosHorarios, duracaoComEncaixe } = require('../services/disponibilidade');
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
+const permissoes = require('../services/permissoes');
+const STATUS = require('../config/statusAgendamento');
+const metricas = require('../services/metricas');
+
 const caixaServ = require('../services/caixa');
 const planoServ = require('../services/plano');
 const estoqueServ = require('../services/estoque');
+
+// Spec 12 (B2): sem `clientes_contato`, telefone de cliente só com o final.
+function veContato(req) {
+  return !req.permissoes || req.permissoes.pode('clientes_contato');
+}
+function clientesParaTela(req, clientes) {
+  return veContato(req) ? clientes : clientes.map((c) => ({ ...c, telefone: permissoes.mascararTelefone(c.telefone) }));
+}
 
 // Formas de pagamento oferecidas ao concluir um atendimento. Rótulos CURTOS
 // (design suave, 2026-07-31): viram pílulas dentro do cartão preto do detalhe,
@@ -204,6 +216,9 @@ function querJson(req) {
 }
 
 function responderOk(req, res, aviso) {
+  // Toda alteração de atendimento passa por aqui: a Gestão e a Home deixam de
+  // usar o número guardado (cache de 60 s) desta barbearia.
+  metricas.invalidar(req.barbeariaId);
   if (querJson(req)) return res.json(aviso ? { ok: true, aviso } : { ok: true });
   if (aviso) req.session.flash = { tipo: 'erro', texto: aviso };
   return res.redirect(urlRetorno(req));
@@ -263,11 +278,11 @@ async function verAgenda(req, res) {
     : [];
   const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
   // Clientes cadastrados — usado no autocomplete do pop-up "Novo agendamento".
-  const clientes = await prisma.cliente.findMany({
+  const clientes = clientesParaTela(req, await prisma.cliente.findMany({
     where: { barbeariaId: b },
     select: { id: true, nome: true, telefone: true },
     orderBy: { nome: 'asc' },
-  });
+  }));
 
   // Bloqueios do dia (mesmo filtro de barbeiro) — aparecem na linha do tempo.
   const whereBloq = { barbeariaId: b, data: { gte: periodoInicio, lt: periodoFimExcl } };
@@ -506,11 +521,26 @@ async function mudarStatus(req, res) {
   if (!podeAlterar(req, agendamento)) return negarAcesso(res);
 
   const novo = req.body.status;
-  if (['agendado', 'concluido', 'cancelado'].includes(novo)) {
+  // Spec 12 (B3): "faltou" (no-show) é um status próprio, separado de cancelado.
+  if (STATUS.VALIDOS.includes(novo)) {
     // Forma de pagamento: registrada junto ao concluir (é quando o cliente paga).
     // Reabrir/cancelar limpa o registro, senão ficaria uma forma de pagamento
     // pendurada num atendimento que não aconteceu.
     const dados = { status: novo };
+    // Cancelamento: grava quando e quem (G13). Recancelar não remarca a data;
+    // sair de "cancelado" (reabrir, concluir, faltou) limpa os campos.
+    if (novo === STATUS.CANCELADO && agendamento.status !== STATUS.CANCELADO) {
+      dados.canceladoEm = new Date();
+      dados.canceladoPor = 'equipe';
+      dados.canceladoPorId = req.session.usuario.id;
+      const motivo = String(req.body.motivo || '').trim().slice(0, 120);
+      dados.motivoCancelamento = motivo || null;
+    } else if (novo !== STATUS.CANCELADO && agendamento.status === STATUS.CANCELADO) {
+      dados.canceladoEm = null;
+      dados.canceladoPor = null;
+      dados.canceladoPorId = null;
+      dados.motivoCancelamento = null;
+    }
     let partes = [];
 
     if (novo === 'concluido') {
@@ -589,6 +619,8 @@ async function mudarStatus(req, res) {
     else if (eraConcluido && !ficaConcluido) await estoqueServ.aplicarConsumo(agendamento.id, +1);
 
     // Ajuste de uso do plano (cancelar devolve 1 uso; reabrir volta a consumir).
+    // "Faltou" NÃO devolve: a vaga ficou reservada para o cliente (ver
+    // config/statusAgendamento.js); só "cancelado" conta como não-ativo aqui.
     if (agendamento.clientePlanoId) {
       const eraAtivo = agendamento.status !== 'cancelado';
       const ficaAtivo = novo !== 'cancelado';
@@ -618,6 +650,7 @@ async function detalheFragmento(req, res) {
   });
   if (!ag) return res.status(404).send('');
   if (!podeAlterar(req, ag)) return res.status(403).send('');
+  if (!veContato(req)) ag.clienteTelefone = permissoes.mascararTelefone(ag.clienteTelefone);
 
   // "Agora" é o próximo atendimento em aberto do dia — mesmo critério da lista,
   // senão o selo mudaria sozinho ao atualizar a folha.
@@ -640,6 +673,7 @@ async function detalheFragmento(req, res) {
 
   let selo = 'Confirmado';
   if (ag.status === 'cancelado') selo = 'Cancelado';
+  else if (ag.status === STATUS.FALTOU) selo = 'Faltou';
   else if (ag.status === 'concluido') selo = 'Concluído';
   else if (proximo && proximo.id === ag.id) selo = 'Agora';
 
@@ -661,6 +695,32 @@ async function detalheFragmento(req, res) {
     servicos,
     maxParcelas: MAX_PARCELAS,
   });
+}
+
+// Desfazer um agendamento recém-criado (aviso "Agendamento criado · Desfazer"
+// do redesign v3). A tela mostra o botão por ~8 s; o servidor aceita até 30 s
+// depois da criação, para cobrir rede lenta. Fora da janela, o caminho é
+// cancelar (que guarda histórico). Só desfaz o que foi criado pela equipe no
+// painel, ainda "agendado", e por quem pode alterar aquele agendamento.
+const JANELA_DESFAZER_MS = 30 * 1000;
+
+// POST /painel/agenda/:id/desfazer
+async function desfazer(req, res) {
+  const ag = await prisma.agendamento.findFirst({ where: { id: idNum(req.params.id), barbeariaId: req.barbeariaId } });
+  if (!ag) return res.status(404).json({ erro: 'Agendamento não encontrado.' });
+  if (!podeAlterar(req, ag)) return res.status(403).json({ erro: 'Você só pode alterar os seus próprios agendamentos.' });
+  const criado = new Date(ag.criadoEm).getTime();
+  const dentro = Date.now() - criado <= JANELA_DESFAZER_MS;
+  if (!dentro || ag.status !== STATUS.AGENDADO || ag.origem !== 'barbeiro') {
+    return res.status(409).json({ erro: 'Não dá mais para desfazer. Cancele o agendamento.' });
+  }
+  if (ag.clientePlanoId) {
+    await planoServ.ajustarUso(ag.clientePlanoId, +1, await planoServ.servicosCobertosDe(ag.id));
+  }
+  await caixaServ.removerEntradaAgendamento(ag.id);
+  await prisma.agendamento.delete({ where: { id: ag.id } });
+  metricas.invalidar(req.barbeariaId);
+  return res.json({ ok: true, desfeito: ag.id });
 }
 
 // POST /painel/agenda/:id/excluir — exclui o agendamento (qualquer status)
@@ -692,11 +752,11 @@ async function dadosForm(req) {
     ? await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } })
     : [];
   const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
-  const clientes = await prisma.cliente.findMany({
+  const clientes = clientesParaTela(req, await prisma.cliente.findMany({
     where: { barbeariaId: b },
     select: { id: true, nome: true, telefone: true },
     orderBy: { nome: 'asc' },
-  });
+  }));
   return { ehAdmin, barbeiros, servicos, clientes };
 }
 
@@ -775,7 +835,18 @@ async function criarManual(req, res) {
   const hora = req.body.hora;
   const nome = (req.body.cliente_nome || '').trim();
   const email = (req.body.cliente_email || '').trim();
-  const telefone = (req.body.cliente_telefone || '').trim();
+  let telefone = (req.body.cliente_telefone || '').trim();
+  // Spec 12 (B2): quem não vê o telefone escolhe o cliente no autocomplete e o
+  // campo chega mascarado ("•••• 4321"). O número de verdade sai do cadastro:
+  // pelo `clienteId` (tela nova) ou, na tela atual, pelo nome + final do número.
+  if (telefone.includes('•')) {
+    const final = normalizarTelefone(telefone);
+    const idCli = idNum(req.body.clienteId);
+    const candidatos = idCli
+      ? await prisma.cliente.findMany({ where: { id: idCli, barbeariaId: b }, select: { telefone: true } })
+      : await prisma.cliente.findMany({ where: { barbeariaId: b, nome, telefone: { endsWith: final } }, select: { telefone: true } });
+    telefone = candidatos.length === 1 && final && candidatos[0].telefone.endsWith(final) ? candidatos[0].telefone : '';
+  }
 
   const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, barbeariaId: b, ativo: true } });
   const servicosBase = servicoIds.length
@@ -802,7 +873,7 @@ async function criarManual(req, res) {
     const iniNovo = paraMinutos(hora);
     const fimNovo = iniNovo + duracaoTotal;
     const existentes = await prisma.agendamento.findMany({
-      where: { barbeariaId: b, usuarioId, data: dataLocal(data), status: { not: 'cancelado' } },
+      where: { barbeariaId: b, usuarioId, data: dataLocal(data), status: { notIn: STATUS.INATIVOS } },
       include: { itens: { include: { servico: true } } },
     });
     const conflita = existentes.some((ag) => {
@@ -827,6 +898,7 @@ async function criarManual(req, res) {
   }
 
   if (erros.length) {
+    if (querJson(req)) return res.status(400).json({ erro: erros.join(' ') });
     req.session.flash = { tipo: 'erro', texto: erros.join(' ') };
     const qs = new URLSearchParams();
     if (data) qs.set('data', data);
@@ -851,7 +923,7 @@ async function criarManual(req, res) {
   // Os serviços que o plano cobre (`cobertosIds`) saem 0; os demais somam normal.
   const cobertos = new Set(cobertura ? cobertura.cobertosIds : []);
   const valorTotal = servicos.reduce((soma, s) => soma + (cobertos.has(s.id) ? 0 : s.valor), 0);
-  await prisma.agendamento.create({
+  const novo = await prisma.agendamento.create({
     data: {
       barbeariaId: b,
       usuarioId,
@@ -871,6 +943,16 @@ async function criarManual(req, res) {
   // Consome 1 uso do plano (limitado; ilimitado não muda) — igual à secretária.
   if (cobertura) await planoServ.ajustarUso(cobertura.assinatura.id, -1, cobertura.cobertosIds);
 
+  metricas.invalidar(b);
+  // Folha "Novo" (redesign v3): a tela pede JSON para mostrar o aviso com
+  // "Desfazer" sem recarregar. O formulário antigo continua com o redirect.
+  if (querJson(req)) {
+    return res.json({
+      ok: true,
+      agendamento: { id: novo.id, data, hora, usuarioId },
+      desfazer: { url: '/painel/agenda/' + novo.id + '/desfazer', ate: new Date(Date.now() + JANELA_DESFAZER_MS).toISOString() },
+    });
+  }
   req.session.flash = { tipo: 'sucesso', texto: 'Agendamento criado.' };
   res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));
 }
@@ -912,4 +994,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson, planosJson };
+module.exports = { desfazer, JANELA_DESFAZER_MS, verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson, planosJson };

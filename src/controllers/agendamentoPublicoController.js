@@ -13,6 +13,7 @@ const precos = require('../services/precos');
 const notifServ = require('../services/notificacoes');
 const demoServ = require('../services/demo');
 const { lerJanelaAgendamento } = require('./horarioController');
+const { INATIVOS: STATUS_INATIVOS } = require('../config/statusAgendamento');
 
 // Até quantos dias no futuro o cliente pode marcar vem de `lerJanelaAgendamento`
 // (Horários → "Janela de agendamento do cliente"), já em NÚMERO DE DIAS.
@@ -225,6 +226,66 @@ async function resolverBarbeiroQualquer(barbeariaId, dataStr, hora, duracaoTotal
   return null;
 }
 
+// ---- Redesign v3 (F12): "Aberto hoje, 9h às 19h" e "próximo dia livre" ------
+
+// "09:00" -> "9h"; "09:30" -> "9h30".
+function horaCurta(hhmm) {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`;
+}
+
+// Horário da barbearia HOJE = união das jornadas dos barbeiros ativos no dia
+// da semana (da primeira entrada à última saída). Vai para todas as páginas
+// públicas como `horarioHoje` (topo da agenda pública).
+async function horarioHojeDe(barbeariaId, agora = new Date()) {
+  const ativos = await prisma.usuario.findMany({ where: { barbeariaId, ativo: true }, select: { id: true } });
+  const jornadas = ativos.length
+    ? await prisma.horarioTrabalho.findMany({ where: { usuarioId: { in: ativos.map((u) => u.id) }, diaSemana: agora.getDay(), trabalha: true } })
+    : [];
+  if (!jornadas.length) return { aberto: false, inicio: null, fim: null, texto: 'Fechado hoje' };
+  const ini = Math.min(...jornadas.map((j) => paraMinutos(j.horaInicio)));
+  const fim = Math.max(...jornadas.map((j) => paraMinutos(j.horaFim)));
+  const hh = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  const minAgora = agora.getHours() * 60 + agora.getMinutes();
+  const texto = minAgora >= fim ? `Hoje até ${horaCurta(hh(fim))} (já fechou)` : `Aberto hoje, ${horaCurta(hh(ini))} às ${horaCurta(hh(fim))}`;
+  return { aberto: minAgora < fim, inicio: hh(ini), fim: hh(fim), texto };
+}
+
+// Middleware das rotas públicas: põe o horário de hoje no contexto da página.
+// Falha aqui não derruba o agendamento (só some a linha do topo).
+async function contextoPublico(req, res, next) {
+  try {
+    res.locals.horarioHoje = await horarioHojeDe(req.barbeariaId);
+  } catch (e) {
+    res.locals.horarioHoje = null;
+  }
+  next();
+}
+
+// Próximo dia (depois de `dataStr`) com pelo menos um horário livre, dentro da
+// janela de agendamento e dos dias do plano (se houver). Olha no máximo 30 dias.
+// Devolve { data: "AAAA-MM-DD", rotulo: "Qui, 16 out" } ou null.
+async function proximoDiaLivre({ barbeariaId, barbeiroIds, dataStr, duracao, diasPlano = null }) {
+  const janelaDias = await lerJanelaAgendamento(barbeariaId);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite = new Date(hoje);
+  limite.setDate(limite.getDate() + janelaDias);
+  const jornadas = await prisma.horarioTrabalho.findMany({ where: { usuarioId: { in: barbeiroIds }, trabalha: true }, select: { diaSemana: true } });
+  const diasQueTrabalha = new Set(jornadas.map((j) => j.diaSemana));
+  const d = dataLocal(dataStr);
+  for (let i = 0; i < 30; i++) {
+    d.setDate(d.getDate() + 1);
+    if (d >= limite) break;
+    const dow = d.getDay();
+    if (!diasQueTrabalha.has(dow) || (diasPlano && !diasPlano.has(dow))) continue;
+    const alvo = iso(d);
+    const grade = barbeiroIds.length > 1 ? await todosHorariosQualquer(barbeiroIds, alvo, duracao) : await todosHorarios(barbeiroIds[0], alvo, duracao);
+    if (grade.some((h) => h.livre)) return { data: alvo, rotulo: `${DIAS_SEMANA[dow].slice(0, 3)}, ${d.getDate()} ${MESES_ABREV[d.getMonth()]}` };
+  }
+  return null;
+}
+
 // Só os horários de UMA data, em JSON — usado pela troca de dia na tela de
 // agendamento (passo 3).
 //
@@ -249,25 +310,40 @@ async function horariosJson(req, res) {
   const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
 
   let todos;
+  let idsBarbeiros;
   if (req.query.barbeiroId === 'any') {
     const barbeiros = await prisma.usuario.findMany({
       where: { barbeariaId: req.barbeariaId, ativo: true },
       select: { id: true },
       orderBy: { id: 'asc' },
     });
-    todos = await todosHorariosQualquer(barbeiros.map((b) => b.id), dataSel, duracaoTotal);
+    idsBarbeiros = barbeiros.map((b) => b.id);
+    todos = await todosHorariosQualquer(idsBarbeiros, dataSel, duracaoTotal);
   } else {
     const barbeiro = await prisma.usuario.findFirst({
       where: { id: idNum(req.query.barbeiroId), barbeariaId: req.barbeariaId, ativo: true },
       select: { id: true },
     });
     if (!barbeiro) return res.status(400).json({ erro: 'barbeiro' });
+    idsBarbeiros = [barbeiro.id];
     todos = await todosHorarios(barbeiro.id, dataSel, duracaoTotal);
+  }
+
+  // Redesign v3 (F12): dia esgotado ganha o atalho "próximo dia com horário
+  // livre". Só calcula quando o dia pedido não tem nenhum livre.
+  const temLivre = todos.some((h) => h.livre);
+  let proximo = null;
+  if (!temLivre && idsBarbeiros.length) {
+    const assinatura = req.query.assinatura ? await carregarAssinatura(req.query.assinatura, req.barbeariaId) : null;
+    const diasPlano = assinatura ? new Set(assinatura.plano.diasSemana.split(',').map(Number)) : null;
+    proximo = await proximoDiaLivre({ barbeariaId: req.barbeariaId, barbeiroIds: idsBarbeiros, dataStr: dataSel, duracao: duracaoTotal, diasPlano });
   }
 
   res.json({
     manha: todos.filter((h) => Number(h.hora.slice(0, 2)) < 12),
     tarde: todos.filter((h) => Number(h.hora.slice(0, 2)) >= 12),
+    temLivre,
+    proximoDiaLivre: proximo,
   });
 }
 
@@ -351,6 +427,17 @@ async function passoHorario(req, res) {
     horariosManha = todos.filter((h) => Number(h.hora.slice(0, 2)) < 12);
     horariosTarde = todos.filter((h) => Number(h.hora.slice(0, 2)) >= 12);
   }
+  // Redesign v3 (F12): atalho do dia esgotado já no primeiro carregamento.
+  let proximoDiaLivreSel = null;
+  if (dataSel && !horariosManha.concat(horariosTarde).some((h) => h.livre)) {
+    proximoDiaLivreSel = await proximoDiaLivre({
+      barbeariaId: req.barbeariaId,
+      barbeiroIds: ehQualquer ? barbeirosAtivos.map((b) => b.id) : [barbeiro.id],
+      dataStr: dataSel,
+      duracao: duracaoTotal,
+      diasPlano,
+    });
+  }
 
   res.render('agendar/horario', {
     layout: 'layouts/publico',
@@ -366,6 +453,7 @@ async function passoHorario(req, res) {
     dataSel,
     horariosManha,
     horariosTarde,
+    proximoDiaLivre: proximoDiaLivreSel,
     assinatura,
     ilimitado,
     diasPlanoLabel: assinatura && assinatura.plano.diasSemana !== '0,1,2,3,4,5,6' ? diasLabel(assinatura.plano.diasSemana) : null,
@@ -526,7 +614,7 @@ async function confirmar(req, res) {
   try {
     agendamento = await prisma.$transaction(async (tx) => {
       const existentes = await tx.agendamento.findMany({
-        where: { barbeariaId: b, usuarioId: barbeiro.id, data: dataObjFinal, status: { not: 'cancelado' } },
+        where: { barbeariaId: b, usuarioId: barbeiro.id, data: dataObjFinal, status: { notIn: STATUS_INATIVOS } },
         include: { itens: { include: { servico: true } } },
       });
       const conflita = existentes.some((ag) => {
@@ -633,4 +721,5 @@ async function sucesso(req, res) {
   });
 }
 
-module.exports = { passoPlano, passoServico, passoBarbeiro, passoHorario, horariosJson, passoDados, confirmar, sucesso };
+module.exports = {
+  contextoPublico, horarioHojeDe, proximoDiaLivre, passoPlano, passoServico, passoBarbeiro, passoHorario, horariosJson, passoDados, confirmar, sucesso };

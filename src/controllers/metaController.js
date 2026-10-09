@@ -154,4 +154,4 @@ async function paraHome(barbeariaId, usuarioId, ehAdmin) {
   });
 }
 
-module.exports = { listar, criar, remover, paraHome };
+module.exports = { listar, criar, remover, paraHome, apurar, atualDe, METRICAS };

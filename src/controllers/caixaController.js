@@ -2,6 +2,7 @@
 // Acesso exclusivo do admin (garantido pelas rotas com exigeAdmin).
 const prisma = require('../config/db');
 const caixaServ = require('../services/caixa');
+const metricas = require('../services/metricas');
 const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
 
 // `curto` é o rótulo das pílulas do design suave (pedido do dono, 2026-07-31):
@@ -247,8 +248,18 @@ async function ver(req, res) {
   const hora = agora.getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
 
+  // Spec 12 (B2): barbeiro com `caixa_ver` vê o caixa; só lança com
+  // `caixa_lancar` e nunca exclui. A comissão somada da equipe é número dos
+  // outros barbeiros: só para quem pode comparar a equipe.
+  const perm = req.permissoes;
+  const podeLancarCaixa = !perm || perm.pode('caixa_lancar');
+  const podeRemoverCaixa = !perm || perm.ehAdmin;
+  if (perm && !perm.podeVerEquipe()) comissaoValor = 0;
+
   res.render('painel/caixa', {
     titulo: 'Financeiro',
+    podeLancarCaixa,
+    podeRemoverCaixa,
     saudacao,
     lancamentos,
     resumoPeriodo,
@@ -315,6 +326,7 @@ async function criar(req, res) {
       formaPagamento,
     },
   });
+  metricas.invalidar(b);
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento registrado.' };
   res.redirect(destino);
 }
@@ -323,6 +335,7 @@ async function criar(req, res) {
 async function remover(req, res) {
   const l = await prisma.caixa.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
   if (l) await prisma.caixa.delete({ where: { id: l.id } }).catch(() => {});
+  metricas.invalidar(req.barbeariaId);
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento removido.' };
 
   const qs = new URLSearchParams();

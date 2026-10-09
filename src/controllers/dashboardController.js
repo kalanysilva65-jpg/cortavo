@@ -6,6 +6,7 @@ const prisma = require('../config/db');
 const planoCortavo = require('../services/planoCortavo');
 const { paraHome: metasDaHome } = require('./metaController');
 const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
+const { INATIVOS: STATUS_INATIVOS } = require('../config/statusAgendamento');
 
 // Date -> meia-noite local do mesmo dia.
 function inicioDoDia(d) {
@@ -29,7 +30,7 @@ function iniciais(nome) {
 async function calcularOcupacao(barbeariaId, barbeiroIds, inicio, fimExcl) {
   if (!barbeiroIds.length) return 0;
   const ags = await prisma.agendamento.findMany({
-    where: { barbeariaId, usuarioId: { in: barbeiroIds }, data: { gte: inicio, lt: fimExcl }, status: { not: 'cancelado' } },
+    where: { barbeariaId, usuarioId: { in: barbeiroIds }, data: { gte: inicio, lt: fimExcl }, status: { notIn: STATUS_INATIVOS } },
     include: { itens: { include: { servico: true } } },
   });
   let ocupado = 0;
@@ -73,7 +74,7 @@ async function ver(req, res) {
   // --- Agenda de hoje + próximo cliente ------------------------------------
   const filtroBarbeiro = ehAdmin ? {} : { usuarioId };
   const agsHoje = await prisma.agendamento.findMany({
-    where: { barbeariaId: b, data: hoje0, status: { not: 'cancelado' }, ...filtroBarbeiro },
+    where: { barbeariaId: b, data: hoje0, status: { notIn: STATUS_INATIVOS }, ...filtroBarbeiro },
     include: { usuario: true, itens: { include: { servico: true } } },
     orderBy: { horaInicio: 'asc' },
   });

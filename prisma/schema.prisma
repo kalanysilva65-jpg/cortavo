@@ -84,6 +84,8 @@ model Barbearia {
   usoIA              UsoIA[]
   usoIAModelo        UsoIAModelo[]
   lembreteLogs       LembreteLog[]
+  comissaoPagamentos ComissaoPagamento[]
+  fechamentosCaixa   FechamentoCaixa[]
 
   @@map("barbearias")
 }
@@ -116,6 +118,7 @@ model Usuario {
   logsAuditoria    LogAuditoria[]
   metas            Meta[]
   precosServico    ServicoPrecoBarbeiro[]
+  comissoesPagas   ComissaoPagamento[]
 
   // E-mail único DENTRO de cada barbearia (o mesmo e-mail pode existir em barbearias diferentes).
   @@unique([barbeariaId, email])
@@ -206,6 +209,10 @@ model Servico {
   valor       Int // centavos
   duracaoMin  Int     @map("duracao_min") // usado para calcular os horários
   fotoUrl     String? @map("foto_url") // caminho da imagem em /uploads
+  // Versão QUADRADA e leve da foto (ex.: 240x240 WEBP) para o cartão da agenda
+  // pública não baixar a imagem de 1600 px (redesign v3). Gerada no navegador
+  // e conferida no servidor (services/imagemInfo.js). Nula = usa fotoUrl.
+  fotoMiniUrl String? @map("foto_mini_url")
   ativo              Boolean @default(true)
   ehProduto          Boolean @default(false) @map("eh_produto") // produto x serviço
   // "Encaixe": serviço que, agendado JUNTO com outro, não soma tempo (cabe no
@@ -275,7 +282,10 @@ model Agendamento {
   clienteTelefone String   @map("cliente_telefone")
   data            DateTime // dia do agendamento (00:00)
   horaInicio      String   @map("hora_inicio")
-  status          String   @default("agendado") // agendado | concluido | cancelado
+  // agendado | concluido | cancelado | faltou. "faltou" (no-show, spec 12 B3,
+  // decisão da Kalany 2026-10-05) é SEPARADO de cancelado: o cliente não veio.
+  // Lista única dos status em src/config/statusAgendamento.js.
+  status          String   @default("agendado")
   // Instante em que o atendimento foi CONCLUÍDO (nulo enquanto não for).
   //
   // Não dá para deduzir de `data`: o barbeiro conclui hoje um atendimento que
@@ -302,6 +312,15 @@ model Agendamento {
   // whatsapp (secretária IA) | barbeiro (manual no painel). Nulo = registros
   // anteriores a este campo (mostrados como "Anterior" no painel-mestre).
   origem          String?  @map("origem")
+  // Cancelamento (spec 12, B3/G13). Nulos nos registros anteriores a estes
+  // campos e em quem nunca foi cancelado. `canceladoPor` = quem pediu:
+  // equipe | cliente | secretaria | assistente. `canceladoPorId` = o usuário da
+  // equipe, quando foi a equipe (sem chave estrangeira de propósito: o
+  // histórico sobrevive à saída do barbeiro). Reabrir limpa os quatro.
+  canceladoEm        DateTime? @map("cancelado_em")
+  canceladoPor       String?   @map("cancelado_por")
+  canceladoPorId     Int?      @map("cancelado_por_id")
+  motivoCancelamento String?   @map("motivo_cancelamento")
   criadoEm        DateTime @default(now()) @map("criado_em")
 
   barbearia    Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
@@ -319,6 +338,9 @@ model Agendamento {
   // a agenda do dia da barbearia (painel).
   @@index([usuarioId, data])
   @@index([barbeariaId, data])
+  // Faturamento, ticket e atendimentos contam por `concluidoEm` (decisão de
+  // 2026-08-16); sem este índice a Gestão varria a tabela (spec 12, B3).
+  @@index([barbeariaId, concluidoEm])
   @@map("agendamentos")
 }
 
@@ -743,4 +765,63 @@ model UsoIAModelo {
 
   @@unique([barbeariaId, competencia, canal, modelo])
   @@map("uso_ia_modelo")
+}
+
+/// Baixa de comissão (spec 12, B3/B5/G15): o responsável marca como PAGA a
+/// comissão de um barbeiro num período. Hoje a comissão é só calculada
+/// (comissaoController); esta tabela guarda o que foi pago, quando e por quem.
+/// `valorCalculado` é o que o app calculou no momento da baixa (para conferir
+/// depois se alguém reabriu um atendimento do período). `caixaId` = saída
+/// lançada no caixa junto com a baixa (opcional).
+model ComissaoPagamento {
+  id             Int      @id @default(autoincrement())
+  barbeariaId    Int      @map("barbearia_id")
+  usuarioId      Int      @map("usuario_id") // barbeiro que recebeu
+  periodoInicio  DateTime @map("periodo_inicio") // 1º dia do período (00:00)
+  periodoFim     DateTime @map("periodo_fim") // último dia do período, incluso (00:00)
+  valor          Int // centavos pagos
+  valorCalculado Int      @map("valor_calculado") // centavos calculados na hora da baixa
+  pagoEm         DateTime @default(now()) @map("pago_em")
+  pagoPorId      Int?     @map("pago_por_id") // quem deu baixa (sem FK: sobrevive à saída)
+  pagoPorNome    String   @map("pago_por_nome")
+  observacao     String?
+  caixaId        Int?     @map("caixa_id")
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([barbeariaId, usuarioId, periodoInicio])
+  @@map("comissao_pagamentos")
+}
+
+/// Fechamento do caixa do dia (redesign v3, F6: "Fechar o caixa de hoje").
+/// Um por barbearia por dia. Guarda o resumo do dia NO MOMENTO do fechamento
+/// (entradas, saídas, por forma de pagamento) e a conferência da gaveta:
+/// `dinheiroEsperado` = fundo inicial + entradas em dinheiro − saídas em
+/// dinheiro; `diferenca` = contado − esperado (negativo = faltou dinheiro).
+/// Fechar de novo o mesmo dia ("refazer") atualiza o registro e soma `vezes`.
+/// Não trava lançamentos: é um registro de conferência, não um bloqueio.
+model FechamentoCaixa {
+  id               Int      @id @default(autoincrement())
+  barbeariaId      Int      @map("barbearia_id")
+  dia              DateTime // o dia fechado (00:00 local)
+  fechadoEm        DateTime @default(now()) @map("fechado_em")
+  fechadoPorId     Int?     @map("fechado_por_id") // sem FK: o registro sobrevive à saída da pessoa
+  fechadoPorNome   String   @map("fechado_por_nome")
+  entradas         Int // centavos
+  saidas           Int // centavos
+  saldo            Int // centavos (entradas − saídas)
+  porForma         String   @map("por_forma") // JSON { pix, credito, debito, dinheiro, sem_forma } das entradas
+  atendimentos     Int // atendimentos concluídos no dia
+  fundoInicial     Int      @default(0) @map("fundo_inicial") // troco que já estava na gaveta (centavos)
+  dinheiroEsperado Int      @map("dinheiro_esperado")
+  dinheiroContado  Int      @map("dinheiro_contado")
+  diferenca        Int
+  observacao       String?
+  vezes            Int      @default(1) // quantas vezes o dia foi fechado
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@unique([barbeariaId, dia])
+  @@map("fechamentos_caixa")
 }

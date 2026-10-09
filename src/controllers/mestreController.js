@@ -11,6 +11,8 @@ const auditoria = require('../services/auditoria');
 const testeGratis = require('../services/testeGratis');
 const planoCortavo = require('../services/planoCortavo');
 const custosIA = require('../services/custosIA');
+const permissoes = require('../services/permissoes');
+const visaoGeralMestre = require('../services/visaoGeralMestre');
 const canaisMensagens = require('../services/canaisMensagens');
 
 // Quantas barbearias por página na lista (paginação server-side).
@@ -342,7 +344,8 @@ async function criarBarbeiro(req, res) {
   }
 
   const novo = await prisma.usuario.create({
-    data: { barbeariaId: barbearia.id, nome, email, senhaHash: await bcrypt.hash(senha, 10), papel },
+    // Spec 12 (B1): funcionário novo nasce com o padrão NOVO de permissões.
+    data: { barbeariaId: barbearia.id, nome, email, senhaHash: await bcrypt.hash(senha, 10), papel, ...(papel === 'funcionario' ? { acessosBloqueados: permissoes.padraoNovoSerializado() } : {}) },
   });
   await auditoria.registrar(req, {
     acao: 'usuario.criar',
@@ -734,6 +737,13 @@ async function sair(req, res) {
   res.redirect('/mestre');
 }
 
+// GET /mestre/visao-geral.json — os 4 números e o "Precisa de atenção" da
+// Visão geral (redesign v3, F10). Só o dono (router.use(exigeDono)).
+async function visaoGeralJson(req, res) {
+  res.set('Cache-Control', 'private, no-store');
+  res.json(await visaoGeralMestre.visaoGeral({ backup: statusBackup() }));
+}
+
 // GET /mestre/uso — uso & custos de IA por barbearia (mês). ?competencia=AAAA-MM.
 async function usoCustos(req, res) {
   const dados = await custosIA.resumo(req.query.competencia);
@@ -756,6 +766,7 @@ module.exports = {
   painel,
   usoCustos,
   usoCustosJson,
+  visaoGeralJson,
   canaisMensagensView,
   formNova,
   criarBarbearia,
