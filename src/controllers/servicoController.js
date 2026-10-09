@@ -5,6 +5,31 @@ const prisma = require('../config/db');
 const precos = require('../services/precos');
 const fs = require('fs');
 const { caminhoDoUpload } = require('../config/paths');
+const { lerDimensoes } = require('../services/imagemInfo');
+
+// Miniatura quadrada (redesign v3): o navegador recorta e reduz a foto e manda
+// em `fotoMini`. Aqui só se aceita o que é, DE FATO, uma imagem quadrada
+// pequena: confere os bytes (não a extensão), o tamanho e as dimensões.
+// Inválida = apagada; a foto grande continua valendo (a tela usa fotoUrl).
+const MINI_MAX_BYTES = 200 * 1024;
+const MINI_LADO_MIN = 64;
+const MINI_LADO_MAX = 480;
+const EXT_DO_FORMATO = { webp: ['.webp'], jpeg: ['.jpg', '.jpeg'], png: ['.png'] };
+function miniValida(arquivo) {
+  if (!arquivo) return null;
+  const url = '/uploads/' + arquivo.filename;
+  try {
+    const caminho = caminhoDoUpload(url);
+    const buf = fs.readFileSync(caminho);
+    const info = lerDimensoes(buf);
+    const ext = String(require('path').extname(arquivo.filename)).toLowerCase();
+    const ok = buf.length <= MINI_MAX_BYTES && info && (EXT_DO_FORMATO[info.formato] || []).includes(ext) &&
+      info.largura === info.altura && info.largura >= MINI_LADO_MIN && info.largura <= MINI_LADO_MAX;
+    if (ok) return url;
+  } catch (_) { /* cai no apagar */ }
+  apagarFoto(url);
+  return null;
+}
 
 // "40.50" / "40" -> 4050 (centavos). Retorna null se inválido.
 function reaisParaCentavos(valorStr) {
@@ -24,7 +49,8 @@ async function removerFoto(req, res) {
   const s = await prisma.servico.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
   if (!s) return res.redirect('/painel/servicos');
   if (s.fotoUrl) apagarFoto(s.fotoUrl);
-  await prisma.servico.update({ where: { id: s.id }, data: { fotoUrl: null } });
+  if (s.fotoMiniUrl) apagarFoto(s.fotoMiniUrl); // a miniatura vai junto
+  await prisma.servico.update({ where: { id: s.id }, data: { fotoUrl: null, fotoMiniUrl: null } });
   req.session.flash = { tipo: 'sucesso', texto: 'Foto removida.' };
   res.redirect(destino(s.ehProduto));
 }
@@ -173,14 +199,17 @@ async function criar(req, res) {
   const ehEncaixe = !ehProduto && req.body.ehEncaixe === 'on';
   const comissaoPercentual = Math.min(100, Math.max(0, parseFloat(req.body.comissaoPercentual) || 10));
   const fotoUrl = req.file ? '/uploads/' + req.file.filename : null;
+  // Miniatura só acompanha uma foto (sozinha não faz sentido).
+  const fotoMiniUrl = fotoUrl ? miniValida(req.fileMini) : (req.fileMini && apagarFoto('/uploads/' + req.fileMini.filename), null);
 
   if (!nome || valor === null) {
     if (fotoUrl) apagarFoto(fotoUrl);
+    if (fotoMiniUrl) apagarFoto(fotoMiniUrl);
     req.session.flash = { tipo: 'erro', texto: 'Informe ao menos nome e um valor válido.' };
     return res.redirect(destino(ehProduto));
   }
 
-  const novoServico = await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual, fotoUrl } });
+  const novoServico = await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual, fotoUrl, fotoMiniUrl } });
   await salvarInsumos(req.barbeariaId, novoServico.id, req.body);
   if (!ehProduto) await precos.salvarPrecosDoForm(req.barbeariaId, novoServico.id, req.body, reaisParaCentavos);
   req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto criado.' : 'Serviço criado.' };
@@ -205,6 +234,7 @@ async function atualizar(req, res) {
   const servico = await prisma.servico.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
   if (!servico) {
     if (req.file) apagarFoto('/uploads/' + req.file.filename);
+    if (req.fileMini) apagarFoto('/uploads/' + req.fileMini.filename);
     return res.redirect('/painel/servicos');
   }
 
@@ -219,6 +249,7 @@ async function atualizar(req, res) {
 
   if (!nome || valor === null) {
     if (req.file) apagarFoto('/uploads/' + req.file.filename);
+    if (req.fileMini) apagarFoto('/uploads/' + req.fileMini.filename);
     req.session.flash = { tipo: 'erro', texto: 'Informe ao menos nome e um valor válido.' };
     return res.redirect(destino(servico.ehProduto));
   }
@@ -226,7 +257,16 @@ async function atualizar(req, res) {
   const data = { nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual };
   if (req.file) {
     apagarFoto(servico.fotoUrl); // remove a foto antiga
+    apagarFoto(servico.fotoMiniUrl); // e a miniatura dela
     data.fotoUrl = '/uploads/' + req.file.filename;
+    data.fotoMiniUrl = miniValida(req.fileMini);
+  } else if (req.fileMini) {
+    // Só um novo recorte da MESMA foto ("moldura do recorte"): troca a miniatura.
+    const nova = servico.fotoUrl ? miniValida(req.fileMini) : (apagarFoto('/uploads/' + req.fileMini.filename), null);
+    if (nova) {
+      apagarFoto(servico.fotoMiniUrl);
+      data.fotoMiniUrl = nova;
+    }
   }
 
   await prisma.servico.update({ where: { id }, data });
@@ -253,6 +293,7 @@ async function remover(req, res) {
   try {
     await prisma.servico.delete({ where: { id } });
     apagarFoto(s.fotoUrl);
+    apagarFoto(s.fotoMiniUrl);
     req.session.flash = { tipo: 'sucesso', texto: s.ehProduto ? 'Produto excluído.' : 'Serviço excluído.' };
   } catch (e) {
     // Está referenciado em agendamentos: desativa em vez de excluir.

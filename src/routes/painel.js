@@ -48,12 +48,17 @@ function uploadMidiaWa(req, res, next) {
 }
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
+// Serviços aceitam, além da `foto`, a miniatura quadrada `fotoMini` (redesign
+// v3); o controller continua lendo a foto em `req.file` e a miniatura em `req.fileMini`.
 function uploadFoto(req, res, next) {
-  upload.single('foto')(req, res, (err) => {
+  upload.fields([{ name: 'foto', maxCount: 1 }, { name: 'fotoMini', maxCount: 1 }])(req, res, (err) => {
     if (err) {
       req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
       return res.redirect('/painel/servicos');
     }
+    const f = req.files || {};
+    req.file = (f.foto && f.foto[0]) || undefined;
+    req.fileMini = (f.fotoMini && f.fotoMini[0]) || undefined;
     next();
   });
 }

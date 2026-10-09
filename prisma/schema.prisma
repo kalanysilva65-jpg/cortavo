@@ -209,6 +209,10 @@ model Servico {
   valor       Int // centavos
   duracaoMin  Int     @map("duracao_min") // usado para calcular os horários
   fotoUrl     String? @map("foto_url") // caminho da imagem em /uploads
+  // Versão QUADRADA e leve da foto (ex.: 240x240 WEBP) para o cartão da agenda
+  // pública não baixar a imagem de 1600 px (redesign v3). Gerada no navegador
+  // e conferida no servidor (services/imagemInfo.js). Nula = usa fotoUrl.
+  fotoMiniUrl String? @map("foto_mini_url")
   ativo              Boolean @default(true)
   ehProduto          Boolean @default(false) @map("eh_produto") // produto x serviço
   // "Encaixe": serviço que, agendado JUNTO com outro, não soma tempo (cabe no
