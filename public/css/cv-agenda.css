@@ -122,3 +122,4 @@
 .cv-ag-plano-tag { font-weight: 600; color: var(--c-tinta-2); }
 #form-novo-agendamento > .cv-campo:not(:first-child) { margin-top: 18px; }
 .cv-ag-chips { padding-bottom: 2px; }
+.cv-ag-folha .cv-entrada:not(:focus) { background: var(--c-bloco-2); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
