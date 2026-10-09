@@ -1,0 +1,168 @@
+<%/* Números da Gestão (fatia F5; spec 12 §3; mockup redesign/v3/prints/05-gestao).
+     Só aparece quando a rota entrega `gestao` (contrato abaixo), que vem do
+     TODO(Beto B4): services/metricas.js + /painel/api/gestao/*, já recortado
+     por papel, permissão e plano. Cada cartão aparece só se o dado dele vier;
+     sem dado, o cartão não existe (nada inventado). Valores em centavos.
+
+     gestao = {
+       rotulo: 'Últimos 7 dias', comparacao: 'vs. 7 dias anteriores',
+       faturamento:  { valor, anterior, serie: [], serieAnt: [], eixo: [] },   G1
+       ocupacao:     { pct, anterior, frase, mapa: { dias, faixas, valores: [[0..4]] } }, G5
+       ticket:       { valor, anterior, spark: [] },                          G3
+       atendimentos: { valor, anterior, spark: [] },                          G4
+       equipe:       [{ nome, valor }],                                       G7 (ranking_equipe)
+       servicos:     [{ nome, qtd }],                                         G8
+       clientes:     { novos, recorrentes },                                  G10
+       faltas:       { valor, anterior, total },                              G14 (B3)
+       comissoes:    { valor, texto },                                        G15
+       pagamentos:   [{ rot, valor }],                                        G16
+       metas:        { pct, texto },                                          G17
+       lucro:        { valor, gastos },                                       G18
+       caixaHoje:    { saldo, texto },
+     }
+     Cada cartão abre a tela que já tem o detalhe; a folha de detalhe com M7
+     (View Transitions) entra junto com os endpoints de detalhe do B4. */%>
+<%
+  var G = gestao;
+  function milhar(n) { return String(Math.round(Math.abs(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function partes(centavos, casas) {
+    var v = Math.abs(centavos || 0) / 100;
+    if (!casas) return { int: (centavos < 0 ? '−' : '') + milhar(Math.floor(v)), cent: '' };
+    var s = v.toFixed(2).split('.'); return { int: (centavos < 0 ? '−' : '') + milhar(+s[0]), cent: ',' + s[1] };
+  }
+  function pctBR(x) { var s = (Math.round(Math.abs(x) * 1000) / 10).toFixed(1).split('.'); return milhar(+s[0]) + ',' + s[1] + '%'; }
+  // Variação: seta + porcentagem, sem cor (a seta e o texto dizem). Sem base: "Sem período anterior".
+  function delta(v, ant, inverso) {
+    if (!ant) return '<span class="cv-delta">Sem período anterior</span>';
+    var d = (v - ant) / ant, sobe = d >= 0, bom = inverso ? !sobe : sobe;
+    return '<span class="cv-delta' + (bom ? '' : ' cv-delta--cai') + '"><svg viewBox="0 0 12 12" aria-hidden="true">' + (sobe ? '<path d="M3 9 9 3M4 3h5v5"/>' : '<path d="M3 3l6 6M9 4v5H4"/>') + '</svg>' + pctBR(d) + '<span class="cv-oculto">' + (sobe ? ' a mais que o período anterior' : ' a menos que o período anterior') + '</span></span>';
+  }
+  function spark(s) {
+    if (!s || s.length < 2) return '';
+    var mx = Math.max.apply(null, s), mn = Math.min.apply(null, s), w = 100, h = 36;
+    var d = s.map(function (v, i) { return (i ? 'L' : 'M') + (i / (s.length - 1) * w).toFixed(1) + ' ' + (h - 3 - (v - mn) / ((mx - mn) || 1) * (h - 6)).toFixed(1); }).join('');
+    return '<svg class="cv-spark" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + '" vector-effect="non-scaling-stroke"/></svg>';
+  }
+  var semNumeros = (!G.faturamento || !G.faturamento.valor) && (!G.atendimentos || !G.atendimentos.valor);
+%>
+<% if (semNumeros) { %>
+  <div class="cv-secao" style="margin-top:16px">
+    <div class="cv-cartao">
+      <div class="cv-vazio-graf" aria-hidden="true"><% [38, 52, 44, 70, 86, 4, 58].forEach(function (v) { %><i style="height:<%= v %>%"></i><% }) %></div>
+      <div class="cv-vazio" style="padding:24px 8px 8px" role="status">
+        <h2>Os números chegam com os atendimentos</h2>
+        <p>Faturamento, ocupação, equipe e clientes aparecem aqui assim que o primeiro atendimento for concluído no caixa.</p>
+        <div class="acoes"><a class="cv-btn" href="/painel/agenda"><%- include('../partials/icone', { cvIc: 'agenda', cvCls: 'cv-ic--20' }) %>Abrir a agenda</a></div>
+      </div>
+    </div>
+  </div>
+<% } else { %>
+<div class="cv-secao" style="margin-top:16px">
+  <% if (G.caixaHoje) { var cx = partes(G.caixaHoje.saldo, 2); %>
+    <a class="cv-cartao cv-toca cv-g-caixa" href="/painel/caixa">
+      <%- include('../partials/icone', { cvIc: 'caixa' }) %>
+      <span class="corpo"><b>Caixa de hoje</b><span><%= G.caixaHoje.texto || '' %></span></span>
+      <b class="valor">R$&nbsp;<%= cx.int %><%= cx.cent %></b>
+      <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+  <% } %>
+
+  <% if (G.faturamento) { var F = G.faturamento, fp = partes(F.valor, 2), serie = F.serie || [], ant = F.serieAnt || [], mx = Math.max.apply(null, serie.concat(ant).concat([1])); %>
+    <a class="cv-cartao cv-toca" href="/painel/relatorios" style="margin-top:12px">
+      <div class="cv-resumo">
+        <span class="rot">Faturamento<%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--16' }) %></span>
+        <span class="cv-num cv-num--g" data-dig="<%= fp.int.length %>"><span class="moeda">R$</span><span class="int"><%= fp.int %></span><span class="cent"><%= fp.cent %></span></span>
+        <%- delta(F.valor, F.anterior) %>
+        <% if (serie.length) { %>
+          <div class="mini">
+            <div class="cv-barras" style="--alt:96px" role="img" aria-label="Faturamento por dia, com o período anterior em contorno">
+              <% serie.forEach(function (v, i) { %><div class="col"><i class="sombra" style="height:<%= ((ant[i] || 0) / mx * 100).toFixed(1) %>%"></i><i class="barra" data-v="<%= (v / mx).toFixed(4) %>" style="transform:scaleY(<%= Math.max(v / mx, 0.0001).toFixed(4) %>)"></i></div><% }) %>
+            </div>
+            <div class="cv-eixo"><% (F.eixo || []).forEach(function (e) { %><span><%= e %></span><% }) %></div>
+          </div>
+          <div class="cv-legenda-graf"><span><i class="q"></i><%= G.rotulo %></span><span><i class="q q--sombra"></i>Período anterior</span></div>
+        <% } %>
+      </div>
+    </a>
+  <% } %>
+
+  <% if (G.ocupacao) { %>
+    <a class="cv-cartao cv-toca" href="/painel/relatorios" style="margin-top:12px">
+      <div class="cv-resumo">
+        <span class="rot">Ocupação<%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--16' }) %></span>
+        <div class="cv-g-linha"><span class="cv-num cv-num--m"><span class="int"><%= Math.round(G.ocupacao.pct) %></span><span class="de">%</span></span><%- delta(G.ocupacao.pct, G.ocupacao.anterior) %></div>
+        <% if (G.ocupacao.frase) { %><p class="cv-g-frase"><%= G.ocupacao.frase %></p><% } %>
+        <% var MP = G.ocupacao.mapa; if (MP && MP.valores && MP.valores.length) { %>
+          <div class="cv-mapa" role="img" aria-label="Ocupação por dia da semana e faixa de hora, do mais vazio (claro) ao mais cheio (escuro)" style="margin-top:14px">
+            <span></span><% (MP.dias || []).forEach(function (d) { %><span class="t"><%= d %></span><% }) %>
+            <% MP.valores.forEach(function (linha, fi) { %><span class="r"><%= (MP.faixas || [])[fi] || '' %></span><% linha.forEach(function (n) { %><span class="c" data-n="<%= Math.max(0, Math.min(4, n | 0)) %>"></span><% }) %><% }) %>
+          </div>
+        <% } %>
+      </div>
+    </a>
+  <% } %>
+
+  <% if (G.ticket || G.atendimentos) { %>
+    <div class="cv-grade" style="margin-top:12px">
+      <% if (G.ticket) { var tp = partes(G.ticket.valor, 2); %>
+        <a class="cv-cartao cv-toca" href="/painel/relatorios"><div class="cv-resumo"><span class="rot">Ticket médio</span><span class="cv-num cv-num--p"><span class="moeda">R$</span><span class="int"><%= tp.int %></span><span class="cent"><%= tp.cent %></span></span><%- delta(G.ticket.valor, G.ticket.anterior) %><div class="mini"><%- spark(G.ticket.spark) %></div></div></a>
+      <% } %>
+      <% if (G.atendimentos) { %>
+        <a class="cv-cartao cv-toca" href="/painel/agenda"><div class="cv-resumo"><span class="rot">Atendimentos</span><span class="cv-num cv-num--p"><span class="int"><%= milhar(G.atendimentos.valor) %></span></span><%- delta(G.atendimentos.valor, G.atendimentos.anterior) %><div class="mini"><%- spark(G.atendimentos.spark) %></div></div></a>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (G.equipe && G.equipe.length) { var topo = Math.max.apply(null, G.equipe.map(function (b) { return b.valor; }).concat([1])); %>
+    <a class="cv-cartao cv-toca" href="/painel/relatorios" style="margin-top:12px">
+      <div class="cv-cartao-cab"><h3>Desempenho da equipe</h3><span class="lado">Faturamento<%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--16' }) %></span></div>
+      <div class="cv-hbarras">
+        <% G.equipe.forEach(function (b) { var bp = partes(b.valor, 0); %><div class="cv-hbarra"><span class="nome"><%= b.nome %></span><span class="valor">R$&nbsp;<%= bp.int %></span><span class="trilho"><b style="transform:scaleX(<%= (b.valor / topo).toFixed(4) %>)"></b></span></div><% }) %>
+      </div>
+    </a>
+  <% } %>
+
+  <% if (G.servicos && G.servicos.length) { var topoS = Math.max.apply(null, G.servicos.map(function (s) { return s.qtd; }).concat([1])); %>
+    <a class="cv-cartao cv-toca" href="/painel/relatorios" style="margin-top:12px">
+      <div class="cv-cartao-cab"><h3>Serviços mais vendidos</h3><span class="lado"><%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--16' }) %></span></div>
+      <div class="cv-hbarras">
+        <% G.servicos.forEach(function (s) { %><div class="cv-hbarra"><span class="nome"><%= s.nome %></span><span class="valor"><%= milhar(s.qtd) %></span><span class="trilho"><b style="transform:scaleX(<%= (s.qtd / topoS).toFixed(4) %>);background:var(--d-2)"></b></span></div><% }) %>
+      </div>
+    </a>
+  <% } %>
+
+  <% if (G.clientes || G.faltas) { %>
+    <div class="cv-grade" style="margin-top:12px">
+      <% if (G.clientes) { var tot = (G.clientes.novos + G.clientes.recorrentes) || 1; %>
+        <a class="cv-cartao cv-toca" href="/painel/clientes"><div class="cv-resumo"><span class="rot">Clientes novos</span><span class="cv-num cv-num--p"><span class="int"><%= milhar(G.clientes.novos) %></span></span><span class="cv-delta">de <%= milhar(G.clientes.novos + G.clientes.recorrentes) %> clientes</span><div class="mini"><div class="cv-pilha" role="img" aria-label="<%= Math.round(G.clientes.novos / tot * 100) %>% novos"><i style="width:<%= (G.clientes.novos / tot * 100).toFixed(1) %>%"></i><i style="width:<%= (G.clientes.recorrentes / tot * 100).toFixed(1) %>%;background:var(--d-trilho)"></i></div></div></div></a>
+      <% } %>
+      <% if (G.faltas) { %>
+        <a class="cv-cartao cv-toca" href="/painel/agenda"><div class="cv-resumo"><span class="rot">Faltas</span><span class="cv-num cv-num--p"><span class="int"><%= milhar(G.faltas.valor) %></span></span><%- delta(G.faltas.valor, G.faltas.anterior, true) %><div class="mini cv-g-nota"><%= G.faltas.total ? pctBR(G.faltas.valor / G.faltas.total) : '0%' %> dos agendamentos</div></div></a>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (G.comissoes) { var cp = partes(G.comissoes.valor, 2); %>
+    <a class="cv-cartao cv-toca" href="/painel/comissoes" style="margin-top:12px"><div class="cv-resumo"><span class="rot">Comissões a pagar<%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--16' }) %></span><span class="cv-num cv-num--m"><span class="moeda">R$</span><span class="int"><%= cp.int %></span><span class="cent"><%= cp.cent %></span></span><% if (G.comissoes.texto) { %><span class="cv-delta"><%= G.comissoes.texto %></span><% } %></div></a>
+  <% } %>
+
+  <% if (G.pagamentos && G.pagamentos.length) { var totP = G.pagamentos.reduce(function (s, p) { return s + p.valor; }, 0) || 1; var TONS = ['var(--d-1)', 'var(--d-2)', 'var(--d-3)', 'var(--d-trilho)']; %>
+    <a class="cv-cartao cv-toca" href="/painel/caixa" style="margin-top:12px">
+      <div class="cv-cartao-cab"><h3>Formas de pagamento</h3><span class="lado"><%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--16' }) %></span></div>
+      <div class="cv-pilha" role="img" aria-label="<%= G.pagamentos.map(function (p) { return p.rot + ' ' + Math.round(p.valor / totP * 100) + '%'; }).join(', ') %>"><% G.pagamentos.slice(0, 4).forEach(function (p) { %><i style="width:<%= (p.valor / totP * 100).toFixed(1) %>%"></i><% }) %></div>
+      <div class="cv-pilha-leg"><% G.pagamentos.slice(0, 4).forEach(function (p, i) { %><div><i style="background:<%= TONS[i] %>"></i><span><%= p.rot %></span><b>R$&nbsp;<%= partes(p.valor, 0).int %></b><span><%= Math.round(p.valor / totP * 100) %>%</span></div><% }) %></div>
+    </a>
+  <% } %>
+
+  <% if (G.metas || G.lucro) { %>
+    <div class="cv-grade" style="margin-top:12px">
+      <% if (G.metas) { var mp = Math.max(0, Math.min(1, G.metas.pct / 100)); %>
+        <a class="cv-cartao cv-toca" href="/painel/metas"><div class="cv-resumo"><span class="rot">Meta do mês</span><div class="cv-g-linha" style="margin-top:10px"><svg class="cv-aneis" width="58" height="58" viewBox="0 0 58 58" role="img" aria-label="Meta <%= Math.round(G.metas.pct) %>%"><circle class="trilho" cx="29" cy="29" r="25" stroke-width="8"/><circle class="arco" cx="29" cy="29" r="25" stroke-width="8" style="stroke:var(--d-1)" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="<%= (100 - mp * 100).toFixed(1) %>" data-p="<%= mp %>"/></svg><span class="cv-num cv-num--p"><span class="int"><%= Math.round(G.metas.pct) %></span><span class="de">%</span></span></div><% if (G.metas.texto) { %><span class="cv-delta" style="margin-top:10px"><%= G.metas.texto %></span><% } %></div></a>
+      <% } %>
+      <% if (G.lucro) { var lp = partes(G.lucro.valor, 0); %>
+        <a class="cv-cartao cv-toca" href="/painel/relatorios"><div class="cv-resumo"><span class="rot">Lucro</span><span class="cv-num cv-num--p"><span class="moeda">R$</span><span class="int"><%= lp.int %></span></span><span class="cv-delta">gastos R$&nbsp;<%= partes(G.lucro.gastos, 0).int %></span></div></a>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+<% } %>

@@ -105,8 +105,33 @@
     try { g.history.replaceState(null, '', g.location.pathname + (q.toString() ? '?' + q : '') + g.location.hash); } catch (e) {}
   }
 
+  /* Seletor de período em vidro: o indicador preto fica sob o período
+     escolhido; ao tocar outro, desliza com a mola `lente` e o formulário vai. */
+  function seletorPeriodo() {
+    var sel = doc.querySelector('.cv-periodo'); if (!sel || !C) return;
+    var ind = sel.querySelector('.ind');
+    function por(b, animar) {
+      if (!ind || !b) return;
+      var rs = sel.getBoundingClientRect(), rb = b.getBoundingClientRect(), x = rb.left - rs.left;
+      ind.style.width = rb.width + 'px';
+      var fim = 'translateX(' + x + 'px)';
+      if (!animar || C.reduz()) { ind.style.transform = fim; return; }
+      var ini = getComputedStyle(ind).transform; ind.style.transform = fim;
+      var m = g.Mola.mola(g.Mola.MOLAS.lente);
+      ind.animate([{ transform: ini }, { transform: fim }], { duration: m.duracao, easing: m.easing });
+    }
+    por(sel.querySelector('button[aria-pressed="true"]'), false);
+    sel.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('button[name="periodo"]');
+      if (!b) return;
+      Array.prototype.forEach.call(sel.querySelectorAll('button[name="periodo"]'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      por(b, true);
+    });
+  }
+
   function iniciar() {
     navbar();
+    seletorPeriodo();
     folhaNovo();
     abrirPelaUrl();
     avisosDoServidor();

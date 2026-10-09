@@ -61,8 +61,30 @@
     </div>
   </div>
 <% } else { %>
+  <% var temNumeros = typeof gestao !== 'undefined' && gestao; %>
+  <% if (temNumeros) { %>
+    <%/* Seletor de período em vidro (spec 12): o estado vai na URL
+         (?periodo= ou ?de=&ate=) e vale para todos os cartões. */%>
+    <% var per = (typeof periodo !== 'undefined' && periodo) || 'semana'; %>
+    <div class="cv-periodo-faixa">
+      <form class="cv-periodo" method="get" action="/painel/gestao" role="group" aria-label="Período">
+        <span class="ind" aria-hidden="true"></span>
+        <% [['hoje', 'Hoje'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']].forEach(function (q) { %>
+          <button type="submit" name="periodo" value="<%= q[0] %>" aria-pressed="<%= per === q[0] ? 'true' : 'false' %>"><%= q[1] %></button>
+        <% }) %>
+        <button type="button" class="cal" aria-label="Escolher datas" aria-expanded="<%= per === 'datas' ? 'true' : 'false' %>" aria-controls="g-datas" onclick="var d=document.getElementById('g-datas');d.hidden=!d.hidden;this.setAttribute('aria-expanded',String(!d.hidden))"><%- include('../partials/icone', { cvIc: 'calendario', cvCls: 'cv-ic--20' }) %></button>
+      </form>
+      <form id="g-datas" class="cv-g-datas" method="get" action="/painel/gestao"<% if (per !== 'datas') { %> hidden<% } %>>
+        <label class="cv-campo"><span class="cv-rotulo">De</span><input class="cv-entrada" type="date" name="de" value="<%= (typeof de !== 'undefined' && de) || '' %>" required /></label>
+        <label class="cv-campo"><span class="cv-rotulo">Até</span><input class="cv-entrada" type="date" name="ate" value="<%= (typeof ate !== 'undefined' && ate) || '' %>" required /></label>
+        <button class="cv-btn cv-btn--p" type="submit">Ver</button>
+      </form>
+      <div class="cv-comparar"><span><%= gestao.rotulo || '' %></span><span><%= gestao.comparacao || '' %></span></div>
+    </div>
+    <%- include('_gestao-numeros') %>
+  <% } %>
   <% secoes.forEach(function (sec, i) { if (!sec.itens.length) return; %>
-    <section class="cv-secao" style="margin-top:<%= i === 0 ? 20 : 28 %>px" aria-labelledby="gestao-<%= i %>">
+    <section class="cv-secao" style="margin-top:<%= (i === 0 && !temNumeros) ? 20 : 28 %>px" aria-labelledby="gestao-<%= i %>">
       <div class="cv-secao-cab"><h2 id="gestao-<%= i %>"><%= sec.t %></h2></div>
       <ul class="cv-lista">
         <% sec.itens.forEach(function (it) { %>

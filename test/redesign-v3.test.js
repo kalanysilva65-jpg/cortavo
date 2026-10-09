@@ -97,7 +97,7 @@ test('F1 rotas: Mais é a lista de seções, Perfil tem rota própria, Gestão e
   const rotas = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
   assert.match(rotas, /router\.get\('\/mais', \(req, res\) => res\.render\('painel\/mais'/);
   assert.match(rotas, /router\.get\('\/perfil', perfilController\.ver\)/);
-  assert.match(rotas, /router\.get\('\/gestao', \(req, res\) => res\.render\('painel\/gestao'/);
+  assert.match(rotas, /router\.get\('\/gestao', \(req, res\) => \{[\s\S]*?res\.render\('painel\/gestao'/);
   assert.doesNotMatch(rotas.split("router.get('/gestao'")[1].split('\n')[0], /exigeAdmin/);
   const horario = fs.readFileSync(path.join(RAIZ, 'src/controllers/horarioController.js'), 'utf8');
   assert.match(horario, /perfil: '\/painel\/perfil'/);
@@ -249,4 +249,34 @@ test('F4 Agenda: livres só com um barbeiro na tela; barbeiro sem horários libe
   const js = fs.readFileSync(path.join(RAIZ, 'public/js/cv-agenda.js'), 'utf8');
   assert.ok(js.includes("fetch('/painel/agenda/horarios?'"));
   assert.ok(js.includes("g.Cortavo.selo({ titulo: 'Agendamento confirmado'"));
+});
+
+// ---------- F5: Gestão com números (contrato do B4) ----------
+const GESTAO_FALSA = {
+  rotulo: 'Últimos 7 dias', comparacao: 'vs. 7 dias anteriores',
+  faturamento: { valor: 1245050, anterior: 1108000, serie: [120000, 180000, 160000, 210000, 260000, 0, 180000], serieAnt: [110000, 150000, 170000, 190000, 230000, 0, 160000], eixo: ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom', 'Seg'] },
+  ticket: { valor: 5230, anterior: 5100, spark: [50, 52, 51, 54, 53] }, atendimentos: { valor: 238, anterior: 0, spark: [30, 34, 31, 40, 45] },
+  equipe: [{ nome: 'Diego Santos', valor: 512000 }, { nome: 'Rafael Moreira', valor: 401000 }],
+};
+test('F5 Gestão: com o dado do B4 aparecem seletor de período e cartões; sem o dado, nenhum número', async () => {
+  const sem = await render('painel/gestao.ejs', locais({ caminho: '/painel/gestao' }));
+  assert.doesNotMatch(sem, /cv-periodo|cv-num/);
+  const com = await render('painel/gestao.ejs', { ...locais({ caminho: '/painel/gestao' }), gestao: GESTAO_FALSA, periodo: 'mes' });
+  assert.match(com, /name="periodo" value="mes" aria-pressed="true"/);
+  assert.match(com, /Últimos 7 dias/);
+  assert.match(com, /<span class="int">12\.450<\/span><span class="cent">,50<\/span>/);
+  assert.match(com, /Sem período anterior/); // atendimentos sem base
+  assert.match(com, /cv-delta--cai|cv-delta"/);
+  assert.equal((com.match(/class="col"/g) || []).length, 7);
+  assert.match(com, /Desempenho da equipe/);
+  for (const ausente of ['Formas de pagamento', 'Comissões a pagar', 'Faltas', 'Lucro', 'Meta do mês', 'Ocupação<']) assert.ok(!com.includes(ausente), ausente);
+  assert.match(com, /href="\/painel\/caixa"/); // a lista de telas continua embaixo
+  const vazio = await render('painel/gestao.ejs', { ...locais({ caminho: '/painel/gestao' }), gestao: { rotulo: 'Hoje', faturamento: { valor: 0 }, atendimentos: { valor: 0 } } });
+  assert.match(vazio, /Os números chegam com os atendimentos/);
+});
+
+test('F5 rota: período validado na URL, números só com o B4', () => {
+  const rotas = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
+  assert.ok(rotas.includes("['hoje', 'semana', 'mes', 'ano'].includes(req.query.periodo)"));
+  assert.ok(rotas.includes('gestao: null'));
 });

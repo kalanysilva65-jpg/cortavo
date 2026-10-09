@@ -182,7 +182,16 @@ router.post('/perfil/jornada', horarioController.salvarJornada);
 // TODO(Beto B4): cartões-resumo da Gestão com /painel/api/gestao/*.
 router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Mais' }));
 router.get('/perfil', perfilController.ver);
-router.get('/gestao', (req, res) => res.render('painel/gestao', { titulo: 'Gestão' }));
+router.get('/gestao', (req, res) => {
+  // Período na URL (spec 12): ?periodo=hoje|semana|mes|ano ou ?de=&ate=.
+  // Só é validado aqui; os números (`gestao`) chegam com o B4 e, sem eles, a
+  // tela mostra a lista de telas, sem seletor e sem número inventado.
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const { de, ate } = req.query;
+  const datas = ISO.test(de || '') && ISO.test(ate || '') && de <= ate;
+  const periodo = datas ? 'datas' : (['hoje', 'semana', 'mes', 'ano'].includes(req.query.periodo) ? req.query.periodo : 'semana');
+  res.render('painel/gestao', { titulo: 'Gestão', periodo, de: datas ? de : null, ate: datas ? ate : null, gestao: null });
+});
 // Fase 2.4: plano da Cortavo da barbearia (só admin/dono; barbeiro não vê plano).
 router.get('/meu-plano', exigeAdmin, meuPlanoController.ver);
 
