@@ -72,3 +72,27 @@ button.cv-linha { font: inherit; color: inherit; background: none; border: 0; cu
 /* A voz do Cortavo: uma frase de fato, sem promessa */
 .cv-frase { margin: 10px var(--margem) 0; font-size: 17px; line-height: 1.45; letter-spacing: -.012em; color: var(--c-tinta-2); max-width: 34ch; text-wrap: pretty; }
 .cv-frase b { color: var(--c-tinta); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Início: Painel vivo */
+.cv-painel { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.cv-painel-pe { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px -20px -20px; padding: 14px 20px 16px; min-height: var(--toque-min); border-top: .5px solid var(--c-fio-objeto); font-size: 14px; font-weight: 600; color: var(--c-sobre-objeto-2); }
+.cv-painel-pe b { color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.cv-objeto .cv-legenda-aneis .rot { font-size: 13px; font-weight: 600; color: var(--c-sobre-objeto-2); }
+.cv-legenda-aneis .cv-num { margin-top: 2px; max-width: 100%; flex-wrap: wrap; row-gap: 2px; }
+/* break-ui (320 px): o "/meta" desce para a linha de baixo em vez de sair do cartão */
+.cv-prox-cartao, .cv-objeto + .cv-cartao { display: block; }
+.cv-prox { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.cv-prox .corpo { min-width: 0; flex: 1; }
+.cv-prox .corpo b, .cv-prox .corpo span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.cv-prox .corpo b { font-size: 17px; font-weight: 600; letter-spacing: -.012em; }
+.cv-prox .corpo span { font-size: 14px; color: var(--c-apoio); margin-top: 1px; }
+.cv-pe-cartao { display: flex; align-items: center; justify-content: space-between; margin: 16px -20px -20px; padding: 13px 20px 15px; min-height: var(--toque-min); border-top: .5px solid var(--c-fio-forte); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); }
+.cv-etiqueta { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: var(--r-pilula); background: var(--c-bloco); font-size: 13px; font-weight: 600; color: var(--c-tinta); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.cv-etiqueta--preta { background: var(--c-tinta); color: #fff; }
+.cv-livres { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; min-width: 0; }
+.cv-livres p { margin: 0; font-size: 15px; color: var(--c-tinta-2); line-height: 1.35; }
+.cv-texto-apoio { margin: 0; font-size: 15px; line-height: 1.45; color: var(--c-tinta-2); }
+.cv-faixa .dias { flex-direction: column; }
+@media (max-width: 340px) { .cv-painel { gap: 14px; } .cv-painel .cv-aneis { width: 104px; height: 104px; } }
+/* Alvo de toque mínimo de 44 px também no avatar do cabeçalho */
+.cv-cab-acoes .cv-avatar { width: var(--toque-min); height: var(--toque-min); }

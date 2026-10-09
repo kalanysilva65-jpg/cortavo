@@ -116,3 +116,62 @@ test('F0 fundação: sem azul, fonte da v3 self-host, acessibilidade de moviment
   assert.match(layout, /viewport-fit=cover/);
   for (const js of ['cv-mola', 'cv-movimento', 'cv-casca']) assert.match(layout, new RegExp('/js/' + js + '\\.js[^"]*" defer'));
 });
+
+// ---------- F3: Início "Painel vivo" ----------
+function inicio(extra = {}) {
+  const arq = path.join(VIEWS, 'painel/dashboard.ejs');
+  const base = {
+    ehAdmin: true, usuarioFotoUrl: null, iniciaisUsuario: 'RM', dataLonga: 'sexta, 9 de outubro', faixaTeste: null,
+    totalHoje: 20, concluidosHoje: 14, restantesHoje: 6, ganhoHoje: 123850, previstoHoje: 180000, ocupacaoHoje: 64,
+    proximoCorte: { cliente: 'Lucas Andrade', hora: '14:30', servico: 'Corte + barba', diaNum: 9, mesLabel: 'out', hoje: true, emMin: 10, barbeiro: 'Diego' },
+    maisHoje: 5, atualizadoAs: '14:20', estoqueBaixo: { tem: false }, metasHome: [],
+  };
+  return ejs.render(fs.readFileSync(arq, 'utf8'), { ...base, ...extra }, { filename: arq });
+}
+
+test('F3 Início: dono vê 3 anéis, frase do dia com plural e o próximo com o barbeiro', () => {
+  const html = inicio();
+  assert.match(html, /<h1>Hoje<\/h1>/);
+  assert.match(html, /Sexta, 9 de outubro/);
+  assert.equal((html.match(/class="arco"/g) || []).length, 3);
+  assert.match(html, /Faturamento/);
+  assert.match(html, /Hoje são <b>20 atendimentos<\/b>, <b>14 concluídos<\/b>\. Já entraram <b>R\$ 1\.238,50<\/b> no caixa\./); // espaço sem quebra entre R$ e o valor
+  assert.match(html, /em 10 min/);
+  assert.match(html, /Corte \+ barba com Diego/);
+  assert.match(html, /Mais 5 hoje/);
+  assert.match(html, /href="\/painel\/gestao"/);
+  const um = inicio({ totalHoje: 1, concluidosHoje: 1 });
+  assert.match(um, /<b>1 atendimento<\/b>, <b>1 concluído<\/b>/);
+});
+
+test('F3 Início: barbeiro vê só a agenda dele (2 anéis, sem dinheiro, sem barbeiro no próximo)', () => {
+  const html = inicio({ ehAdmin: false, ganhoHoje: 0, previstoHoje: 0, totalHoje: 6, concluidosHoje: 2 });
+  assert.equal((html.match(/class="arco"/g) || []).length, 2);
+  assert.doesNotMatch(html, /Faturamento|R\$/);
+  assert.match(html, /Você tem <b>6 atendimentos<\/b> hoje\. O próximo é às <b>14:30<\/b>\./);
+  assert.doesNotMatch(html, /com Diego/);
+  assert.match(html, /Minha agenda/);
+});
+
+test('F3 Início: barbearia nova e valores grandes não quebram (break-ui)', () => {
+  const vazio = inicio({ totalHoje: 0, concluidosHoje: 0, ganhoHoje: 0, previstoHoje: 0, ocupacaoHoje: 0, proximoCorte: null, maisHoje: 0 });
+  assert.match(vazio, /Nenhum atendimento marcado para hoje\./);
+  assert.match(vazio, /Atualiza a cada atendimento/);
+  assert.equal((vazio.match(/data-p="0"/g) || []).length, 3, 'anel a 0% não desenha ponto');
+  assert.match(vazio, /Nenhum agendamento a partir de agora/);
+  const grande = inicio({ ganhoHoje: 12849300, previstoHoje: 15000000 });
+  assert.match(grande, /128,5 mil/);
+  assert.match(grande, /\/150 mil/);
+  assert.match(grande, /data-fixo/);
+});
+
+test('F3 Início: horas livres só com o dado do Beto (B6); faixa do teste só quando existe', () => {
+  assert.doesNotMatch(inicio(), /Horas livres hoje|class="cv-histo"/);
+  const comHoras = inicio({ horasLivres: { de: 9, ocup: [1, 1, 0.5, 'b', 1, 1, 0.5, 0, 0, 0.5, 0, 0.5], agoraH: 14.3, livres: 5, faixa: 'entre 15h e 19h' } });
+  assert.match(comHoras, /Horas livres hoje/);
+  assert.equal((comHoras.match(/class="h[ "]/g) || []).length, 12);
+  assert.match(comHoras, /class="h bloq/);
+  assert.match(comHoras, /class="agora"/);
+  assert.doesNotMatch(inicio(), /cv-faixa/);
+  assert.match(inicio({ faixaTeste: { dias: 3, aviso: true, texto: 'Seu teste termina em 3 dias.' } }), /cv-faixa faixa-teste/);
+});

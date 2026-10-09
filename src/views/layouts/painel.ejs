@@ -7,7 +7,8 @@
   // tokens.css + cv.css + cv-telas.css (sem styles.css nem a pilha suave) e
   // trazem o próprio cabeçalho. A lista cresce a cada fatia do plano de
   // migração; quando todas estiverem aqui, a pilha antiga sai (fatia F11).
-  var TELAS_V3 = ['/painel/mais', '/painel/gestao'];
+  // A faixa do teste grátis mora só na Início (partials/faixa-teste.ejs).
+  var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao'];
   var ehV3 = TELAS_V3.indexOf(currentPath) !== -1;
   var ehSuave = !ehV3 && TELAS_SUAVE.indexOf(currentPath) !== -1;
 %>
@@ -136,9 +137,6 @@
       <%- include('../partials/header-painel') %>
     </div>
     <main class="container conteudo">
-      <% if (typeof faixaTeste !== 'undefined' && faixaTeste) { %>
-        <div class="faixa-teste<%= faixaTeste.aviso ? ' faixa-teste--aviso' : '' %>" role="status" style="position:static;display:block;margin:0 0 16px;padding:10px 14px;border:1px solid <%= faixaTeste.aviso ? '#111111' : '#9A9A9A' %>;border-radius:12px;background:#FFFFFF;color:#111111;font-size:14px;line-height:1.4;<%= faixaTeste.aviso ? 'font-weight:600;' : '' %>"><%= faixaTeste.texto %></div>
-      <% } %>
       <%- include('../partials/flash') %> <%- body %>
     </main>
     <% } %>

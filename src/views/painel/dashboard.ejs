@@ -1,211 +1,173 @@
-<%/* Home no design SUAVE (pedido do dono, 2026-07-31): substitui a composição
-     editorial do Turno 6 (canto vivo, números de 80px) pelo HTML de referência
-     que ele anexou — cartão escuro do próximo atendimento no topo, grade de
-     atalhos, fila e, só então, os números do dia em cartões arredondados.
-     A ordem é intencional: o que se faz AGORA vem antes do que se mede.
-     Estilos em public/css/sv-home.css; o que é compartilhado, em suave.css. */%>
-<%
-  // O bloco de dinheiro é do admin. Para o funcionário a mesma moldura mostra
-  // VOLUME de atendimentos (regra que já existia no Turno 6 e continua valendo:
-  // funcionário não enxerga faturamento).
-  // Plano da Cortavo (fase 2, B3): mesma regra dos menus. Fora do plano, o
-  // admin vê o atalho com cadeado (o servidor mostra "fora do plano"); o
-  // barbeiro não vê.
-  var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
-  var CADEADO_HM = '<svg class="ic-cadeado" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.5a4.8 4.8 0 0 0-4.8 4.8v2.4H6.4A2.4 2.4 0 0 0 4 12.1v7A2.4 2.4 0 0 0 6.4 21.5h11.2a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-.8V7.3A4.8 4.8 0 0 0 12 2.5zm2.6 7.2V7.3a2.6 2.6 0 1 0-5.2 0v2.4z"/></svg>';
-  var trancaRel = fdp('/painel/relatorios');
-  var trancaEst = fdp('/painel/estoque');
-  var trancaMetas = fdp('/painel/metas');
-  var resumoHref = ehAdmin ? '/painel/caixa' : '/painel/agenda';
-  var resumoRot = ehAdmin ? 'Faturamento hoje' : 'Atendimentos hoje';
-  var resumoNum = ehAdmin ? fmtT6(ganhoHoje) : totalHoje;
-  var ladrilhos = ehAdmin
-    ? [
-        { href: trancaRel ? '/painel/caixa' : '/painel/relatorios', num: concluidosHoje, rot: 'Cortes hoje' },
-        { href: trancaRel ? '/painel/caixa' : '/painel/relatorios', num: fmtT6(ticketMedioHoje), rot: 'Ticket médio' },
-      ]
-    : [
-        { href: '/painel/agenda', num: concluidosHoje, rot: 'Concluídos' },
-        { href: '/painel/agenda', num: restantesHoje, rot: 'Restantes' },
-      ];
+<%/* Início "Painel vivo" (redesign v3, fatia F3; direção C aprovada em
+     2026-10-05). Mockup: redesign/v3/prints/01-inicio-dono-390.png.
+     Ordem: título "Hoje" com a data, faixa do teste (só admin), a frase do
+     dia, o Painel (objeto preto com 1 a 3 anéis), o próximo atendimento,
+     horas livres e destaques.
 
+     Dados: os que o dashboardController já calcula, recortados como antes
+     (admin = barbearia toda; barbeiro = só a agenda dele, sem dinheiro).
+     O que depende do Beto aparece só quando o dado existir, nunca inventado:
+       TODO(Beto B6): GET /painel/api/home com meta do dia (anel e frase),
+         horas livres por hora (histograma) e destaques de horário vago e
+         cliente sumido. Sem `horasLivres`, o cartão não aparece.
+       TODO(Beto B1): anéis "Seu faturamento" e "Sua comissão" do barbeiro
+         (chaves meus_numeros e comissoes); hoje ele vê atendimentos e ocupação.
+     Primeiros passos (spec 11) entram na fatia F9 (branch squad/app-primeiro-acesso).
+     Plano: estoque baixo e metas só chegam aqui quando o plano libera (B3). */%>
+<%
+  var admin = !!ehAdmin;
+  function milhar(n) { return String(Math.round(Math.abs(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  // Painel: acima de R$ 100 mil vira "128,5 mil" (design-system §10, decisão a); o valor inteiro fica na Gestão.
+  function compacto(reais) { return reais >= 100000 ? (Math.round(reais / 100) / 10).toFixed(1).replace('.', ',').replace(',0', '') + ' mil' : milhar(reais); }
+  function plural(n, um, varios) { return n === 1 ? um : varios; }
+  function brl(centavos) { var v = (centavos || 0) / 100; var s = v.toFixed(2).split('.'); return 'R$ ' + milhar(+s[0]) + ',' + s[1]; }
+
+  var dataTitulo = (dataLonga || '').charAt(0).toUpperCase() + (dataLonga || '').slice(1);
+  // Dinheiro no Painel sem centavos e nunca arredondado para cima (1.238,50 -> 1.238).
+  var ganhoReais = Math.floor((ganhoHoje || 0) / 100);
+  var previstoReais = Math.floor((typeof previstoHoje !== 'undefined' ? previstoHoje : 0) / 100);
+  var vazio = !totalHoje && !ganhoHoje;
+
+  // Anéis: a ordem dos tons é fixa (preto/branco = dinheiro, depois os cinzas).
+  // Com permissão menor os anéis somem e o Painel se reorganiza (spec 12).
+  var aneis = [];
+  if (admin) {
+    aneis.push({ rot: 'Faturamento', p: previstoReais > 0 ? ganhoReais / previstoReais : 0, moeda: true, v: ganhoReais, txt: compacto(ganhoReais), fixo: ganhoReais >= 100000, de: previstoReais > 0 ? '/' + compacto(previstoReais) : '', leitura: 'R$ ' + milhar(ganhoReais) + (previstoReais > 0 ? ' de R$ ' + milhar(previstoReais) + ' previstos' : '') });
+  }
+  aneis.push({ rot: admin ? 'Atendimentos' : 'Seus atendimentos', p: totalHoje ? concluidosHoje / totalHoje : 0, v: concluidosHoje, txt: milhar(concluidosHoje), de: totalHoje ? '/' + milhar(totalHoje) : '', leitura: concluidosHoje + ' de ' + totalHoje + ' concluídos' });
+  aneis.push({ rot: admin ? 'Ocupação' : 'Agenda ocupada', p: (ocupacaoHoje || 0) / 100, v: ocupacaoHoje || 0, txt: String(ocupacaoHoje || 0), suf: '%', leitura: (ocupacaoHoje || 0) + '%' });
+  var CORES = ['var(--d-1-objeto)', 'var(--d-2-objeto)', 'var(--d-3-objeto)'];
+  var tam = aneis.length === 2 ? 116 : 128, sw = aneis.length === 2 ? 15 : 13, gap = 4, centro = tam / 2;
+
+  var prox = proximoCorte;
+  var etiqueta = '';
+  if (prox) {
+    if (prox.hoje && prox.emMin != null) etiqueta = prox.emMin < 1 ? 'agora' : prox.emMin < 60 ? 'em ' + prox.emMin + ' min' : 'hoje';
+    else etiqueta = prox.diaNum + ' ' + prox.mesLabel;
+  }
+
+  var destaques = [];
+  if (admin && estoqueBaixo && estoqueBaixo.tem) {
+    destaques.push({ href: '/painel/estoque', ic: 'estoque', t: estoqueBaixo.quantidade === 1 ? 'Estoque baixo: ' + estoqueBaixo.nomes : estoqueBaixo.quantidade + ' itens no estoque mínimo', s: estoqueBaixo.quantidade === 1 ? 'Chegou ao mínimo definido' : estoqueBaixo.nomes });
+  }
+  (metasHome || []).forEach(function (m) {
+    var atual = m.dinheiro ? brl(m.atual) : milhar(m.atual), alvo = m.dinheiro ? brl(m.alvo) : milhar(m.alvo);
+    destaques.push({ href: admin ? '/painel/metas' : null, ic: 'meta', t: m.batida ? 'Meta batida: ' + m.label.toLowerCase() : m.label + ': ' + m.pct + '% da meta do mês', s: atual + ' de ' + alvo + ' · ' + m.escopo });
+  });
 %>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup"><%= dataTitulo %></p><h1>Hoje</h1></div>
+  <div class="cv-cab-acoes">
+    <a class="cv-avatar" href="/painel/mais" aria-label="Mais: perfil e ajustes"><% if (usuarioFotoUrl) { %><img src="<%= usuarioFotoUrl %>" alt="" style="width:100%;height:100%;object-fit:cover" /><% } else { %><%= iniciaisUsuario %><% } %></a>
+  </div>
+</header>
+
+<% if (typeof faixaTeste !== 'undefined' && faixaTeste) { %><%- include('../partials/faixa-teste') %><% } %>
+
+<p class="cv-frase">
+  <% if (!totalHoje) { %>Nenhum atendimento marcado para hoje.<% if (prox && !prox.hoje) { %> O próximo é dia <b><%= prox.diaNum %></b> às <b><%= prox.hora %></b>.<% } %>
+  <% } else if (admin) { %>Hoje são <b><%= totalHoje %> <%= plural(totalHoje, 'atendimento', 'atendimentos') %></b>, <b><%= concluidosHoje %> <%= plural(concluidosHoje, 'concluído', 'concluídos') %></b>.<% if (ganhoHoje > 0) { %> Já entraram <b><%= brl(ganhoHoje) %></b> no caixa.<% } %>
+  <% } else { %>Você tem <b><%= totalHoje %> <%= plural(totalHoje, 'atendimento', 'atendimentos') %></b> hoje.<% if (prox && prox.hoje) { %> O próximo é às <b><%= prox.hora %></b>.<% } %>
+  <% } %>
+</p>
+
+<div class="cv-secao" style="margin-top:20px">
+  <section class="cv-objeto cv-gravada" aria-label="Resumo de hoje">
+    <div class="cv-painel">
+      <svg class="cv-aneis" width="<%= tam %>" height="<%= tam %>" viewBox="0 0 <%= tam %> <%= tam %>" role="img" aria-label="<%= aneis.map(function (a) { return a.rot + ' ' + Math.round(Math.min(1, a.p) * 100) + '%'; }).join(', ') %>">
+        <% aneis.forEach(function (a, i) { var r = centro - sw / 2 - i * (sw + gap), p = Math.max(0, Math.min(1, a.p)); %>
+        <circle class="trilho" cx="<%= centro %>" cy="<%= centro %>" r="<%= r %>" stroke-width="<%= sw %>"/>
+        <circle class="arco" cx="<%= centro %>" cy="<%= centro %>" r="<%= r %>" stroke-width="<%= sw %>" style="stroke:<%= CORES[i] %>" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="<%= (100 - p * 100).toFixed(2) %>" data-p="<%= p === 0 ? 0 : p.toFixed(4) %>"/>
+        <% }) %>
+      </svg>
+      <ul class="cv-legenda-aneis">
+        <% aneis.forEach(function (a, i) { %>
+        <li>
+          <span class="rot"><i style="background:<%= CORES[i] %>"></i><%= a.rot %></span>
+          <span class="cv-num cv-num--m" data-v="<%= a.v %>" data-casas="0" data-dig="<%= a.txt.length %>"<% if (a.fixo) { %> data-fixo<% } %> aria-label="<%= a.leitura %>"><% if (a.moeda) { %><span class="moeda" aria-hidden="true">R$</span><% } %><span class="int" aria-hidden="true"><%= a.txt %></span><% if (a.de) { %><span class="de" aria-hidden="true"><%= a.de %></span><% } %><% if (a.suf) { %><span class="de" aria-hidden="true"><%= a.suf %></span><% } %></span>
+        </li>
+        <% }) %>
+      </ul>
+    </div>
+    <a class="cv-painel-pe" href="<%= admin ? '/painel/gestao' : '/painel/agenda' %>">
+      <span><%= vazio ? 'Atualiza a cada atendimento' : 'Atualizado às ' + atualizadoAs %></span>
+      <b><%= admin ? 'Gestão' : 'Minha agenda' %><%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--16' }) %></b>
+    </a>
+  </section>
+
+  <% if (prox) { %>
+  <a class="cv-cartao cv-toca cv-prox-cartao" href="/painel/agenda" style="margin-top:12px" aria-label="Próximo atendimento: <%= prox.cliente %>, <%= prox.hoje ? 'hoje' : 'dia ' + prox.diaNum %> às <%= prox.hora %>. Abrir a agenda">
+    <div class="cv-cartao-cab"><h3>Próximo atendimento</h3><span class="cv-etiqueta<%= prox.hoje ? ' cv-etiqueta--preta' : '' %>"><%= etiqueta %></span></div>
+    <div class="cv-prox">
+      <span class="cv-num cv-num--g"><%= prox.hora %></span>
+      <div class="corpo"><b><%= prox.cliente %></b><span><%= prox.servico %><%= admin && prox.barbeiro ? ' com ' + prox.barbeiro : '' %></span></div>
+    </div>
+    <div class="cv-pe-cartao"><span><%= maisHoje > 0 ? 'Mais ' + maisHoje + ' hoje' : 'Ver a agenda do dia' %></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></div>
+  </a>
+  <% } else { %>
+  <a class="cv-cartao cv-toca" href="/painel/agenda" style="margin-top:12px">
+    <div class="cv-cartao-cab" style="margin-bottom:6px"><h3>Próximo atendimento</h3></div>
+    <p class="cv-texto-apoio">Nenhum agendamento a partir de agora. O link de agendamento continua aberto para os clientes.</p>
+    <div class="cv-pe-cartao"><span>Ver a agenda</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></div>
+  </a>
+  <% } %>
+</div>
+
+<% if (typeof horasLivres !== 'undefined' && horasLivres && horasLivres.ocup && horasLivres.ocup.length) { %>
+  <%/* Pronto para o B6: { de: 9, ocup: [0..1 | 'b'], agoraH: 14.3, livres: 5, faixa: 'entre 15h e 19h' } */%>
+  <% var hl = horasLivres, n = hl.ocup.length; %>
+  <section class="cv-secao" style="margin-top:12px">
+    <div class="cv-cartao">
+      <div class="cv-cartao-cab"><h3><%= admin ? 'Horas livres hoje' : 'Suas horas livres' %></h3><span class="lado">agora <%= atualizadoAs %></span></div>
+      <div class="cv-livres"><span class="cv-num cv-num--g"><%= hl.livres %></span><p><%= plural(hl.livres, 'horário livre', 'horários livres') %> <%= hl.livres ? (hl.faixa || '') : '' %></p></div>
+      <div class="cv-histo" role="img" aria-label="Ocupação por hora, das <%= hl.de %>h às <%= hl.de + n %>h">
+        <% hl.ocup.forEach(function (o, i) { var bloq = o === 'b', passado = hl.de + i + 1 <= hl.agoraH; %>
+        <div class="h<%= bloq ? ' bloq' : '' %><%= passado ? ' passado' : '' %>"><b data-v="<%= bloq ? 0 : o %>" style="transform:scaleY(<%= bloq ? 0 : Math.max(o, 0.0001) %>)"></b></div>
+        <% }) %>
+        <% if (hl.agoraH > hl.de && hl.agoraH < hl.de + n) { %><span class="agora" style="left:<%= ((hl.agoraH - hl.de) / n * 100).toFixed(2) %>%"></span><% } %>
+      </div>
+      <div class="cv-histo-eixo"><% for (var k = 0; k <= 4; k++) { %><span><%= hl.de + Math.round(k * n / 4) %>h</span><% } %></div>
+      <div class="cv-legenda-graf"><span><i class="q"></i>Ocupado</span><span><i class="q" style="background:var(--d-trilho)"></i>Livre</span><span><i class="q q--listra"></i>Bloqueado</span></div>
+    </div>
+  </section>
+<% } %>
+
+<% if (destaques.length) { %>
+  <section class="cv-secao" aria-labelledby="inicio-destaques">
+    <div class="cv-secao-cab"><h2 id="inicio-destaques">Destaques</h2><% if (admin) { %><a href="/painel/gestao">Gestão</a><% } %></div>
+    <ul class="cv-lista">
+      <% destaques.forEach(function (d) { %>
+      <li><% if (d.href) { %><a class="cv-linha cv-linha--quebra" href="<%= d.href %>"><% } else { %><div class="cv-linha cv-linha--quebra"><% } %>
+        <%- include('../partials/icone', { cvIc: d.ic }) %>
+        <span class="corpo"><span class="t"><%= d.t %></span><span class="s"><%= d.s %></span></span>
+        <% if (d.href) { %><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a><% } else { %></div><% } %></li>
+      <% }) %>
+    </ul>
+  </section>
+<% } %>
+
 <script>
-  /* A Home só faz o show de animações na PRIMEIRA visita por sessão (pedido do
-     dono, 2026-09-09): ao VOLTAR pra ela (ex.: Caixa -> Início) a enxurrada de
-     animações (contadores, gráfico, cartões, barras) + a transição de página
-     travavam no WebView. Se já mostramos nesta sessão, marca o <html> e o
-     sv-home.css + o motor de animação entregam tudo PRONTO, instantâneo.
-     Roda ANTES da .sv-tela abaixo, então a marca já está posta no 1º quadro. */
+  /* M2 (abertura do dia): anéis fecham e números contam só na PRIMEIRA vez que
+     a Início abre no dia (nesta sessão). Ao voltar, tudo entra pronto
+     (motion-spec §1). Com "reduzir movimento", Cortavo já entrega o valor final. */
   (function () {
-    try {
-      if (sessionStorage.getItem('cortavoHomeVisto') === '1') {
-        document.documentElement.setAttribute('data-home-visto', '1');
-      } else {
-        sessionStorage.setItem('cortavoHomeVisto', '1');
-      }
-    } catch (e) {}
+    function abrir() {
+      var C = window.Cortavo; if (!C) return;
+      var primeira = false;
+      try {
+        var hoje = new Date().toDateString();
+        primeira = sessionStorage.getItem('cvInicioVisto') !== hoje;
+        sessionStorage.setItem('cvInicioVisto', hoje);
+      } catch (e) {}
+      var svg = document.querySelector('.cv-painel .cv-aneis');
+      if (svg) C.aneis(svg, { abertura: primeira, semAnimar: !primeira });
+      if (!primeira) return;
+      Array.prototype.forEach.call(document.querySelectorAll('.cv-painel .cv-num[data-v]:not([data-fixo])'), function (el) {
+        C.contar(el, +el.getAttribute('data-v'), { casas: 0, dur: 700 });
+      });
+      var barras = document.querySelectorAll('.cv-histo b');
+      if (barras.length) C.barras(barras, Array.prototype.map.call(barras, function (b) { return +b.getAttribute('data-v'); }), { inicial: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', abrir); else abrir();
   })();
 </script>
-<div class="sv-tela">
-
-  <div class="sv-topo sv-reveal">
-    <div class="sv-avatar">
-      <% if (usuarioFotoUrl) { %>
-        <img src="<%= usuarioFotoUrl %>" alt="" />
-      <% } else { %>
-        <%= iniciaisUsuario %>
-      <% } %>
-    </div>
-    <div class="sv-topo-texto">
-      <div class="sv-topo-saudacao"><%= saudacao %> · <%= dataLonga %></div>
-      <div class="sv-topo-nome"><%= usuario.nome %></div>
-    </div>
-    <%/* O sino leva ao Estoque porque é o único aviso que a Home tem hoje —
-         a bolinha só aparece quando existe item no limite. */%>
-    <% if (!trancaEst || ehAdmin) { %>
-    <a href="/painel/estoque" class="sv-topo-btn" title="<%= trancaEst ? 'Estoque: ' + trancaEst.texto : 'Estoque' %>" aria-label="<%= trancaEst ? 'Estoque (fora do plano)' : 'Estoque' %>"<% if (trancaEst) { %> style="opacity:.55"<% } %>>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-      <% if (estoqueBaixo.tem) { %><span class="sv-topo-btn-ponto"></span><% } %>
-      <% if (trancaEst) { %><%- CADEADO_HM %><% } %>
-    </a>
-    <% } %>
-  </div>
-
-  <a href="/painel/agenda" class="sv-cartao sv-cartao--escuro sv-hm-prox sv-reveal sv-hm-p2">
-    <div class="sv-hm-prox-topo">
-      <span class="sv-pilula"><span class="sv-pilula-ponto"></span>Próximo atendimento</span>
-      <% if (proximoCorte) { %>
-        <span class="sv-hm-prox-data"><%= proximoCorte.diaNum %> <%= proximoCorte.mesLabel %></span>
-      <% } %>
-    </div>
-    <div class="sv-hm-prox-linha">
-      <% if (proximoCorte) { %>
-        <div class="sv-hm-prox-av"><%= proximoCorte.iniciais %></div>
-        <div class="sv-hm-prox-corpo">
-          <div class="sv-hm-prox-nome"><%= proximoCorte.cliente %></div>
-          <div class="sv-hm-prox-serv"><%= proximoCorte.servico %></div>
-        </div>
-        <div class="sv-hm-prox-hora"><%= proximoCorte.hora %></div>
-      <% } else { %>
-        <%/* Sem avatar nem hora no vazio: um monograma "—" pareceria cliente. */%>
-        <div class="sv-hm-prox-corpo">
-          <div class="sv-hm-prox-nome">Nenhum agendamento</div>
-          <div class="sv-hm-prox-serv">A agenda está livre a partir de agora</div>
-        </div>
-      <% } %>
-    </div>
-    <div class="sv-hm-prox-pe">
-      <span class="sv-hm-prox-pe-rot">Ver agenda do dia</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </div>
-  </a>
-
-  <%/* Cards de METAS no lugar dos atalhos (pedido do dono, 2026-09-30):
-       mostram as metas configuradas em /painel/metas com o progresso do mês.
-       Barbeiro vê só as metas dele. */%>
-  <% if (metasHome.length) { %>
-    <div class="sv-hm-metas sv-reveal sv-hm-p3">
-      <% metasHome.forEach(function (m) { %>
-        <a href="<%= ehAdmin ? '/painel/metas' : '/painel' %>" class="sv-hm-meta<%= m.batida ? ' sv-hm-meta--ok' : '' %>">
-          <span class="sv-hm-meta-rot"><%= m.label %> · <%= m.escopo %></span>
-          <span class="sv-hm-meta-num"><%= m.dinheiro ? fmtT6(m.atual) : m.atual %><small> / <%= m.dinheiro ? fmtT6(m.alvo) : m.alvo %></small></span>
-          <span class="sv-hm-meta-barra"><span style="width:<%= m.pct %>%"></span></span>
-          <span class="sv-hm-meta-pct"><%= m.batida ? 'Meta batida!' : m.pct + '% do mês' %></span>
-        </a>
-      <% }) %>
-    </div>
-  <% } else if (ehAdmin) { %>
-    <div class="sv-hm-metas sv-reveal sv-hm-p3">
-      <a href="/painel/metas" class="sv-hm-meta sv-hm-meta--vazia"<% if (trancaMetas) { %> title="<%= trancaMetas.texto %>" aria-label="Metas (fora do plano)"<% } %>>
-        <span class="sv-hm-meta-rot">Metas do mês<% if (trancaMetas) { %> <%- CADEADO_HM %><% } %></span>
-        <span class="sv-hm-meta-pct"><%= trancaMetas ? trancaMetas.texto : 'Nenhuma meta configurada · toque para criar' %></span>
-      </a>
-    </div>
-  <% } %>
-
-  <% if (seguintesCortes.length) { %>
-    <div class="sv-hm-secao sv-reveal sv-hm-p4">
-      <div class="sv-hm-secao-tit">Próximos na fila</div>
-      <a href="/painel/agenda" class="sv-hm-secao-link">Ver todos</a>
-    </div>
-    <div class="sv-hm-fila">
-      <% seguintesCortes.forEach(function (nx) { %>
-        <a href="/painel/agenda" class="sv-hm-fila-item">
-          <span class="sv-hm-fila-av"><%= nx.iniciais %></span>
-          <span class="sv-hm-fila-corpo">
-            <span class="sv-hm-fila-nome"><%= nx.cliente %></span>
-            <span class="sv-hm-fila-serv"><%= nx.servico %></span>
-          </span>
-          <span class="sv-hm-fila-hora"><%= nx.hora %></span>
-        </a>
-      <% }) %>
-    </div>
-  <% } %>
-
-  <div class="sv-hm-secao sv-hm-secao--resumo sv-reveal">
-    <div class="sv-hm-secao-tit">Resumo de hoje</div>
-    <% if (ehAdmin) { %>
-      <a href="/painel/relatorios" class="sv-hm-secao-link"<% if (trancaRel) { %> title="<%= trancaRel.texto %>" aria-label="Relatórios (fora do plano)" style="opacity:.55"<% } %>>Relatórios<% if (trancaRel) { %> <%- CADEADO_HM %><% } %></a>
-    <% } %>
-  </div>
-
-  <a href="<%= resumoHref %>" class="sv-cartao sv-hm-resumo sv-reveal">
-    <div class="sv-hm-resumo-rot"><%= resumoRot %></div>
-    <div class="sv-hm-resumo-num" data-count><%= resumoNum %></div>
-    <div class="sv-hm-barra">
-      <div class="sv-hm-barra-cheio" data-fill style="width:<%= ocupacaoLargura %>%"></div>
-    </div>
-    <div class="sv-hm-resumo-pe">
-      <span class="sv-hm-resumo-pe-rot">Ocupação da agenda</span>
-      <span class="sv-hm-resumo-pe-val"><%= ocupacaoHoje %>%</span>
-    </div>
-  </a>
-
-  <div class="sv-hm-ladrilhos">
-    <% ladrilhos.forEach(function (ld) { %>
-      <a href="<%= ld.href %>" class="sv-cartao sv-hm-ladrilho sv-reveal">
-        <div class="sv-hm-ladrilho-num" data-count><%= ld.num %></div>
-        <div class="sv-hm-ladrilho-rot"><%= ld.rot %></div>
-      </a>
-    <% }) %>
-  </div>
-
-  <% if (estoqueBaixo.tem) { %>
-    <a href="/painel/estoque" class="sv-hm-alerta sv-reveal">
-      <span class="sv-hm-alerta-ic">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17.3A1.9 1.9 0 0 0 4.2 20h15.6a1.9 1.9 0 0 0 1.6-2.7L13.7 3.9a1.9 1.9 0 0 0-3.4 0z"/></svg>
-      </span>
-      <span class="sv-hm-alerta-corpo">
-        <span class="sv-hm-alerta-tit"><%= estoqueBaixo.quantidade %> <%= estoqueBaixo.titulo %></span>
-        <span class="sv-hm-alerta-sub"><%= estoqueBaixo.nomes %></span>
-      </span>
-      <svg class="sv-hm-alerta-seta" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-    </a>
-  <% } %>
-
-  <% if (ehAdmin) { %>
-    <div class="sv-cartao sv-hm-semana sv-reveal">
-      <div class="sv-hm-semana-topo">
-        <div>
-          <div class="sv-hm-semana-rot">Faturamento semanal</div>
-          <div class="sv-hm-semana-total"><%= fmtT6(faturamentoSemanal) %></div>
-        </div>
-        <%/* "Esta semana" e não "7 dias": as colunas são segunda a domingo da
-             semana corrente, não os últimos 7 dias corridos. */%>
-        <div class="sv-hm-semana-selo">Esta semana</div>
-      </div>
-      <div class="sv-hm-graf">
-        <% barrasSemana.forEach(function (bl) { %>
-          <div class="sv-hm-col">
-            <div class="sv-hm-col-caixa">
-              <div class="sv-hm-col-barra <%= bl.hoje ? 'hoje' : '' %>" style="height:<%= bl.altura %>px"></div>
-            </div>
-            <div class="sv-hm-col-rot <%= bl.hoje ? 'hoje' : '' %>"><%= bl.label %></div>
-          </div>
-        <% }) %>
-      </div>
-    </div>
-  <% } %>
-
-</div>

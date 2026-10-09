@@ -180,7 +180,7 @@ async function ver(req, res) {
   const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const agsFuturos = await prisma.agendamento.findMany({
     where: { barbeariaId: b, data: { gte: hoje0 }, status: 'agendado', ...filtroBarbeiro },
-    include: { itens: { include: { servico: true } } },
+    include: { itens: { include: { servico: true } }, usuario: { select: { nome: true } } },
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
     take: 20,
   });
@@ -195,8 +195,15 @@ async function ver(req, res) {
       diaNum: a.data.getDate(),
       mesLabel: MESES_CURTOS[a.data.getMonth()],
       iniciais: iniciais(a.clienteNome),
+      // Redesign v3 (Início): "em 10 min" quando é hoje, e "com Diego" para o admin.
+      hoje: a.data.getTime() === hoje0.getTime(),
+      emMin: a.data.getTime() === hoje0.getTime() ? paraMinutos(a.horaInicio) - minutoAgora : null,
+      barbeiro: a.usuario ? (a.usuario.nome || '').split(' ')[0] : '',
     }));
   const proximoCorte = proximosTodos[0] || null;
+  // Quantos ainda faltam hoje depois do próximo ("Mais 5 hoje").
+  const aindaHoje = agsHoje.filter((a) => a.status === 'agendado' && paraMinutos(a.horaInicio) >= minutoAgora).length;
+  const maisHoje = Math.max(0, aindaHoje - (proximoCorte && proximoCorte.hoje ? 1 : 0));
   const seguintesCortes = proximosTodos.slice(1);
 
   // --- Faturamento semanal: total + colunas do gráfico ---------------------
@@ -231,6 +238,11 @@ async function ver(req, res) {
   const metasHome = planoCortavo.libera(plano, 'metas') ? await metasDaHome(b, u.id, !!req.ehAdmin) : [];
 
   res.render('painel/dashboard', {
+    // Redesign v3 (Início "Painel vivo"): previsto do dia (anel de faturamento
+    // até existir a meta do dia, TODO(Beto B6)), hora da leitura e a fila de hoje.
+    previstoHoje,
+    atualizadoAs: `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`,
+    maisHoje,
     titulo: 'Painel',
     totalHoje,
     concluidosHoje,

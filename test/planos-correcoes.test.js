@@ -152,40 +152,38 @@ test('B3 Barbearia: Home continua mostrando estoque baixo e metas', async () => 
   assert.equal(res.renderizou.dados.estoqueBaixo.tem, true);
 });
 
-test('B3 views: Home usa foraDoPlano nos atalhos; cabeçalho só conta estoque quando o plano libera', () => {
+// Redesign v3 (F3): a Início virou o "Painel vivo" e não tem mais atalhos
+// trancados (o cadeado do plano fica no Mais e na Gestão). A regra B3 continua:
+// estoque e metas só chegam à Início quando o plano libera (o controller nem
+// consulta, testes acima) e o cabeçalho só conta estoque com o plano liberando.
+test('B3 views: Início só mostra estoque e metas que o controller entregou; cabeçalho só conta estoque quando o plano libera', () => {
   const home = fs.readFileSync(path.join(RAIZ, 'src/views/painel/dashboard.ejs'), 'utf8');
-  for (const h of ["fdp('/painel/relatorios')", "fdp('/painel/estoque')", "fdp('/painel/metas')", '<% if (!trancaEst || ehAdmin) { %>']) assert.ok(home.includes(h), h);
+  assert.ok(home.includes('admin && estoqueBaixo && estoqueBaixo.tem'), 'estoque baixo só para admin e só com dado');
+  assert.ok(home.includes('(metasHome || []).forEach'), 'metas vêm do controller (vazias fora do plano)');
   const rotas = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
   assert.match(rotas, /req\.ehAdmin && planoCortavo\.libera\(planoCortavo\.planoDe\(barbearia && barbearia\.planoCortavo\), 'estoque'\)/);
 });
 
-test('B3 view da Home: admin vê cadeado, barbeiro não vê o sino de estoque (Essencial)', () => {
+test('B3 view da Início (v3): Essencial sem estoque e sem metas; barbeiro nunca vê estoque; Barbearia mostra o estoque baixo', () => {
   const ejs = require(require.resolve('ejs', { paths: [RAIZ] }));
-  const home = fs.readFileSync(path.join(RAIZ, 'src/views/painel/dashboard.ejs'), 'utf8');
-  const pc = carregar('src/services/planoCortavo.js');
-  const plano = pc.planoDe('essencial');
-  const foraDoPlano = (href) => {
-    const f = pc.funcaoDoCaminho(String(href).replace(/^\/painel/, '') || '/');
-    return f && !pc.libera(plano, f.chave) ? { ...f, texto: pc.textoForaDoPlano(f.chave) } : null;
-  };
+  const arq = path.join(RAIZ, 'src/views/painel/dashboard.ejs');
+  const home = fs.readFileSync(arq, 'utf8');
   const base = {
-    fmtT6: (v) => String(v), usuarioFotoUrl: null, fmtBRL: (v) => String(v), foraDoPlano, usuario: { nome: 'Ana' }, totalHoje: 0, concluidosHoje: 0, restantesHoje: 0, ganhoHoje: 0, ticketMedioHoje: 0,
-    ocupacaoHoje: 0, ocupacaoLargura: 0, saudacao: 'Oi', dataLonga: '', proximoCorte: null, seguintesCortes: [],
+    usuarioFotoUrl: null, usuario: { nome: 'Ana' }, totalHoje: 0, concluidosHoje: 0, restantesHoje: 0, ganhoHoje: 0, ticketMedioHoje: 0,
+    ocupacaoHoje: 0, ocupacaoLargura: 0, saudacao: 'Oi', dataLonga: 'sexta, 9 de outubro', proximoCorte: null, seguintesCortes: [],
     iniciaisUsuario: 'A', faturamentoSemanal: 0, barrasSemana: [], estoqueBaixo: { tem: false }, metasHome: [],
+    previstoHoje: 0, atualizadoAs: '14:20', maisHoje: 0, faixaTeste: null,
   };
-  let html;
-  try {
-    html = ejs.render(home, { ...base, ehAdmin: true }, { filename: path.join(RAIZ, 'src/views/painel/dashboard.ejs') });
-  } catch (e) {
-    // A Home usa locais do app; o teste passa os mínimos.
-    throw new Error("render da Home falhou: " + e.message);
-  }
-  assert.match(html, /Estoque \(fora do plano\)/);
-  assert.match(html, /Relatórios \(fora do plano\)/);
-  assert.match(html, /Disponível no plano Barbearia/);
-  const htmlBarbeiro = ejs.render(home, { ...base, ehAdmin: false }, { filename: path.join(RAIZ, 'src/views/painel/dashboard.ejs') });
-  assert.doesNotMatch(htmlBarbeiro, /href="\/painel\/estoque"/);
-  assert.doesNotMatch(htmlBarbeiro, /fora do plano/);
+  const r = (extra) => ejs.render(home, { ...base, ...extra }, { filename: arq });
+  const essencialAdmin = r({ ehAdmin: true });
+  assert.doesNotMatch(essencialAdmin, /href="\/painel\/(estoque|metas)"/);
+  assert.doesNotMatch(essencialAdmin, /fora do plano/);
+  const barbeiro = r({ ehAdmin: false, estoqueBaixo: { tem: true, quantidade: 1, nomes: 'Pomada' } });
+  assert.doesNotMatch(barbeiro, /href="\/painel\/estoque"/);
+  assert.doesNotMatch(barbeiro, /Faturamento/);
+  const plenoAdmin = r({ ehAdmin: true, estoqueBaixo: { tem: true, quantidade: 1, nomes: 'Pomada' } });
+  assert.match(plenoAdmin, /href="\/painel\/estoque"/);
+  assert.match(plenoAdmin, /Estoque baixo: Pomada/);
 });
 
 // ---------- Lista do mestre: aviso conta só barbeiros ativos ----------

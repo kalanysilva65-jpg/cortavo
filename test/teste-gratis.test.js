@@ -347,11 +347,15 @@ test('250 no teste: estadoTeto da secretária usa o contador do teste mesmo com 
 // ---------- Tela do dono (2.7) ----------
 test('2.7 faixa do dono aparece no layout do painel sem botão de pagar', async () => {
   const fs = require('node:fs');
-  const layout = fs.readFileSync(path.join(VIEWS, 'layouts/painel.ejs'), 'utf8');
-  assert.ok(layout.includes('faixaTeste.texto'));
+  // Redesign v3 (F3): a faixa saiu do layout e mora no topo da Início.
+  const faixa = fs.readFileSync(path.join(VIEWS, 'partials/faixa-teste.ejs'), 'utf8');
+  assert.ok(faixa.includes('faixaTeste.texto'));
+  assert.doesNotMatch(faixa.replace(/<%\/\*[\s\S]*?\*\/%>/g, ''), /pagar|assinar|comprar|checkout/i, 'sem botão de pagar');
+  const home = fs.readFileSync(path.join(VIEWS, 'painel/dashboard.ejs'), 'utf8');
+  assert.ok(home.includes("include('../partials/faixa-teste')"));
   const det = fs.readFileSync(path.join(VIEWS, 'mestre/barbearia-detalhe.ejs'), 'utf8');
   assert.ok(det.includes('/teste/prorrogar') && det.includes('/teste/segurar') && det.includes('/fundador'));
-  for (const v of ['layouts/painel.ejs', 'mestre/barbearia-detalhe.ejs', 'mestre/painel.ejs']) {
+  for (const v of ['partials/faixa-teste.ejs', 'layouts/painel.ejs', 'mestre/barbearia-detalhe.ejs', 'mestre/painel.ejs']) {
     const txt = fs.readFileSync(path.join(VIEWS, v), 'utf8');
     assert.doesNotMatch(txt.slice(txt.indexOf('teste') || 0), /#(0d6efd|1e90ff|007bff|2563eb|3b82f6)/i, 'sem azul');
   }
@@ -464,14 +468,17 @@ test('Sergio obs.: liberar vaga CONFIRMADA pede confirmação na tela', () => {
 
 // ---------- Ajustes da Vera ----------
 test('Vera T1: faixa do teste usa classe própria e estática (sem `alerta`, que vira aviso flutuante na Home)', async () => {
-  const html = await render('layouts/painel.ejs', {}).catch(() => null);
+  // Redesign v3 (F3): a faixa virou o componente estático cv-faixa, no topo da
+  // Início (partials/faixa-teste.ejs), e continua sem a classe `alerta`.
   const fs = require('node:fs');
-  const txt = fs.readFileSync(path.join(VIEWS, 'layouts/painel.ejs'), 'utf8');
-  const linha = txt.split('\n').find((l) => l.includes('faixaTeste.texto'));
-  assert.match(linha, /class="faixa-teste/);
-  assert.doesNotMatch(linha, /alerta/);
-  assert.match(linha, /position:static/);
-  void html;
+  const txt = fs.readFileSync(path.join(VIEWS, 'partials/faixa-teste.ejs'), 'utf8');
+  const linha = txt.split('\n').find((l) => l.includes('class="cv-faixa'));
+  assert.match(linha, /class="cv-faixa faixa-teste/);
+  assert.doesNotMatch(txt.replace(/<%\/\*[\s\S]*?\*\/%>/g, ''), /alerta/);
+  const html = await render('partials/faixa-teste.ejs', { faixaTeste: { dias: 3, aviso: true, texto: 'Seu teste termina em 3 dias. A Cortavo vai falar com você para continuar.' } });
+  assert.match(html, /<b>3<\/b><small>dias<\/small>/);
+  assert.match(html, /href="\/painel\/meu-plano"/);
+  assert.match(html, /role="status"/);
 });
 
 test('Vera: mestre mostra "Pausa amanhã" para teste já vencido', async () => {

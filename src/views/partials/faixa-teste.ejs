@@ -1,0 +1,13 @@
+<%/* Faixa do teste grátis (fase 2.7), redesenhada na v3 (cv-faixa): só
+     dono/admin (o controller só preenche faixaTeste para admin, correção
+     Sergio 7), só no topo da Início (design-system §16 e spec 05).
+     Contador preto de dias + o texto do servidor + "Meu plano". Sem botão de
+     pagar: nada de compra dentro do app. Classe própria, estática, sem
+     `alerta` (ajuste T1 da Vera: `alerta` vira aviso flutuante). */%>
+<% var diasFaixa = Math.max(0, faixaTeste.dias || 0); %>
+<div class="cv-secao" style="margin-top:16px">
+  <div class="cv-faixa faixa-teste<%= faixaTeste.aviso ? ' faixa-teste--aviso' : '' %>" role="status">
+    <span class="dias" aria-hidden="true"><b><%= diasFaixa %></b><small><%= diasFaixa === 1 ? 'dia' : 'dias' %></small></span>
+    <span><%= faixaTeste.texto %> <a href="/painel/meu-plano">Meu plano</a></span>
+  </div>
+</div>
