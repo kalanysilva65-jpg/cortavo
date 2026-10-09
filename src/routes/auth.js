@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { limiteLogin } = require('../middlewares/rateLimit');
+const { limiteLogin, limiteCriarSenhaGet, limiteCriarSenhaPost, limiteEsqueci } = require('../middlewares/rateLimit');
 
 // Raiz: dono -> painel-mestre; equipe logada -> painel; visitante -> depende
 // do contexto (ver abaixo).
@@ -56,5 +56,13 @@ router.post('/logout', authController.logout);
 // que caem em áreas diferentes depois do login.
 router.get('/trocar-senha', authController.mostrarTrocaSenha);
 router.post('/trocar-senha', authController.trocarSenha);
+
+// Acesso por link (spec 13): a pessoa cria a PRÓPRIA senha pelo link do e-mail.
+// Públicas e sem login. O GET não consome o link (só valida e limpa a URL).
+router.get('/criar-senha', limiteCriarSenhaGet, authController.mostrarCriarSenha);
+router.post('/criar-senha', limiteCriarSenhaPost, authController.criarSenha);
+// "Esqueci minha senha" (F5): resposta sempre igual, exista o e-mail ou não.
+router.get('/esqueci-senha', authController.mostrarEsqueci);
+router.post('/esqueci-senha', limiteEsqueci, authController.pedirLinkEsqueci);
 
 module.exports = router;

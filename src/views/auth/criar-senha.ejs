@@ -1,0 +1,51 @@
+<%/* Spec 13: "Crie sua senha" (link do e-mail). O token NÃO aparece aqui: a
+     sessão guarda só o hash, e a URL já foi limpa no GET. */%>
+<main class="cv-ac">
+  <div class="cv-ac-wrap">
+    <%- include('_acesso-marca') %>
+    <h1 class="cv-ac-titulo">Crie sua senha</h1>
+    <p class="cv-ac-sub">Para <strong><%= nomeBarbearia %></strong> · <%= email %></p>
+
+    <div class="cv-ac-cartao">
+      <form method="POST" action="/criar-senha" class="cv-ac-form" novalidate>
+        <%/* Para o gerenciador de senhas salvar a senha no e-mail certo. */%>
+        <input type="email" name="usuario" value="<%= email %>" autocomplete="username" hidden readonly />
+
+        <% if (erro) { %>
+          <div class="cv-ac-erro" role="alert" id="erro-senha"><%= erro %></div>
+        <% } %>
+
+        <div class="cv-ac-campo">
+          <label class="cv-ac-rot" for="senha">Nova senha (mínimo 8 caracteres)</label>
+          <div class="cv-ac-senha">
+            <input class="cv-ac-entrada" type="password" id="senha" name="senha" autocomplete="new-password" minlength="8" required autofocus
+                   <%- erro ? 'aria-invalid="true" aria-describedby="erro-senha"' : '' %> />
+            <button type="button" class="cv-ac-mostrar" data-alvo="senha" aria-pressed="false">Mostrar</button>
+          </div>
+        </div>
+
+        <div class="cv-ac-campo">
+          <label class="cv-ac-rot" for="confirmar">Repita a senha</label>
+          <div class="cv-ac-senha">
+            <input class="cv-ac-entrada" type="password" id="confirmar" name="confirmar" autocomplete="new-password" minlength="8" required
+                   <%- erro ? 'aria-invalid="true" aria-describedby="erro-senha"' : '' %> />
+            <button type="button" class="cv-ac-mostrar" data-alvo="confirmar" aria-pressed="false">Mostrar</button>
+          </div>
+        </div>
+
+        <button class="cv-ac-btn" type="submit">Criar senha e entrar</button>
+      </form>
+    </div>
+  </div>
+</main>
+<script>
+  document.querySelectorAll('.cv-ac-mostrar').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var c = document.getElementById(b.getAttribute('data-alvo'));
+      var oculta = c.type === 'password';
+      c.type = oculta ? 'text' : 'password';
+      b.textContent = oculta ? 'Ocultar' : 'Mostrar';
+      b.setAttribute('aria-pressed', oculta ? 'true' : 'false');
+    });
+  });
+</script>

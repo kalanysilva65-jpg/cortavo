@@ -79,4 +79,62 @@ const limiteAgendar = rateLimit({
   },
 });
 
-module.exports = { limiteLogin, limiteAdmin, limiteIA, limiteAgendar };
+// --- Acesso por link (spec 13, seção 4) ------------------------------------
+// Telas públicas e sem login. Fábricas (criar*) para os testes montarem limites
+// novos sem estado compartilhado.
+const QUINZE_MIN = 15 * 60 * 1000;
+
+// GET /criar-senha: 30 / 15 min por IP. Responde a tela simples de aviso.
+function criarLimiteCriarSenhaGet() {
+  return rateLimit({
+    windowMs: QUINZE_MIN,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler(req, res) {
+      res.set('Cache-Control', 'no-store');
+      res.status(429).render('auth/link-invalido', { layout: 'layouts/auth', titulo: 'Muitas tentativas', barbearia: null, aviso: true, suporte: '' });
+    },
+  });
+}
+
+// POST /criar-senha: 10 / 15 min por IP. Volta ao formulário com o aviso
+// (padrão do limiteLogin). Redireciona para a própria rota: o Referer não vem
+// (helmet manda Referrer-Policy: no-referrer).
+function criarLimiteCriarSenhaPost() {
+  return rateLimit({
+    windowMs: QUINZE_MIN,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler(req, res) {
+      req.session.flash = { tipo: 'erro', texto: 'Muitas tentativas, aguarde alguns minutos.' };
+      res.redirect('/criar-senha');
+    },
+  });
+}
+
+// POST /esqueci-senha: 5 / 15 min por IP. Estourado, a resposta é a MESMA de
+// sempre ("Se esse e-mail tiver acesso, enviamos um link."), só que nada sai.
+function criarLimiteEsqueci() {
+  return rateLimit({
+    windowMs: QUINZE_MIN,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler(req, res) {
+      res.set('Cache-Control', 'no-store');
+      res.render('auth/esqueci-senha', { layout: 'layouts/auth', titulo: 'Esqueci minha senha', barbearia: null, pedido: true });
+    },
+  });
+}
+
+const limiteCriarSenhaGet = criarLimiteCriarSenhaGet();
+const limiteCriarSenhaPost = criarLimiteCriarSenhaPost();
+const limiteEsqueci = criarLimiteEsqueci();
+
+module.exports = {
+  limiteLogin, limiteAdmin, limiteIA, limiteAgendar,
+  limiteCriarSenhaGet, limiteCriarSenhaPost, limiteEsqueci,
+  criarLimiteCriarSenhaGet, criarLimiteCriarSenhaPost, criarLimiteEsqueci,
+};

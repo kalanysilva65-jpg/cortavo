@@ -1,0 +1,91 @@
+/* =========================================================================
+   Telas do acesso por link (spec 13): "Crie sua senha", "Este link não vale
+   mais" e "Esqueci minha senha". Visual v3 simples (tokens da Dani,
+   squads/app-cortavo/output/redesign/v3/tokens.css). Sem azul.
+   Os tokens usados ficam ESCOPADOS em .cv-ac (mesmos nomes e valores do v3):
+   assim esta folha funciona sozinha hoje e não briga com o tokens.css global
+   quando o redesign entrar.
+   ========================================================================= */
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-600-normal.woff2') format('woff2'); font-weight: 500 600; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-800-normal.woff2') format('woff2'); font-weight: 700 800; font-display: swap; }
+
+.cv-ac {
+  --c-pagina: #F2F2F2; --c-superficie: #FFFFFF; --c-bloco: #F2F2F2; --c-objeto: #111111;
+  --c-tinta: #111111; --c-tinta-2: #3D3D3D; --c-apoio: #666666; --c-fio-forte: rgba(17,17,17,.14);
+  --c-perigo: #B42318; --c-perigo-fundo: #FBEDEB;
+  --vidro-preto: rgba(17,17,17,.92);
+  --vidro-aro-preto: inset 0 1px 0 rgba(255,255,255,.24), inset 0 0 0 .5px rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4);
+  --s-cartao: 0 1px 2px rgba(17,17,17,.04);
+  --s-preto: 0 8px 24px -4px rgba(17,17,17,.45), 0 2px 4px rgba(17,17,17,.2);
+  --fonte: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --r-pilula: 999px; --r-cartao: 24px; --r-campo: 14px;
+  --margem: 20px; --toque-min: 44px; --press: 0.97;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --d-press-out: 160ms; --d-curta: 180ms;
+
+  position: relative; z-index: 1;
+  min-height: 100vh; min-height: 100dvh;
+  background: var(--c-pagina); color: var(--c-tinta);
+  font-family: var(--fonte); font-size: 16px; line-height: 1.45; letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+}
+@media (prefers-contrast: more) { .cv-ac { --c-apoio: #3D3D3D; --c-tinta-2: #111111; --c-fio-forte: rgba(17,17,17,.6); --vidro-preto: #000; } }
+
+.cv-ac *, .cv-ac *::before, .cv-ac *::after { box-sizing: border-box; }
+.cv-ac-wrap {
+  max-width: 420px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  padding: calc(40px + env(safe-area-inset-top, 0px)) var(--margem) calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Ícone oficial: o C com o check (traçado de movimento.js, LOGO_D) num disco preto. */
+.cv-ac-marca { width: 56px; height: 56px; border-radius: 50%; background: var(--c-objeto); display: grid; place-items: center; box-shadow: var(--s-preto); }
+.cv-ac-marca svg { width: 34px; height: auto; display: block; }
+
+.cv-ac-titulo { font-size: 34px; line-height: 1.1; letter-spacing: -0.035em; font-weight: 800; margin: 28px 0 0; }
+.cv-ac-sub { font-size: 14px; line-height: 1.4; color: var(--c-tinta-2); margin: 10px 0 0; overflow-wrap: anywhere; }
+.cv-ac-sub strong { font-weight: 600; color: var(--c-tinta); }
+
+.cv-ac-cartao { background: var(--c-superficie); border-radius: var(--r-cartao); padding: 20px; box-shadow: var(--s-cartao); margin-top: 28px; }
+.cv-ac-form { display: grid; gap: 16px; }
+.cv-ac-campo { display: grid; gap: 6px; }
+.cv-ac-rot { font-size: 13px; font-weight: 600; color: var(--c-tinta-2); }
+.cv-ac-senha { position: relative; }
+.cv-ac-entrada {
+  width: 100%; min-height: 52px; padding: 0 16px; border-radius: var(--r-campo); border: 0;
+  background: var(--c-bloco); color: var(--c-tinta); font: inherit; font-size: 16px;
+  box-shadow: inset 0 0 0 1px transparent; outline: none;
+  transition: box-shadow var(--d-curta) var(--ease-out);
+}
+.cv-ac-senha .cv-ac-entrada { padding-right: 96px; }
+.cv-ac-entrada:focus-visible { box-shadow: inset 0 0 0 2px var(--c-tinta); }
+.cv-ac-entrada[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--c-perigo); }
+.cv-ac-mostrar {
+  position: absolute; right: 4px; top: 4px; min-height: var(--toque-min); min-width: 80px; padding: 0 12px;
+  border: 0; border-radius: var(--r-pilula); background: none; color: var(--c-tinta);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.cv-ac-mostrar:focus-visible { outline: 2px solid var(--c-tinta); outline-offset: 2px; }
+.cv-ac-ajuda { font-size: 13px; color: var(--c-apoio); }
+
+.cv-ac-erro {
+  display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-campo);
+  background: var(--c-perigo-fundo); color: var(--c-perigo); font-size: 14px; font-weight: 600; line-height: 1.4;
+}
+.cv-ac-ok { padding: 14px 16px; border-radius: var(--r-campo); background: var(--c-bloco); color: var(--c-tinta); font-size: 15px; line-height: 1.45; }
+
+.cv-ac-acoes { margin-top: auto; padding-top: 32px; display: grid; gap: 8px; }
+.cv-ac-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  min-height: 52px; padding: 0 24px; border: 0; border-radius: var(--r-pilula);
+  font: inherit; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer;
+  color: #fff; background: var(--vidro-preto); box-shadow: var(--vidro-aro-preto), var(--s-preto);
+  transition: transform var(--d-press-out) var(--ease-out);
+}
+.cv-ac-btn:active { transform: scale(var(--press)); }
+.cv-ac-btn:focus-visible { outline: 2px solid var(--c-tinta); outline-offset: 3px; }
+.cv-ac-btn--texto { background: none; color: var(--c-tinta); box-shadow: none; min-height: var(--toque-min); }
+.cv-ac-link { color: var(--c-tinta); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.cv-ac-form .cv-ac-btn { margin-top: 8px; }
+
+@media (prefers-reduced-motion: reduce) { .cv-ac-btn, .cv-ac-entrada { transition: none; } }

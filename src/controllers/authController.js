@@ -5,6 +5,56 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../config/db');
 const pausa = require('../services/pausa');
+const auditoria = require('../services/auditoria');
+const tokensAcesso = require('../services/tokensAcesso');
+const acessoLink = require('../services/acessoLink');
+const { SUPORTE_CORTAVO } = require('../config/constantes');
+
+// "Versão" da senha guardada na sessão (F6 da spec 13): quando a senha muda,
+// senhaDefinidaEm muda e as sessões abertas antes deixam de valer
+// (middlewares/sessaoValida.js).
+function versaoSenha(usuario) {
+  return usuario && usuario.senhaDefinidaEm ? new Date(usuario.senhaDefinidaEm).getTime() : 0;
+}
+
+// Cria a sessão do usuário. Usado pelo login e pelo "Crie sua senha".
+async function abrirSessao(req, usuario, { manterConectado = false } = {}) {
+  // Renova o ID de sessão no login (anti session-fixation): se alguém plantou
+  // um cookie de sessão conhecido antes do login, ele deixa de valer no instante
+  // em que o usuário se autentica. Só depois da renovação é que gravamos os
+  // dados do usuário na sessão nova.
+  await new Promise((resolve) => req.session.regenerate(() => resolve()));
+
+  // Guarda só o essencial na sessão (inclui a barbearia do usuário).
+  req.session.usuario = {
+    id: usuario.id,
+    nome: usuario.nome,
+    papel: usuario.papel,
+    barbeariaId: usuario.barbeariaId,
+  };
+  req.session.senhaVersao = versaoSenha(usuario);
+
+  // Senha provisória (padrão de fábrica ou criada pelo admin): o guard global
+  // vai forçar a tela de troca antes de liberar qualquer área. A marca fica na
+  // sessão pra não reler o banco a cada request.
+  req.session.trocarSenha = !!usuario.senhaProvisoria;
+
+  // "Manter conectado" (pedido do dono, 2026-08-01): estende o cookie de 8h
+  // para 30 dias. Sem marcar, segue o padrão curto.
+  //
+  // EXCEÇÃO — dono do sistema (super-admin do painel-mestre): a sessão dele
+  // NUNCA é estendida, mesmo marcando o checkbox. O /mestre é a área mais
+  // sensível do sistema; uma sessão de 30 dias ali é risco grande demais.
+  if (manterConectado && usuario.papel !== 'dono') {
+    req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 30;
+  }
+}
+
+// Persiste a sessão (novo ID + dados) ANTES de redirecionar: com store em
+// arquivo, sem isso a requisição seguinte poderia chegar antes da gravação.
+function salvarSessao(req) {
+  return new Promise((resolve) => req.session.save(() => resolve()));
+}
 
 // Para onde mandar cada perfil depois do login.
 function destino(usuario) {
@@ -81,40 +131,8 @@ async function fazerLogin(req, res) {
     if (!b || b.ativo === false) return pausa.renderTelaPausa(res, b && b.nome);
   }
 
-  // Renova o ID de sessão no login (anti session-fixation): se alguém plantou
-  // um cookie de sessão conhecido antes do login, ele deixa de valer no instante
-  // em que o usuário se autentica. Só depois da renovação é que gravamos os
-  // dados do usuário na sessão nova.
-  await new Promise((resolve) => req.session.regenerate(() => resolve()));
-
-  // Guarda só o essencial na sessão (inclui a barbearia do usuário).
-  req.session.usuario = {
-    id: usuario.id,
-    nome: usuario.nome,
-    papel: usuario.papel,
-    barbeariaId: usuario.barbeariaId,
-  };
-
-  // Senha provisória (padrão de fábrica ou criada pelo admin): o guard global
-  // vai forçar a tela de troca antes de liberar qualquer área. A marca fica na
-  // sessão pra não reler o banco a cada request.
-  req.session.trocarSenha = !!usuario.senhaProvisoria;
-
-  // "Manter conectado" (pedido do dono, 2026-08-01): estende o cookie de 8h
-  // para 30 dias. Sem marcar, segue o padrão curto — é o dono numa máquina
-  // possivelmente compartilhada com a equipe, então a escolha é dele, não
-  // um padrão que o mantém logado para sempre.
-  //
-  // EXCEÇÃO — dono do sistema (super-admin do painel-mestre): a sessão dele
-  // NUNCA é estendida, mesmo marcando o checkbox. O /mestre é a área mais
-  // sensível do sistema; uma sessão de 30 dias ali é risco grande demais se o
-  // aparelho for perdido/compartilhado. Fica sempre no padrão curto (8h).
-  if (req.body.manterConectado && usuario.papel !== 'dono') {
-    req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 30;
-  }
-  // Persiste a sessão nova (novo ID + dados) ANTES de redirecionar: com store em
-  // arquivo, sem isso a requisição seguinte poderia chegar antes da gravação.
-  await new Promise((resolve) => req.session.save(() => resolve()));
+  await abrirSessao(req, usuario, { manterConectado: !!req.body.manterConectado });
+  await salvarSessao(req);
   res.redirect(destino(usuario));
 }
 
@@ -156,13 +174,143 @@ async function trocarSenha(req, res) {
   if (nova !== conf) return erro('A confirmação não bate com a nova senha.');
   if (await bcrypt.compare(nova, usuario.senhaHash)) return erro('A nova senha precisa ser diferente da atual.');
 
+  // senhaDefinidaEm muda junto: as OUTRAS sessões abertas com a senha antiga
+  // caem (F6); esta segue valendo com a versão nova.
+  const agora = new Date();
   await prisma.usuario.update({
     where: { id: usuario.id },
-    data: { senhaHash: await bcrypt.hash(nova, 10), senhaProvisoria: false },
+    data: { senhaHash: await bcrypt.hash(nova, 10), senhaProvisoria: false, senhaDefinidaEm: agora },
   });
+  req.session.senhaVersao = agora.getTime();
   req.session.trocarSenha = false;
   req.session.flash = { tipo: 'sucesso', texto: 'Senha atualizada com sucesso.' };
   res.redirect(destino(usuario));
 }
 
-module.exports = { mostrarLogin, fazerLogin, logout, mostrarTrocaSenha, trocarSenha };
+// ===================== Acesso por link (spec 13) =====================
+// Respostas destas telas nunca vão para cache (o link carrega um segredo).
+function semCache(res) {
+  res.set('Cache-Control', 'no-store');
+  res.set('Pragma', 'no-cache');
+}
+
+// A MESMA tela para link inválido, usado, revogado, vencido ou de pessoa
+// inativa: nunca diz o motivo.
+function telaLinkInvalido(req, res) {
+  if (req.session) delete req.session.acessoLink;
+  semCache(res);
+  return res.status(410).render('auth/link-invalido', {
+    layout: 'layouts/auth',
+    titulo: 'Este link não vale mais',
+    barbearia: null,
+    aviso: false,
+    suporte: SUPORTE_CORTAVO,
+  });
+}
+
+// Regras da senha nova: mínimo 8 caracteres, máximo 72 BYTES (o bcrypt ignora
+// o que passa disso), confirmação igual. Sem regra de "maiúscula + símbolo".
+const SENHA_MIN = 8;
+const SENHA_MAX_BYTES = 72;
+function erroDaSenha(senha, confirmar) {
+  if (typeof senha !== 'string' || senha.length < SENHA_MIN) return 'A senha precisa ter ao menos 8 caracteres.';
+  if (Buffer.byteLength(senha, 'utf8') > SENHA_MAX_BYTES) return 'Use no máximo 72 caracteres.';
+  if (senha !== confirmar) return 'As duas senhas não são iguais.';
+  return null;
+}
+
+async function renderFormCriarSenha(req, res, valido, erro, status = 200) {
+  const b = await prisma.barbearia.findUnique({ where: { id: valido.usuario.barbeariaId }, select: { nome: true } });
+  semCache(res);
+  return res.status(status).render('auth/criar-senha', {
+    layout: 'layouts/auth',
+    titulo: 'Crie sua senha',
+    barbearia: null,
+    nomeBarbearia: (b && b.nome) || 'sua barbearia',
+    email: valido.usuario.email,
+    erro,
+  });
+}
+
+// GET /criar-senha?t=... e GET /criar-senha.
+// Com ?t: só VALIDA (não consome: leitores de e-mail e antivírus abrem links
+// sozinhos), guarda o HASH na sessão e redireciona para a URL limpa (o token sai
+// do histórico do navegador). Sem ?t: mostra o formulário do link guardado.
+async function mostrarCriarSenha(req, res) {
+  const t = req.query && req.query.t;
+  if (t !== undefined) {
+    const valido = typeof t === 'string' ? await tokensAcesso.validar(t) : null;
+    if (!valido) return telaLinkInvalido(req, res);
+    req.session.acessoLink = { hash: tokensAcesso.hashToken(t) };
+    await salvarSessao(req);
+    semCache(res);
+    return res.redirect('/criar-senha');
+  }
+  const hash = req.session.acessoLink && req.session.acessoLink.hash;
+  const valido = hash ? await tokensAcesso.validarHash(hash) : null;
+  if (!valido) return telaLinkInvalido(req, res);
+  // Aviso do limite de tentativas (flash) aparece dentro do formulário.
+  const flash = res.locals && res.locals.flash;
+  const erro = flash && flash.tipo === 'erro' ? flash.texto : null;
+  if (erro) res.locals.flash = null;
+  return renderFormCriarSenha(req, res, valido, erro);
+}
+
+// POST /criar-senha: confere a senha, consome o link de forma atômica, grava e
+// já entra (sessão regenerada). Barbearia pausada: tela de pausa, sem sessão.
+// Proteção extra contra formulário forjado: o hash do link precisa estar na
+// sessão (um site de fora não tem).
+async function criarSenha(req, res) {
+  const hash = req.session.acessoLink && req.session.acessoLink.hash;
+  const valido = hash ? await tokensAcesso.validarHash(hash) : null;
+  if (!valido) return telaLinkInvalido(req, res);
+
+  const senha = req.body.senha;
+  const erro = erroDaSenha(senha, req.body.confirmar);
+  if (erro) return renderFormCriarSenha(req, res, valido, erro, 422);
+
+  const senhaHash = await bcrypt.hash(senha, 10);
+  const usuario = await tokensAcesso.consumirHash(hash, senhaHash);
+  if (!usuario) return telaLinkInvalido(req, res);
+  delete req.session.acessoLink;
+
+  const b = await prisma.barbearia.findUnique({ where: { id: usuario.barbeariaId }, select: { ativo: true, nome: true } });
+  if (!b || b.ativo === false) {
+    await auditoria.registrar(req, { acao: 'acesso.senha_criada', alvoTipo: 'usuario', alvoId: usuario.id, detalhe: `${usuario.email} criou a senha pelo link (barbearia pausada: não entrou).` });
+    semCache(res);
+    return pausa.renderTelaPausa(res, b && b.nome);
+  }
+
+  await abrirSessao(req, usuario);
+  await auditoria.registrar(req, { acao: 'acesso.senha_criada', alvoTipo: 'usuario', alvoId: usuario.id, detalhe: `${usuario.email} criou a senha pelo link.` });
+  req.session.flash = { tipo: 'sucesso', texto: 'Senha criada. Bem-vindo à Cortavo.' };
+  await salvarSessao(req);
+  semCache(res);
+  return res.redirect(destino(usuario));
+}
+
+// GET /esqueci-senha
+function mostrarEsqueci(req, res) {
+  semCache(res);
+  res.render('auth/esqueci-senha', { layout: 'layouts/auth', titulo: 'Esqueci minha senha', barbearia: null, pedido: false });
+}
+
+// POST /esqueci-senha: SEMPRE a mesma resposta. O envio roda depois da resposta
+// (sem diferença de tempo entre e-mail com e sem conta).
+function pedirLinkEsqueci(req, res) {
+  const tarefa = acessoLink.esqueciSenha({
+    email: req.body.email,
+    barbeariaId: req.barbearia ? req.barbearia.id : null,
+    req: { ip: req.ip, session: {} },
+  });
+  res.locals.tarefaEsqueci = tarefa; // os testes esperam por ela
+  semCache(res);
+  res.render('auth/esqueci-senha', { layout: 'layouts/auth', titulo: 'Esqueci minha senha', barbearia: null, pedido: true });
+}
+
+module.exports = {
+  mostrarLogin, fazerLogin, logout, mostrarTrocaSenha, trocarSenha,
+  mostrarCriarSenha, criarSenha, mostrarEsqueci, pedirLinkEsqueci,
+  erroDaSenha, versaoSenha,
+};
+
