@@ -85,6 +85,7 @@ model Barbearia {
   usoIAModelo        UsoIAModelo[]
   lembreteLogs       LembreteLog[]
   comissaoPagamentos ComissaoPagamento[]
+  fechamentosCaixa   FechamentoCaixa[]
 
   @@map("barbearias")
 }
@@ -787,4 +788,36 @@ model ComissaoPagamento {
 
   @@index([barbeariaId, usuarioId, periodoInicio])
   @@map("comissao_pagamentos")
+}
+
+/// Fechamento do caixa do dia (redesign v3, F6: "Fechar o caixa de hoje").
+/// Um por barbearia por dia. Guarda o resumo do dia NO MOMENTO do fechamento
+/// (entradas, saídas, por forma de pagamento) e a conferência da gaveta:
+/// `dinheiroEsperado` = fundo inicial + entradas em dinheiro − saídas em
+/// dinheiro; `diferenca` = contado − esperado (negativo = faltou dinheiro).
+/// Fechar de novo o mesmo dia ("refazer") atualiza o registro e soma `vezes`.
+/// Não trava lançamentos: é um registro de conferência, não um bloqueio.
+model FechamentoCaixa {
+  id               Int      @id @default(autoincrement())
+  barbeariaId      Int      @map("barbearia_id")
+  dia              DateTime // o dia fechado (00:00 local)
+  fechadoEm        DateTime @default(now()) @map("fechado_em")
+  fechadoPorId     Int?     @map("fechado_por_id") // sem FK: o registro sobrevive à saída da pessoa
+  fechadoPorNome   String   @map("fechado_por_nome")
+  entradas         Int // centavos
+  saidas           Int // centavos
+  saldo            Int // centavos (entradas − saídas)
+  porForma         String   @map("por_forma") // JSON { pix, credito, debito, dinheiro, sem_forma } das entradas
+  atendimentos     Int // atendimentos concluídos no dia
+  fundoInicial     Int      @default(0) @map("fundo_inicial") // troco que já estava na gaveta (centavos)
+  dinheiroEsperado Int      @map("dinheiro_esperado")
+  dinheiroContado  Int      @map("dinheiro_contado")
+  diferenca        Int
+  observacao       String?
+  vezes            Int      @default(1) // quantas vezes o dia foi fechado
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@unique([barbeariaId, dia])
+  @@map("fechamentos_caixa")
 }

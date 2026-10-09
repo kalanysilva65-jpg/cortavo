@@ -31,6 +31,7 @@ const logoController = require('../controllers/logoController');
 const meuPlanoController = require('../controllers/meuPlanoController');
 const conversasController = require('../controllers/conversasController');
 const gestaoApiController = require('../controllers/gestaoApiController');
+const caixaApiController = require('../controllers/caixaApiController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
 const upload = require('../middlewares/upload');
@@ -376,6 +377,10 @@ router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 router.get('/caixa', exige('caixa_ver'), caixaController.ver);
 router.post('/caixa', exige('caixa_lancar'), caixaController.criar);
 router.post('/caixa/:id/remover', exigeAdmin, caixaController.remover);
+// Caixa do dia e fechamento (redesign v3, F6): ver com caixa_ver; fechar com caixa_lancar.
+router.get('/api/caixa/dia', exige('caixa_ver'), caixaApiController.dia);
+router.get('/api/caixa/fechamentos', exige('caixa_ver'), caixaApiController.fechamentos);
+router.post('/api/caixa/fechar', exige('caixa_lancar'), caixaApiController.fechar);
 
 // --- Relatórios (somente admin) --------------------------------------------
 router.get('/relatorios', exigeAdmin, relatorioController.ver);
