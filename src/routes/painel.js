@@ -4,6 +4,7 @@ const router = express.Router();
 const { exigeLogin, exigeAdmin } = require('../middlewares/auth');
 const { exigeBarbeariaPainel } = require('../middlewares/tenant');
 const { exigeFuncaoDoPlano } = require('../middlewares/planoCortavo');
+const { exige } = require('../middlewares/permissao');
 const planoCortavo = require('../services/planoCortavo');
 const testeGratis = require('../services/testeGratis');
 const prisma = require('../config/db');
@@ -345,10 +346,12 @@ router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 // Equipe (barbeiros) e Marca são gerenciadas apenas no painel-mestre (dono do
 // sistema), em /mestre/barbearias/:id — por isso não há rotas delas aqui.
 
-// --- Caixa (somente admin) ------------------------------------------------
+// --- Caixa -----------------------------------------------------------------
+// Spec 12 (B2, R4): ver e lançar passam a valer para o barbeiro com a chave
+// (caixa_ver / caixa_lancar; admin sempre). Excluir lançamento continua só admin.
 // Específicas (/config, /categorias) antes das paramétricas (/:id).
-router.get('/caixa', exigeAdmin, caixaController.ver);
-router.post('/caixa', exigeAdmin, caixaController.criar);
+router.get('/caixa', exige('caixa_ver'), caixaController.ver);
+router.post('/caixa', exige('caixa_lancar'), caixaController.criar);
 router.post('/caixa/:id/remover', exigeAdmin, caixaController.remover);
 
 // --- Relatórios (somente admin) --------------------------------------------

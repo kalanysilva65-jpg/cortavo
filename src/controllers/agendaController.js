@@ -8,6 +8,15 @@ const precos = require('../services/precos');
 const { dataLocal, paraMinutos, duracaoEfetiva, todosHorarios, duracaoComEncaixe } = require('../services/disponibilidade');
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
+const permissoes = require('../services/permissoes');
+
+// Spec 12 (B2): sem `clientes_contato`, telefone de cliente só com o final.
+function veContato(req) {
+  return !req.permissoes || req.permissoes.pode('clientes_contato');
+}
+function clientesParaTela(req, clientes) {
+  return veContato(req) ? clientes : clientes.map((c) => ({ ...c, telefone: permissoes.mascararTelefone(c.telefone) }));
+}
 const caixaServ = require('../services/caixa');
 const planoServ = require('../services/plano');
 const estoqueServ = require('../services/estoque');
@@ -263,11 +272,11 @@ async function verAgenda(req, res) {
     : [];
   const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
   // Clientes cadastrados — usado no autocomplete do pop-up "Novo agendamento".
-  const clientes = await prisma.cliente.findMany({
+  const clientes = clientesParaTela(req, await prisma.cliente.findMany({
     where: { barbeariaId: b },
     select: { id: true, nome: true, telefone: true },
     orderBy: { nome: 'asc' },
-  });
+  }));
 
   // Bloqueios do dia (mesmo filtro de barbeiro) — aparecem na linha do tempo.
   const whereBloq = { barbeariaId: b, data: { gte: periodoInicio, lt: periodoFimExcl } };
@@ -618,6 +627,7 @@ async function detalheFragmento(req, res) {
   });
   if (!ag) return res.status(404).send('');
   if (!podeAlterar(req, ag)) return res.status(403).send('');
+  if (!veContato(req)) ag.clienteTelefone = permissoes.mascararTelefone(ag.clienteTelefone);
 
   // "Agora" é o próximo atendimento em aberto do dia — mesmo critério da lista,
   // senão o selo mudaria sozinho ao atualizar a folha.
@@ -692,11 +702,11 @@ async function dadosForm(req) {
     ? await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } })
     : [];
   const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
-  const clientes = await prisma.cliente.findMany({
+  const clientes = clientesParaTela(req, await prisma.cliente.findMany({
     where: { barbeariaId: b },
     select: { id: true, nome: true, telefone: true },
     orderBy: { nome: 'asc' },
-  });
+  }));
   return { ehAdmin, barbeiros, servicos, clientes };
 }
 
@@ -775,7 +785,18 @@ async function criarManual(req, res) {
   const hora = req.body.hora;
   const nome = (req.body.cliente_nome || '').trim();
   const email = (req.body.cliente_email || '').trim();
-  const telefone = (req.body.cliente_telefone || '').trim();
+  let telefone = (req.body.cliente_telefone || '').trim();
+  // Spec 12 (B2): quem não vê o telefone escolhe o cliente no autocomplete e o
+  // campo chega mascarado ("•••• 4321"). O número de verdade sai do cadastro:
+  // pelo `clienteId` (tela nova) ou, na tela atual, pelo nome + final do número.
+  if (telefone.includes('•')) {
+    const final = normalizarTelefone(telefone);
+    const idCli = idNum(req.body.clienteId);
+    const candidatos = idCli
+      ? await prisma.cliente.findMany({ where: { id: idCli, barbeariaId: b }, select: { telefone: true } })
+      : await prisma.cliente.findMany({ where: { barbeariaId: b, nome, telefone: { endsWith: final } }, select: { telefone: true } });
+    telefone = candidatos.length === 1 && final && candidatos[0].telefone.endsWith(final) ? candidatos[0].telefone : '';
+  }
 
   const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, barbeariaId: b, ativo: true } });
   const servicosBase = servicoIds.length

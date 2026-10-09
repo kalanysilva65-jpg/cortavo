@@ -5,6 +5,13 @@ const prisma = require('../config/db');
 const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
 const { DIAS_SEMANA } = require('../config/constantes');
+const permissoes = require('../services/permissoes');
+
+// Spec 12 (B2): sem `clientes_contato`, o telefone do cliente chega à tela só
+// com o final (a tela não recebe o dado que não vai mostrar).
+function veContato(req) {
+  return !req.permissoes || req.permissoes.pode('clientes_contato');
+}
 
 const DIAS_SUMIDO = 30; // mesmo limite usado no HTML original (lastVisitDays >= 30)
 
@@ -124,7 +131,10 @@ async function listar(req, res) {
     // gravada ao meio-dia local justamente para que o corte em UTC não puxe
     // o dia para trás aqui.
     const nascimentoIso = c.dataNascimento ? new Date(c.dataNascimento).toISOString().slice(0, 10) : '';
-    return { ...c, iniciais: iniciais(c.nome), stats, assinaturas, aniversarianteMes, nascimentoIso };
+    const telefone = veContato(req) ? c.telefone : permissoes.mascararTelefone(c.telefone);
+    // Os agendamentos do histórico também carregam o telefone: sai mascarado junto.
+    const agendamentos = veContato(req) ? c.agendamentos : c.agendamentos.map((a) => ({ ...a, clienteTelefone: permissoes.mascararTelefone(a.clienteTelefone) }));
+    return { ...c, telefone, agendamentos, telefoneOculto: !veContato(req), iniciais: iniciais(c.nome), stats, assinaturas, aniversarianteMes, nascimentoIso };
   });
 
   // Resumo do topo ("Na base"): o número grande é o tamanho da carteira, e as
@@ -169,7 +179,9 @@ async function atualizar(req, res) {
   const cliente = await prisma.cliente.findFirst({ where: { id, barbeariaId: b } });
   if (!cliente) return res.redirect('/painel/clientes');
 
-  const telefone = normalizarTelefone(req.body.telefone);
+  // Sem `clientes_contato` a tela mostra o telefone mascarado; o que voltar no
+  // formulário é ignorado, senão "•••• 4321" viraria o telefone "4321".
+  const telefone = veContato(req) ? normalizarTelefone(req.body.telefone) : cliente.telefone;
   if (!telefone) {
     req.session.flash = { tipo: 'erro', texto: 'Informe um telefone válido.' };
     return res.redirect('/painel/clientes');

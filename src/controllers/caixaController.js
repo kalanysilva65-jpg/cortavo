@@ -247,8 +247,18 @@ async function ver(req, res) {
   const hora = agora.getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
 
+  // Spec 12 (B2): barbeiro com `caixa_ver` vê o caixa; só lança com
+  // `caixa_lancar` e nunca exclui. A comissão somada da equipe é número dos
+  // outros barbeiros: só para quem pode comparar a equipe.
+  const perm = req.permissoes;
+  const podeLancarCaixa = !perm || perm.pode('caixa_lancar');
+  const podeRemoverCaixa = !perm || perm.ehAdmin;
+  if (perm && !perm.podeVerEquipe()) comissaoValor = 0;
+
   res.render('painel/caixa', {
     titulo: 'Financeiro',
+    podeLancarCaixa,
+    podeRemoverCaixa,
     saudacao,
     lancamentos,
     resumoPeriodo,
