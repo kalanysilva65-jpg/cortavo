@@ -33,11 +33,11 @@ const hrefsDaNav = (html) => (html.match(/<nav class="cv-navbar"[\s\S]*?<\/nav>/
 test('F1 navbar: as mesmas 5 seções para dono e para barbeiro com tudo bloqueado', async () => {
   const dono = await render('partials/nav-inferior.ejs', locais());
   const soAgenda = await render('partials/nav-inferior.ejs', locais({ admin: false, bloqueados: TUDO_BLOQUEADO, plano: 'essencial' }));
-  const esperado = ['href="/painel"', 'href="/painel/agenda"', 'href="/painel/agenda/novo"', 'href="/painel/gestao"', 'href="/painel/mais"'];
+  const esperado = ['href="/painel"', 'href="/painel/agenda"', 'href="/painel/agenda?abrir=agendamento"', 'href="/painel/gestao"', 'href="/painel/mais"'];
   assert.deepEqual(hrefsDaNav(dono), esperado);
   assert.deepEqual(hrefsDaNav(soAgenda), esperado);
   for (const r of ['Início', 'Agenda', 'Gestão', 'Mais']) assert.match(dono, new RegExp('<span>' + r + '</span>'));
-  assert.match(dono, /aria-label="Novo agendamento"/);
+  assert.match(dono, /id="btn-novo"[^>]*aria-label="Novo"/);
 });
 
 test('F1 navbar: a seção ativa segue a tela (aria-current)', async () => {
@@ -174,4 +174,29 @@ test('F3 Início: horas livres só com o dado do Beto (B6); faixa do teste só q
   assert.match(comHoras, /class="agora"/);
   assert.doesNotMatch(inicio(), /cv-faixa/);
   assert.match(inicio({ faixaTeste: { dias: 3, aviso: true, texto: 'Seu teste termina em 3 dias.' } }), /cv-faixa faixa-teste/);
+});
+
+// ---------- F2: folha Novo ----------
+const acoesDaFolha = (html) => (html.match(/<section class="cv-folha" id="folha-novo"[\s\S]*?<\/section>/) || [''])[0].match(/<b>[^<]+<\/b>/g).map((b) => b.replace(/<\/?b>/g, ''));
+test('F2 folha Novo: ações filtradas pela permissão, "Agendamento" sempre e primeiro', async () => {
+  const dono = await render('partials/nav-inferior.ejs', locais());
+  assert.deepEqual(acoesDaFolha(dono), ['Agendamento', 'Cliente', 'Lançamento', 'Bloqueio']);
+  assert.match(dono, /class="cv-acao cv-acao--principal" href="\/painel\/agenda\?abrir=agendamento"/);
+  assert.match(dono, /href="\/painel\/caixa\?abrir=lancamento"/);
+  const basico = await render('partials/nav-inferior.ejs', locais({ admin: false }));
+  assert.deepEqual(acoesDaFolha(basico), ['Agendamento', 'Cliente', 'Bloqueio']);
+  assert.match(basico, /href="\/painel\/horarios"/);
+  assert.doesNotMatch(basico, /abrir=lancamento/);
+  const soAgenda = await render('partials/nav-inferior.ejs', locais({ admin: false, bloqueados: TUDO_BLOQUEADO }));
+  assert.deepEqual(acoesDaFolha(soAgenda), ['Agendamento']);
+  assert.match(dono, /role="dialog" aria-modal="true" aria-labelledby="folha-novo-titulo"/);
+  assert.match(dono, /data-fechar aria-label="Fechar"/);
+});
+
+test('F2 casca: "+" abre a folha e ?abrir= abre a folha da tela de destino', () => {
+  const js = fs.readFileSync(path.join(RAIZ, 'public/js/cv-casca.js'), 'utf8');
+  for (const t of ["C.folha.abrir(f, { gatilho: btn })", "C.folha.arrastar(f)", "e.key === 'Escape'", "g.abrirModal('novo')", "g.abrirModal('bloqueio')", "g.clAbrirFolha('novo')", "g.cxFolha('novo', true)"]) assert.ok(js.includes(t), t);
+  for (const [v, fn] of [['painel/agenda.ejs', 'function abrirModal('], ['painel/clientes.ejs', 'function clAbrirFolha('], ['painel/caixa.ejs', 'function cxFolha(']]) {
+    assert.ok(fs.readFileSync(path.join(VIEWS, v), 'utf8').includes(fn), v);
+  }
 });

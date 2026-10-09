@@ -35,11 +35,46 @@
   <span class="cv-lente" aria-hidden="true"></span>
   <% ITENS_NAV.forEach(function (it) { %>
     <% if (!it) { %>
-      <%/* Novo: até a folha de ações (fatia F2) entrar, leva direto ao novo
-           agendamento, a única ação que todo papel sempre tem. */%>
-      <a class="cv-mais" id="btn-novo" href="/painel/agenda/novo" aria-label="Novo agendamento"><%- include('icone', { cvIc: 'mais' }) %></a>
+      <%/* Novo (M4): o "+" abre a folha com as ações liberadas. Sem JS ele
+           continua sendo um link para o novo agendamento, a única ação que
+           todo papel sempre tem. */%>
+      <a class="cv-mais" id="btn-novo" href="/painel/agenda?abrir=agendamento" aria-label="Novo"><%- include('icone', { cvIc: 'mais' }) %></a>
     <% } else { %>
       <a class="cv-nav-item" href="<%= it.href %>" data-nav="<%= it.s %>"<% if (it.s === secaoAtual) { %> aria-current="page"<% } %>><%- include('icone', { cvIc: it.ic }) %><span><%= it.nome %></span></a>
     <% } %>
   <% }) %>
 </nav>
+
+<%
+  // Folha Novo (fatia F2, M4): só as ações que este usuário pode fazer, com o
+  // mesmo filtro das telas de destino. "Agendamento" aparece sempre.
+  // Cada ação abre a tela que já faz aquilo, com a folha dela aberta
+  // (?abrir=..., cv-casca.js), reaproveitando as rotas e validações de hoje.
+  // TODO(Beto B1): filtrar Lançamento e Bloqueio pelas chaves caixa_lancar e
+  // horarios no lugar de "só admin" quando as chaves novas existirem.
+  var _pode = (typeof podeAcessar === 'function') ? podeAcessar : function () { return true; };
+  var _adm = (typeof ehAdmin !== 'undefined') && !!ehAdmin;
+  var ACOES_NOVO = [
+    { ic: 'novoAg', t: 'Agendamento', s: 'Cliente, serviço e horário', href: '/painel/agenda?abrir=agendamento', ok: true },
+    { ic: 'clienteMais', t: 'Cliente', s: 'Cadastrar contato', href: '/painel/clientes?abrir=cliente', ok: _pode('/painel/clientes') },
+    { ic: 'lancamento', t: 'Lançamento', s: 'Entrada ou saída no caixa', href: '/painel/caixa?abrir=lancamento', ok: _adm },
+    { ic: 'bloqueio', t: 'Bloqueio', s: 'Fechar um horário', href: _adm ? '/painel/agenda?abrir=bloqueio' : '/painel/horarios', ok: _adm || _pode('/painel/horarios') },
+  ].filter(function (a) { return a.ok; });
+%>
+<div class="cv-veu" aria-hidden="true"></div>
+<section class="cv-folha" id="folha-novo" role="dialog" aria-modal="true" aria-labelledby="folha-novo-titulo">
+  <div class="cv-folha-zona">
+    <div class="cv-puxador" aria-hidden="true"></div>
+    <div class="cv-folha-cab">
+      <h2 id="folha-novo-titulo" tabindex="-1" data-foco style="outline:none">Novo</h2>
+      <button class="cv-redondo cv-redondo--leve" type="button" data-fechar aria-label="Fechar"><%- include('icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button>
+    </div>
+  </div>
+  <div class="cv-folha-corpo">
+    <div class="cv-acoes4">
+      <% ACOES_NOVO.forEach(function (a, i) { %>
+        <a class="cv-acao<%= i === 0 ? ' cv-acao--principal' : '' %>" href="<%= a.href %>" data-cascata><%- include('icone', { cvIc: a.ic }) %><span><b><%= a.t %></b><small><%= a.s %></small></span></a>
+      <% }) %>
+    </div>
+  </div>
+</section>

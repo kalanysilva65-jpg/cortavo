@@ -67,8 +67,48 @@
     });
   }
 
+  /* Folha Novo (M4): "+" abre e fecha; véu, Esc, "×" e arrastar fecham. */
+  function folhaNovo() {
+    var btn = doc.getElementById('btn-novo'), f = doc.getElementById('folha-novo');
+    if (!btn || !f || !C) return;
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.setAttribute('aria-controls', 'folha-novo');
+    btn.setAttribute('aria-expanded', 'false');
+    C.folha.arrastar(f);
+    function fechar() { if (C.folha.atual()) C.folha.fechar(f); }
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (C.folha.atual()) { fechar(); return; }
+      var palco = doc.querySelector('.cv-palco');
+      if (palco) palco.style.transformOrigin = '50% ' + (g.scrollY + g.innerHeight / 2) + 'px';
+      C.folha.abrir(f, { gatilho: btn });
+    });
+    var veu = doc.querySelector('.cv-veu');
+    if (veu) veu.addEventListener('click', fechar);
+    Array.prototype.forEach.call(f.querySelectorAll('[data-fechar]'), function (b) { b.addEventListener('click', fechar); });
+    doc.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
+  }
+
+  /* Ação do Novo que abre a folha da própria tela (?abrir=...). As funções
+     são as globais que cada tela já usa nos onclick. */
+  function abrirPelaUrl() {
+    var q; try { q = new URLSearchParams(g.location.search); } catch (e) { return; }
+    var alvo = q.get('abrir'); if (!alvo) return;
+    var mapa = {
+      agendamento: function () { if (typeof g.abrirModal === 'function') g.abrirModal('novo'); },
+      bloqueio: function () { if (typeof g.abrirModal === 'function') g.abrirModal('bloqueio'); },
+      cliente: function () { if (typeof g.clAbrirFolha === 'function') g.clAbrirFolha('novo'); },
+      lancamento: function () { if (typeof g.cxFolha === 'function') g.cxFolha('novo', true); },
+    };
+    if (mapa[alvo]) mapa[alvo]();
+    q.delete('abrir');
+    try { g.history.replaceState(null, '', g.location.pathname + (q.toString() ? '?' + q : '') + g.location.hash); } catch (e) {}
+  }
+
   function iniciar() {
     navbar();
+    folhaNovo();
+    abrirPelaUrl();
     avisosDoServidor();
     cartoesLink();
     if (C && doc.querySelector('.cv-cab-compacto')) C.cabecalho({ limiar: 44 });
