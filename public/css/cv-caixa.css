@@ -1,12 +1,6 @@
 /* =========================================================================
    Cortavo v3 · Caixa e Fechar caixa (fatia F6). Mockups: prints 09, 09c, 10.
    ========================================================================= */
-.cv-cx-periodos { display: grid; grid-template-columns: 1fr 1fr 1fr 44px; height: 44px; }
-.cv-cx-periodos a, .cv-cx-periodos .cv-cx-cal { display: grid; place-items: center; border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); transition: background-color var(--d-curta) var(--ease-out); }
-.cv-cx-periodos [aria-current="page"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
-.cv-cx-custom { margin-top: 10px; }
-.cv-cx-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.cv-cx-duas .cv-campo + .cv-campo { margin-top: 0; }
 .cv-cx-atalhos { margin: 12px calc(-1 * var(--e-5)) 12px; padding: 0 var(--e-5); }
 .cv-cx-es { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: .5px solid var(--c-fio-objeto); }
 .cv-cx-es b { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; }
@@ -17,7 +11,6 @@
 .cv-cx-receber .corpo { flex: 1; min-width: 0; }
 .cv-cx-receber b { display: block; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .cv-cx-receber .corpo span { font-size: 13px; color: var(--c-apoio); }
-.cv-cx-val { margin-top: 6px; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .cv-cx-extrato { --recuo: 76px; }
 .cv-cx-quando { width: 44px; flex-shrink: 0; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
 .cv-cx-quando b { font-size: 14px; font-weight: 600; color: var(--c-apoio); }

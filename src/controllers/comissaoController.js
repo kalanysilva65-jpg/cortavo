@@ -255,7 +255,25 @@ async function ver(req, res) {
   else if (inicioStr === presetSemana.inicio && fimStr === presetSemana.fim) periodoAtivo = 'semana';
   else if (inicioStr === presetMes.inicio && fimStr === presetMes.fim) periodoAtivo = 'mes';
 
+  // Redesign v3 (F7): o que já foi pago e o que falta, por barbeiro, e o
+  // histórico das baixas (B5 do Beto, mesmo recorte da Gestão: o barbeiro só
+  // recebe a dele). Sem a leitura, a tela mostra só a comissão calculada.
+  let situacoes = {};
+  let pagamentosComissao = [];
+  if (req.permissoes) {
+    try {
+      const r = await require('../services/metricas').calcular('comissoes', { barbeariaId: b, permissoes: req.permissoes, query: { de: inicioStr, ate: fimStr, detalhe: '1' } });
+      for (const x of r.resumo.barbeiros) situacoes[x.usuarioId] = { pago: x.pago, aPagar: x.aPagar, situacao: x.situacao };
+      pagamentosComissao = (r.detalhe && r.detalhe.pagamentos) || [];
+    } catch (e) {
+      situacoes = {};
+    }
+  }
+
   res.render('painel/comissoes', {
+    situacoes,
+    pagamentosComissao,
+    nomePeriodo: periodoAtivo === 'hoje' ? 'Hoje' : periodoAtivo === 'semana' ? 'Esta semana' : periodoAtivo === 'mes' ? 'Este mês' : inicioStr.split('-').reverse().join('/') + ' a ' + fimStr.split('-').reverse().join('/'),
     titulo: 'Comissões',
     grupos,
     barbeiros,

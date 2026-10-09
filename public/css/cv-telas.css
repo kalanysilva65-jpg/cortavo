@@ -131,3 +131,12 @@ a.cv-cartao { display: block; color: inherit; }
 .cv-vazio-graf { position: relative; height: 96px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; align-items: end; }
 .cv-vazio-graf i { display: block; border-radius: 6px 6px 3px 3px; box-shadow: inset 0 0 0 1.5px var(--d-trilho); }
 .cv-logo-c { display: grid; place-items: center; background: var(--c-objeto); flex-shrink: 0; } /* o C com check oficial, branco sobre preto */
+
+/* Segmentado de período e campos lado a lado (Caixa, Comissões) */
+.cv-cx-periodos { display: grid; grid-template-columns: 1fr 1fr 1fr 44px; height: 44px; }
+.cv-cx-periodos a, .cv-cx-periodos .cv-cx-cal { display: grid; place-items: center; border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); transition: background-color var(--d-curta) var(--ease-out); }
+.cv-cx-periodos [aria-current="page"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
+.cv-cx-custom { margin-top: 10px; }
+.cv-cx-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cv-cx-duas .cv-campo + .cv-campo { margin-top: 0; }
+.cv-cx-val { margin-top: 6px; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
