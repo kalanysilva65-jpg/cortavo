@@ -201,9 +201,8 @@ test('F2 casca: "+" abre a folha e ?abrir= abre a folha da tela de destino', () 
   for (const t of ["C.folha.abrir(f, { gatilho: btn })", "C.folha.arrastar(f)", "e.key === 'Escape'", "g.abrirModal('novo')", "g.abrirModal('bloqueio')", "g.clAbrirFolha('novo')", "g.cxFolha('novo', true)"]) assert.ok(js.includes(t), t);
   // A Agenda v3 expõe abrirModal no próprio script; clientes e caixa, nas views.
   assert.ok(fs.readFileSync(path.join(RAIZ, 'public/js/cv-agenda.js'), 'utf8').includes('g.abrirModal = abrirModal'));
-  for (const [v, fn] of [['painel/clientes.ejs', 'function clAbrirFolha('], ['painel/caixa.ejs', 'function cxFolha(']]) {
-    assert.ok(fs.readFileSync(path.join(VIEWS, v), 'utf8').includes(fn), v);
-  }
+  assert.ok(fs.readFileSync(path.join(RAIZ, 'public/js/cv-caixa.js'), 'utf8').includes('g.cxFolha = function'));
+  assert.ok(fs.readFileSync(path.join(VIEWS, 'painel/clientes.ejs'), 'utf8').includes('function clAbrirFolha('));
 });
 
 // ---------- F4: Agenda ----------
@@ -310,4 +309,54 @@ test('F5 rota: período validado na URL, números só com o B4', () => {
   const rotas = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
   assert.ok(rotas.includes("['hoje', 'semana', 'mes', 'ano'].includes(req.query.periodo)"));
   assert.ok(rotas.includes('gestaoTela.montarGestao({ barbeariaId: req.barbeariaId, permissoes: req.permissoes'));
+});
+
+// ---------- F6: Caixa e Fechar caixa ----------
+function caixaHtml(extra = {}) {
+  const base = {
+    podeLancarCaixa: true, podeRemoverCaixa: true, nomePeriodoSel: 'Hoje, 9 de outubro', periodoAtivo: 'hoje',
+    presetHoje: { inicio: '2026-10-09', fim: '2026-10-09' }, presetSemana: { inicio: '2026-10-05', fim: '2026-10-11' }, presetMes: { inicio: '2026-10-01', fim: '2026-10-31' },
+    periodoCustomLabel: 'Período', inicioStr: '2026-10-09', fimStr: '2026-10-09', atalhosPeriodo: [], hojeIso: '2026-10-09',
+    resumoPeriodo: { entrou: 210650, saiu: 26400, saldo: 184250 }, lancamentos: [{ tipo: 'entrada' }, { tipo: 'entrada' }, { tipo: 'saida' }],
+    aReceber: { quantidade: 2, valor: 9000 }, formasPagamento: [{ label: 'Pix', curto: 'Pix', valorCentavos: 109600 }, { label: 'Dinheiro', curto: 'Dinheiro', valorCentavos: 35800 }],
+    servicosValor: 150000, produtosValor: 20000, comissaoValor: 60000, extratoLabel: 'Extrato de hoje', extratoRestantes: 0,
+    extrato: [{ id: 7, hora: '14:12', diaLabel: '', descricao: 'Corte + barba', sub: 'Felipe Rocha · Pix', entrada: true, valor: 7000, saldo: 7000 }],
+    formasPagamentoOpcoes: [{ valor: 'pix', curto: 'Pix' }, { valor: 'dinheiro', curto: 'Dinheiro' }],
+    fmtBRL: (c) => 'R$ ' + (c / 100).toFixed(2).replace('.', ','),
+  };
+  const arq = path.join(VIEWS, 'painel/caixa.ejs');
+  return ejs.render(fs.readFileSync(arq, 'utf8'), { ...base, ...extra }, { filename: arq });
+}
+test('F6 Caixa: saldo no objeto, Lançar e Fechar caixa só com caixa_lancar, excluir só com permissão', () => {
+  const html = caixaHtml();
+  assert.match(html, /Saldo de hoje/);
+  assert.match(html, /<span class="int">1\.842<\/span><span class="cent">,50<\/span>/);
+  assert.match(html, /2 lançamentos[\s\S]*1 lançamento/);
+  assert.match(html, /href="\/painel\/caixa\/fechar"/);
+  assert.match(html, /id="cx-folha-novo" role="dialog"/);
+  assert.match(html, /action="\/painel\/caixa\/7\/remover"/);
+  const so = caixaHtml({ podeLancarCaixa: false, podeRemoverCaixa: false });
+  assert.doesNotMatch(so, /cx-folha-novo|caixa\/fechar|\/remover/);
+  assert.doesNotMatch(html, /sv-cx-|pill-opcao/);
+});
+test('F6 Fechar caixa: conferência da gaveta com o esperado; dia já fechado mostra o registro e "Fechar de novo"', () => {
+  const arq = path.join(VIEWS, 'painel/caixa-fechar.ejs');
+  const resumo = { entradas: 210650, saidas: 26400, saldo: 184250, porForma: { pix: 109600, credito: 0, debito: 65250, dinheiro: 35800, sem_forma: 0 }, saidasDinheiro: 8400, aReceber: { quantidade: 0, valor: 0 }, fechamento: null };
+  const r = (res) => ejs.render(fs.readFileSync(arq, 'utf8'), { resumo: res, dataLonga: 'Sexta, 9 de outubro', fmtBRL: (c) => 'R$ ' + (c / 100).toFixed(2).replace('.', ',') }, { filename: arq });
+  const aberto = r(resumo);
+  assert.match(aberto, /data-base="27400"/, 'dinheiro 358,00 menos 84,00 de saídas em dinheiro');
+  assert.match(aberto, /Esperado: R\$ 274,00/);
+  assert.doesNotMatch(aberto, /Crédito/, 'forma zerada não aparece');
+  assert.match(aberto, /Fechar o caixa de hoje<\/button>/);
+  const fechado = r({ ...resumo, fechamento: { fechadoEm: new Date(2026, 9, 9, 19, 42), fechadoPorNome: 'Ana Admin', entradas: 210650, saidas: 26400, saldo: 184250, dinheiroEsperado: 27400, dinheiroContado: 27000, diferenca: -400, vezes: 1 } });
+  assert.match(fechado, /Caixa fechado às 19:42/);
+  assert.match(fechado, /Faltaram R\$ 4,00 na gaveta\. Por Ana/);
+  assert.match(fechado, /cv-logo-c/);
+  assert.match(fechado, /id="cx-refazer"/);
+  assert.match(fechado, /data-refazer="1"/);
+  const rotas = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
+  assert.match(rotas, /router\.get\('\/caixa\/fechar', exige\('caixa_lancar'\)/);
+  const js = fs.readFileSync(path.join(RAIZ, 'public/js/cv-caixa.js'), 'utf8');
+  assert.ok(js.includes("fetch('/painel/api/caixa/fechar'"));
+  assert.ok(js.includes("C.selo({ botao: btn, processando:"));
 });

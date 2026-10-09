@@ -101,7 +101,9 @@ test('B2 caixa: admin continua vendo tudo (comissão, excluir, lançar)', async 
 
 test('B2 caixa: a tela esconde Lançar e Excluir conforme a permissão', () => {
   const v = fs.readFileSync(path.join(RAIZ, 'src/views/painel/caixa.ejs'), 'utf8');
-  assert.match(v, /podeLancarCaixa\) \{ %>\s*<button type="button" class="sv-cx-lancar"/);
+  // Redesign v3 (F6): Lançar e Fechar caixa ficam juntos atrás de podeLancarCaixa.
+  assert.match(v, /var _lancar = \(typeof podeLancarCaixa === 'undefined' \|\| podeLancarCaixa\);/);
+  assert.match(v, /<% if \(_lancar\) \{ %>\s*<div class="cv-cx-acoes">\s*<button type="button" class="cv-btn cv-btn--2 cv-cx-lancar"/);
   assert.match(v, /podeRemoverCaixa\) \{ %>\s*<form method="POST" action="\/painel\/caixa\/<%= ex\.id %>\/remover"/);
 });
 

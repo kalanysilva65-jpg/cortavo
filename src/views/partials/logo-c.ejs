@@ -1,0 +1,4 @@
+<%/* O C com check do ícone oficial (branco sobre o ladrilho preto), traçado de
+     public/js/cv-movimento.js (LOGO_D). Usado parado onde algo terminou:
+     "Caixa fechado", "Pago". Tamanho do ladrilho por cvTam (padrão 48). */%>
+<% var _t = (typeof cvTam !== 'undefined' && cvTam) ? cvTam : 48; %><span class="cv-logo-c" style="width:<%= _t %>px;height:<%= _t %>px;border-radius:<%= Math.round(_t * 0.26) %>px" aria-hidden="true"><svg viewBox="150 240 770 545" width="<%= Math.round(_t * 0.62) %>" height="<%= Math.round(_t * 0.44) %>"><path fill="#fff" d="M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z"/></svg></span>

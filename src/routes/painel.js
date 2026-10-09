@@ -406,6 +406,16 @@ router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 // (caixa_ver / caixa_lancar; admin sempre). Excluir lançamento continua só admin.
 // Específicas (/config, /categorias) antes das paramétricas (/:id).
 router.get('/caixa', exige('caixa_ver'), caixaController.ver);
+// Redesign v3 (F6): tela "Fechar o caixa de hoje" (o registro é a API do Beto,
+// POST /painel/api/caixa/fechar). Mesma chave de quem fecha: caixa_lancar.
+router.get('/caixa/fechar', exige('caixa_lancar'), async (req, res) => {
+  const fechamentoCaixa = require('../services/fechamentoCaixa');
+  const dia = fechamentoCaixa.lerDia(undefined);
+  const resumo = await fechamentoCaixa.resumoDoDia(req.barbeariaId, dia, {});
+  const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  res.render('painel/caixa-fechar', { titulo: 'Fechar caixa', resumo, dataLonga: `${DIAS[dia.getDay()]}, ${dia.getDate()} de ${MESES[dia.getMonth()]}` });
+});
 router.post('/caixa', exige('caixa_lancar'), caixaController.criar);
 router.post('/caixa/:id/remover', exigeAdmin, caixaController.remover);
 // Caixa do dia e fechamento (redesign v3, F6): ver com caixa_ver; fechar com caixa_lancar.

@@ -1,0 +1,51 @@
+/* =========================================================================
+   Cortavo v3 · Caixa e Fechar caixa (fatia F6). Mockups: prints 09, 09c, 10.
+   ========================================================================= */
+.cv-cx-periodos { display: grid; grid-template-columns: 1fr 1fr 1fr 44px; height: 44px; }
+.cv-cx-periodos a, .cv-cx-periodos .cv-cx-cal { display: grid; place-items: center; border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); transition: background-color var(--d-curta) var(--ease-out); }
+.cv-cx-periodos [aria-current="page"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
+.cv-cx-custom { margin-top: 10px; }
+.cv-cx-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cv-cx-duas .cv-campo + .cv-campo { margin-top: 0; }
+.cv-cx-atalhos { margin: 12px calc(-1 * var(--e-5)) 12px; padding: 0 var(--e-5); }
+.cv-cx-es { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: .5px solid var(--c-fio-objeto); }
+.cv-cx-es b { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; }
+.cv-cx-es .rot--p { font-size: 12px; font-weight: 400; }
+.cv-cx-acoes { display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; margin-top: 12px; }
+.cv-cx-lancar, .cv-cx-acoes .cv-btn--2 { background: var(--c-superficie); box-shadow: var(--s-cartao); color: var(--c-tinta); }
+.cv-cx-receber { display: flex !important; align-items: center; gap: 12px; }
+.cv-cx-receber .corpo { flex: 1; min-width: 0; }
+.cv-cx-receber b { display: block; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cv-cx-receber .corpo span { font-size: 13px; color: var(--c-apoio); }
+.cv-cx-val { margin-top: 6px; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.cv-cx-extrato { --recuo: 76px; }
+.cv-cx-quando { width: 44px; flex-shrink: 0; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.cv-cx-quando b { font-size: 14px; font-weight: 600; color: var(--c-apoio); }
+.cv-cx-quando small { font-size: 11px; color: var(--c-apoio); }
+.cv-cx-extrato .fim b { white-space: nowrap; }
+.cv-cx-extrato form { margin: -6px -10px -6px 0; flex-shrink: 0; }
+.cv-cx-mais { margin: 10px 4px 0; font-size: 13px; color: var(--c-apoio); }
+.cv-cx-folha .cv-seg { margin-bottom: 4px; }
+.cv-cx-folha .cv-entrada:not(:focus) { background: var(--c-bloco-2); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-cx-formas { margin: 0 calc(-1 * var(--margem)); }
+.cv-cx-formas .cv-chip { height: 44px; }
+
+/* Fechar caixa */
+.cv-cx-voltar { display: inline-flex; align-items: center; gap: 2px; min-height: var(--toque-min); margin: -8px 0 0 -6px; font-size: 16px; font-weight: 600; color: var(--c-tinta); }
+.cv-cx-rot-saldo { margin: 4px 2px 2px; font-size: 15px; font-weight: 600; color: var(--c-tinta-2); }
+.cv-cx-conta { display: grid; }
+.cv-cx-conta div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 0; font-size: 15px; }
+.cv-cx-conta div + div { border-top: .5px solid var(--c-fio-forte); }
+.cv-cx-conta span { color: var(--c-tinta-2); min-width: 0; }
+.cv-cx-conta b { font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
+.cv-cx-conta .cv-cx-obs { white-space: normal; font-weight: 600; text-align: right; }
+.cv-cx-bate { display: flex; align-items: center; gap: 10px; margin: 14px 0 4px; padding: 14px 16px; border-radius: 16px; background: var(--c-bloco); font-size: 15px; font-weight: 600; }
+.cv-cx-bate .ck { width: 28px; height: 28px; border-radius: 50%; background: var(--c-tinta); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
+.cv-cx-bate[data-estado="dif"] .ck, .cv-cx-bate[data-estado="falta"] .ck { background: transparent; color: var(--c-tinta); box-shadow: inset 0 0 0 1.5px var(--c-tinta); }
+.cv-cx-bate[data-estado="dif"] .ck svg, .cv-cx-bate[data-estado="falta"] .ck svg { display: none; }
+.cv-cx-bate + .cv-campo { margin-top: 16px; }
+.cv-cx-nota { margin: 16px 4px 0; font-size: 13px; color: var(--c-apoio); line-height: 1.5; }
+.cv-cx-fechado { display: flex; gap: 14px; align-items: center; }
+.cv-cx-fechado b { display: block; font-size: 17px; }
+.cv-cx-fechado span span { font-size: 14px; color: var(--c-apoio); }
+#cx-fechar .cv-cartao + .cv-cartao { margin-top: 12px; }

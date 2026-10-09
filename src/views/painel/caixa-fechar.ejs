@@ -1,0 +1,70 @@
+<%/* Fechar o caixa de hoje (redesign v3, F6; mockups 09 e 09c).
+     Dados: `resumo` = services/fechamentoCaixa.resumoDoDia (Beto). Fechar
+     manda POST /painel/api/caixa/fechar em JSON; enquanto o servidor responde,
+     o botão vira o disco com o poste (M3 dentro do M1) e o C com check se
+     escreve. Fechar só registra a conferência: os lançamentos continuam
+     abertos. Se o dia já foi fechado, mostra o registro e "Fechar de novo". */%>
+<%
+  function _milhar(n) { return String(Math.floor(Math.abs(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function _partes(c) { var v = Math.abs(c || 0) / 100; var s = v.toFixed(2).split('.'); return { int: (c < 0 ? '−' : '') + _milhar(+s[0]), cent: ',' + s[1] }; }
+  function _reais(c) { return ((c || 0) / 100).toFixed(2).replace('.', ','); }
+  var R = resumo, F = R.fechamento, _saldo = _partes(R.saldo);
+  var FORMAS = [['pix', 'Pix'], ['credito', 'Crédito'], ['debito', 'Débito'], ['dinheiro', 'Dinheiro'], ['sem_forma', 'Sem forma']];
+  var _base = (R.porForma.dinheiro || 0) - (R.saidasDinheiro || 0); // esperado sem o fundo de troco
+  function _hora(d) { var x = new Date(d); return String(x.getHours()).padStart(2, '0') + ':' + String(x.getMinutes()).padStart(2, '0'); }
+%>
+<header class="cv-cab cv-cx-cab-interna">
+  <div class="cv-cab-txt">
+    <a class="cv-cx-voltar" href="/painel/caixa"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--20' }) %>Caixa</a>
+    <h1>Fechar caixa</h1>
+  </div>
+</header>
+
+<div class="cv-secao" style="margin-top:12px">
+  <p class="cv-cab-sup" style="margin:0 2px"><%= dataLonga %></p>
+  <p class="cv-cx-rot-saldo">Saldo do dia</p>
+  <span class="cv-num cv-num--heroi" data-dig="<%= _saldo.int.length %>"><span class="moeda">R$</span><span class="int"><%= _saldo.int %></span><span class="cent"><%= _saldo.cent %></span></span>
+</div>
+
+<% if (F) { %>
+  <div class="cv-secao" style="margin-top:20px">
+    <div class="cv-cartao cv-cx-fechado" role="status">
+      <%- include('../partials/logo-c', { cvTam: 48 }) %>
+      <span><b>Caixa fechado às <%= _hora(F.fechadoEm) %></b><span><%= F.diferenca === 0 ? 'Dinheiro conferido, sem diferença' : (F.diferenca < 0 ? 'Faltaram ' : 'Sobraram ') + fmtBRL(Math.abs(F.diferenca)) + ' na gaveta' %><%= F.fechadoPorNome ? '. Por ' + F.fechadoPorNome.split(' ')[0] : '' %><%= F.vezes > 1 ? '. Fechado ' + F.vezes + ' vezes' : '' %></span></span>
+    </div>
+    <div class="cv-cartao"><div class="cv-cx-conta">
+      <div><span>Entradas</span><b><%= fmtBRL(F.entradas) %></b></div>
+      <div><span>Saídas</span><b>−&nbsp;<%= fmtBRL(F.saidas) %></b></div>
+      <div><span>Dinheiro esperado</span><b><%= fmtBRL(F.dinheiroEsperado) %></b></div>
+      <div><span>Dinheiro contado</span><b><%= fmtBRL(F.dinheiroContado) %></b></div>
+      <% if (F.observacao) { %><div><span>Observação</span><b class="cv-cx-obs"><%= F.observacao %></b></div><% } %>
+    </div></div>
+    <div class="cv-cx-acoes" style="margin-top:16px">
+      <a class="cv-btn cv-btn--2" href="/painel/caixa">Ver o caixa</a>
+      <button type="button" class="cv-btn cv-btn--2" id="cx-refazer">Fechar de novo</button>
+    </div>
+  </div>
+<% } %>
+
+<form class="cv-secao" id="cx-fechar" style="margin-top:20px"<% if (F) { %> hidden<% } %> data-base="<%= _base %>" data-refazer="<%= F ? '1' : '' %>" novalidate>
+  <div class="cv-cartao"><div class="cv-cx-conta">
+    <div><span>Entradas</span><b><%= fmtBRL(R.entradas) %></b></div>
+    <div><span>Saídas</span><b>−&nbsp;<%= fmtBRL(R.saidas) %></b></div>
+    <% FORMAS.forEach(function (f) { if (!R.porForma[f[0]]) return; %><div><span><%= f[1] %></span><b><%= fmtBRL(R.porForma[f[0]]) %></b></div><% }) %>
+    <% if (R.aReceber && R.aReceber.quantidade) { %><div><span><%= R.aReceber.quantidade %> <%= R.aReceber.quantidade === 1 ? 'atendimento ainda aberto' : 'atendimentos ainda abertos' %></span><b><%= fmtBRL(R.aReceber.valor) %></b></div><% } %>
+  </div></div>
+
+  <div class="cv-cartao">
+    <div class="cv-cx-duas">
+      <div class="cv-campo"><label for="cx-fundo">Fundo de troco</label><input id="cx-fundo" class="cv-entrada" inputmode="decimal" autocomplete="off" placeholder="0,00" value="" aria-describedby="cx-fundo-ajuda" /><span class="cv-ajuda" id="cx-fundo-ajuda">Opcional</span></div>
+      <div class="cv-campo"><label for="cx-gaveta">Dinheiro na gaveta</label><input id="cx-gaveta" class="cv-entrada cv-entrada--num" inputmode="decimal" autocomplete="off" value="<%= _reais(Math.max(0, _base)) %>" aria-describedby="cx-esperado" required /></div>
+    </div>
+    <p class="cv-ajuda" id="cx-esperado" style="margin:8px 2px 0">Esperado: <%= fmtBRL(Math.max(0, _base)) %></p>
+    <div class="cv-cx-bate" id="cx-bate" aria-live="polite"><span class="ck" aria-hidden="true"><%- include('../partials/icone', { cvIc: 'check', cvCls: 'cv-ic--16' }) %></span><span id="cx-bate-txt">Bate com o esperado. Diferença de R$ 0,00.</span></div>
+    <div class="cv-campo"><label for="cx-obs">Observação, opcional</label><input id="cx-obs" class="cv-entrada" maxlength="200" autocomplete="off" placeholder="Troco separado, sangria…" /></div>
+  </div>
+
+  <p class="cv-cx-nota">Fechar registra a conferência do dia, com quem fechou e a hora. Os lançamentos continuam abertos para ajustes.</p>
+  <p class="cv-erro" id="cx-erro" role="alert" hidden></p>
+  <button class="cv-btn cv-btn--largo" id="btn-fechar" type="submit" style="margin-top:18px"><%= F ? 'Fechar o caixa de hoje de novo' : 'Fechar o caixa de hoje' %></button>
+</form>
