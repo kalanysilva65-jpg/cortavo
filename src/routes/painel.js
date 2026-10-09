@@ -182,6 +182,8 @@ router.get('/', dashboardController.ver);
 // (services/metricas.js -> contextoCalculo), porque depende do cartão e do
 // filtro de barbeiro; sem permissão, 403 sem dado. Documentação para o front:
 // squads/app-cortavo/output/gestao-dados-apis.md.
+// Home "Painel vivo" (B6): anéis, horas livres, próximos e destaques.
+router.get('/api/home', gestaoApiController.inicio);
 router.get('/api/gestao/cartoes', gestaoApiController.cartoes);
 router.get('/api/gestao/:metrica', gestaoApiController.metrica);
 // Baixa de comissão (B5): só admin, e só se o plano tem Comissões.

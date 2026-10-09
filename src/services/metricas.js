@@ -153,12 +153,19 @@ function cacheGravar(chave, valor, agora = Date.now()) {
 }
 // Depois de concluir/cancelar/lançar, a Home não pode mostrar o número velho
 // por um minuto: quem grava chama isto e a barbearia volta a calcular.
+// A versão por barbearia deixa outros caches (ex.: a Home) saberem que algo mudou.
+const versoes = new Map();
+function versaoCache(barbeariaId) {
+  return versoes.get(barbeariaId) || 0;
+}
 function invalidar(barbeariaId) {
   const pref = barbeariaId + '|';
   for (const k of Array.from(cache.keys())) if (k.startsWith(pref)) cache.delete(k);
+  versoes.set(barbeariaId, versaoCache(barbeariaId) + 1);
 }
 function limparCache() {
   cache.clear();
+  versoes.clear();
 }
 
 // Memória da requisição: várias métricas pedem a mesma lista (ex.: a Home).
@@ -1192,7 +1199,7 @@ function cartoesDisponiveis(permissoes) {
 module.exports = {
   resolverPeriodo, variacaoPct, pctDe, iso, dataLocal, dataValida,
   calcular, cartoesDisponiveis, contextoCalculo, CARTOES,
-  invalidar, limparCache,
+  invalidar, limparCache, versaoCache,
   // funções expostas para a Home (B6) e para os testes de paridade
   faturamento, atendimentos, ticket, ocupacao, ocupacaoBase, horasLivres, equipe, faturamentoPorBarbeiro,
   maisVendidos, clientes, pagamentos, metas, lucro, origem, planos, listaAtendimentos, calcularComissoes,

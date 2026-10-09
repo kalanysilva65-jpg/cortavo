@@ -7,6 +7,7 @@
 // recebe 403 sem dado nenhum (critérios 4 e 5).
 const prisma = require('../config/db');
 const metricas = require('../services/metricas');
+const home = require('../services/home');
 
 function semCache(res) {
   res.set('Cache-Control', 'private, no-store');
@@ -152,4 +153,16 @@ async function desfazerBaixaComissao(req, res) {
   res.json({ ok: true });
 }
 
-module.exports = { cartoes, metrica, responderErro, lerBarbeiroFiltro, semCache, baixarComissao, desfazerBaixaComissao };
+// GET /painel/api/home — Painel vivo da Início (B6), recortado por papel,
+// permissão e plano. Nunca 403: a agenda própria é direito básico.
+async function inicio(req, res) {
+  semCache(res);
+  const r = await home.montarHome({
+    barbeariaId: req.barbeariaId,
+    permissoes: req.permissoes,
+    faixaTeste: res.locals.faixaTeste || null,
+  });
+  res.json(r);
+}
+
+module.exports = { cartoes, metrica, responderErro, lerBarbeiroFiltro, semCache, baixarComissao, desfazerBaixaComissao, inicio };
