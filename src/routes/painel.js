@@ -30,6 +30,7 @@ const secretariaController = require('../controllers/secretariaController');
 const logoController = require('../controllers/logoController');
 const meuPlanoController = require('../controllers/meuPlanoController');
 const conversasController = require('../controllers/conversasController');
+const gestaoApiController = require('../controllers/gestaoApiController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
 const upload = require('../middlewares/upload');
@@ -166,6 +167,14 @@ router.use(exigeFuncaoDoPlano);
 
 // Painel (dashboard).
 router.get('/', dashboardController.ver);
+
+// --- API da Gestão (spec 12, B4) -------------------------------------------
+// Um endpoint por cartão. A permissão é conferida DENTRO de cada cálculo
+// (services/metricas.js -> contextoCalculo), porque depende do cartão e do
+// filtro de barbeiro; sem permissão, 403 sem dado. Documentação para o front:
+// squads/app-cortavo/output/gestao-dados-apis.md.
+router.get('/api/gestao/cartoes', gestaoApiController.cartoes);
+router.get('/api/gestao/:metrica', gestaoApiController.metrica);
 
 // Foto do próprio usuário logado (hero do painel).
 router.get('/logo', exigeAdmin, logoController.ver);

@@ -10,6 +10,7 @@ const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const permissoes = require('../services/permissoes');
 const STATUS = require('../config/statusAgendamento');
+const metricas = require('../services/metricas');
 
 const caixaServ = require('../services/caixa');
 const planoServ = require('../services/plano');
@@ -215,6 +216,9 @@ function querJson(req) {
 }
 
 function responderOk(req, res, aviso) {
+  // Toda alteração de atendimento passa por aqui: a Gestão e a Home deixam de
+  // usar o número guardado (cache de 60 s) desta barbearia.
+  metricas.invalidar(req.barbeariaId);
   if (querJson(req)) return res.json(aviso ? { ok: true, aviso } : { ok: true });
   if (aviso) req.session.flash = { tipo: 'erro', texto: aviso };
   return res.redirect(urlRetorno(req));
@@ -912,6 +916,7 @@ async function criarManual(req, res) {
   // Consome 1 uso do plano (limitado; ilimitado não muda) — igual à secretária.
   if (cobertura) await planoServ.ajustarUso(cobertura.assinatura.id, -1, cobertura.cobertosIds);
 
+  metricas.invalidar(b);
   req.session.flash = { tipo: 'sucesso', texto: 'Agendamento criado.' };
   res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));
 }

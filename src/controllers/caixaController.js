@@ -2,6 +2,7 @@
 // Acesso exclusivo do admin (garantido pelas rotas com exigeAdmin).
 const prisma = require('../config/db');
 const caixaServ = require('../services/caixa');
+const metricas = require('../services/metricas');
 const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
 
 // `curto` é o rótulo das pílulas do design suave (pedido do dono, 2026-07-31):
@@ -325,6 +326,7 @@ async function criar(req, res) {
       formaPagamento,
     },
   });
+  metricas.invalidar(b);
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento registrado.' };
   res.redirect(destino);
 }
@@ -333,6 +335,7 @@ async function criar(req, res) {
 async function remover(req, res) {
   const l = await prisma.caixa.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
   if (l) await prisma.caixa.delete({ where: { id: l.id } }).catch(() => {});
+  metricas.invalidar(req.barbeariaId);
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento removido.' };
 
   const qs = new URLSearchParams();
