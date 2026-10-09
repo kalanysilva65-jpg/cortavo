@@ -133,7 +133,7 @@
           <div class="cv-tl-item" data-min="<%= e.ini %>" data-fim="<%= _minA(bl.horaFim) %>">
             <span class="cv-tl-hora"><%= bl.horaInicio %></span>
             <div class="cv-ag bloqueado">
-              <span class="etq"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--16' }) %><span><%= bl.motivo || 'Bloqueado' %> até <%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome.split(' ')[0] %><% } %></span></span>
+              <span class="etq" title="<%= bl.motivo || 'Bloqueado' %> até <%= bl.horaFim %>"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--16' }) %><span><%= bl.motivo || 'Bloqueado' %> até <%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome.split(' ')[0] %><% } %></span></span>
               <% if (ehAdmin) { %>
                 <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" onsubmit="return confirm('Remover este bloqueio?')" class="cv-ag-bloq-rem">
                   <input type="hidden" name="retornoData" value="<%= dataStr %>" />

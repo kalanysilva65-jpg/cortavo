@@ -84,3 +84,13 @@ html:has(> body.pg-sv) { background: var(--c-pagina); }
   /* Até o painel do PC (F13): a navbar flutua embaixo, sem coluna lateral */
   .pg-sv .sv-tela.sv-ag-tela { padding-bottom: var(--area-nav); }
 }
+
+/* break-ui (320 px): nome em 2 linhas não pode virar letra por letra; o estado
+   desce para baixo do nome. A etiqueta do bloqueio corta em 2 linhas. */
+.pg-sv .cv-agenda .cv-ag.bloqueado .etq { flex: 1; min-width: 0; }
+.pg-sv .cv-agenda .cv-ag.bloqueado .etq > span { overflow: hidden; overflow-wrap: anywhere; }
+@media (max-width: 360px) {
+  .pg-sv .cv-agenda .cv-ag:not(.bloqueado):not(.livre) { flex-wrap: wrap; row-gap: 4px; }
+  .pg-sv .cv-agenda .cv-ag:not(.bloqueado):not(.livre) .corpo { flex: 1 1 calc(100% - 44px); }
+  .pg-sv .cv-agenda .cv-ag .est { width: 100%; padding-left: 44px; }
+}
