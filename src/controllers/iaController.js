@@ -122,7 +122,7 @@ async function acao(req, res) {
       return res.status(400).json({ erro: r.mensagem || 'Não consegui reagendar.' });
     }
     if (tipo === 'cancelar') {
-      const r = await agseg.cancelarAgendamento(b, { agendamentoId: dados.agendamentoId, usuarioIdRestrito });
+      const r = await agseg.cancelarAgendamento(b, { agendamentoId: dados.agendamentoId, usuarioIdRestrito, canceladoPor: 'assistente', porUsuarioId: req.session.usuario.id });
       if (r.ok) {
         const nome = r.clienteNome ? r.clienteNome.split(' ')[0] : 'cliente';
         return res.json({ ok: true, mensagem: r.jaCancelado ? 'Esse agendamento já estava cancelado.' : `✅ Agendamento de ${nome} cancelado.` });

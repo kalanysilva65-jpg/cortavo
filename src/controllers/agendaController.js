@@ -9,6 +9,11 @@ const { dataLocal, paraMinutos, duracaoEfetiva, todosHorarios, duracaoComEncaixe
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const permissoes = require('../services/permissoes');
+const STATUS = require('../config/statusAgendamento');
+
+const caixaServ = require('../services/caixa');
+const planoServ = require('../services/plano');
+const estoqueServ = require('../services/estoque');
 
 // Spec 12 (B2): sem `clientes_contato`, telefone de cliente só com o final.
 function veContato(req) {
@@ -17,9 +22,6 @@ function veContato(req) {
 function clientesParaTela(req, clientes) {
   return veContato(req) ? clientes : clientes.map((c) => ({ ...c, telefone: permissoes.mascararTelefone(c.telefone) }));
 }
-const caixaServ = require('../services/caixa');
-const planoServ = require('../services/plano');
-const estoqueServ = require('../services/estoque');
 
 // Formas de pagamento oferecidas ao concluir um atendimento. Rótulos CURTOS
 // (design suave, 2026-07-31): viram pílulas dentro do cartão preto do detalhe,
@@ -515,11 +517,26 @@ async function mudarStatus(req, res) {
   if (!podeAlterar(req, agendamento)) return negarAcesso(res);
 
   const novo = req.body.status;
-  if (['agendado', 'concluido', 'cancelado'].includes(novo)) {
+  // Spec 12 (B3): "faltou" (no-show) é um status próprio, separado de cancelado.
+  if (STATUS.VALIDOS.includes(novo)) {
     // Forma de pagamento: registrada junto ao concluir (é quando o cliente paga).
     // Reabrir/cancelar limpa o registro, senão ficaria uma forma de pagamento
     // pendurada num atendimento que não aconteceu.
     const dados = { status: novo };
+    // Cancelamento: grava quando e quem (G13). Recancelar não remarca a data;
+    // sair de "cancelado" (reabrir, concluir, faltou) limpa os campos.
+    if (novo === STATUS.CANCELADO && agendamento.status !== STATUS.CANCELADO) {
+      dados.canceladoEm = new Date();
+      dados.canceladoPor = 'equipe';
+      dados.canceladoPorId = req.session.usuario.id;
+      const motivo = String(req.body.motivo || '').trim().slice(0, 120);
+      dados.motivoCancelamento = motivo || null;
+    } else if (novo !== STATUS.CANCELADO && agendamento.status === STATUS.CANCELADO) {
+      dados.canceladoEm = null;
+      dados.canceladoPor = null;
+      dados.canceladoPorId = null;
+      dados.motivoCancelamento = null;
+    }
     let partes = [];
 
     if (novo === 'concluido') {
@@ -598,6 +615,8 @@ async function mudarStatus(req, res) {
     else if (eraConcluido && !ficaConcluido) await estoqueServ.aplicarConsumo(agendamento.id, +1);
 
     // Ajuste de uso do plano (cancelar devolve 1 uso; reabrir volta a consumir).
+    // "Faltou" NÃO devolve: a vaga ficou reservada para o cliente (ver
+    // config/statusAgendamento.js); só "cancelado" conta como não-ativo aqui.
     if (agendamento.clientePlanoId) {
       const eraAtivo = agendamento.status !== 'cancelado';
       const ficaAtivo = novo !== 'cancelado';
@@ -650,6 +669,7 @@ async function detalheFragmento(req, res) {
 
   let selo = 'Confirmado';
   if (ag.status === 'cancelado') selo = 'Cancelado';
+  else if (ag.status === STATUS.FALTOU) selo = 'Faltou';
   else if (ag.status === 'concluido') selo = 'Concluído';
   else if (proximo && proximo.id === ag.id) selo = 'Agora';
 
@@ -823,7 +843,7 @@ async function criarManual(req, res) {
     const iniNovo = paraMinutos(hora);
     const fimNovo = iniNovo + duracaoTotal;
     const existentes = await prisma.agendamento.findMany({
-      where: { barbeariaId: b, usuarioId, data: dataLocal(data), status: { not: 'cancelado' } },
+      where: { barbeariaId: b, usuarioId, data: dataLocal(data), status: { notIn: STATUS.INATIVOS } },
       include: { itens: { include: { servico: true } } },
     });
     const conflita = existentes.some((ag) => {

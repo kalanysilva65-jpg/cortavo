@@ -16,6 +16,7 @@
 // design novo, e as folhas de página inteira viraram folhas inferiores.
 const prisma = require('../config/db');
 const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
+const { INATIVOS: STATUS_INATIVOS } = require('../config/statusAgendamento');
 
 function iso(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -476,7 +477,7 @@ async function ver(req, res) {
     prisma.horarioTrabalho.findMany({ where: { barbeariaId: b } }),
     prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, select: { id: true, nome: true } }),
     prisma.agendamento.findMany({
-      where: { barbeariaId: b, status: { not: 'cancelado' }, data: { gte: inicio, lt: fimExcl } },
+      where: { barbeariaId: b, status: { notIn: STATUS_INATIVOS }, data: { gte: inicio, lt: fimExcl } },
       select: { data: true, horaInicio: true, usuarioId: true, itens: { select: { quantidade: true, servico: { select: { duracaoMin: true, ehEncaixe: true } } } } },
     }),
   ]);

@@ -3,6 +3,7 @@
 // os agendamentos ativos e os bloqueios manuais daquele barbeiro.
 const prisma = require('../config/db');
 const { INTERVALO_SLOT_MIN } = require('../config/constantes');
+const { INATIVOS: STATUS_INATIVOS } = require('../config/statusAgendamento');
 
 // "HH:MM" -> minutos desde 00:00
 function paraMinutos(hhmm) {
@@ -57,7 +58,7 @@ async function intervalosOcupados(barbeiroId, data) {
   const ocupados = [];
 
   const agendamentos = await prisma.agendamento.findMany({
-    where: { usuarioId: barbeiroId, data, status: { not: 'cancelado' } },
+    where: { usuarioId: barbeiroId, data, status: { notIn: STATUS_INATIVOS } },
     include: { itens: { include: { servico: true } } },
   });
   for (const ag of agendamentos) {
@@ -123,4 +124,4 @@ async function todosHorarios(barbeiroId, dataStr, duracaoServico) {
   return slots;
 }
 
-module.exports = { horariosDisponiveis, todosHorarios, dataLocal, paraMinutos, paraHHMM, duracaoEfetiva, duracaoComEncaixe };
+module.exports = { horariosDisponiveis, todosHorarios, intervalosOcupados, dataLocal, paraMinutos, paraHHMM, duracaoEfetiva, duracaoComEncaixe };

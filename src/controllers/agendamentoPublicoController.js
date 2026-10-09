@@ -13,6 +13,7 @@ const precos = require('../services/precos');
 const notifServ = require('../services/notificacoes');
 const demoServ = require('../services/demo');
 const { lerJanelaAgendamento } = require('./horarioController');
+const { INATIVOS: STATUS_INATIVOS } = require('../config/statusAgendamento');
 
 // Até quantos dias no futuro o cliente pode marcar vem de `lerJanelaAgendamento`
 // (Horários → "Janela de agendamento do cliente"), já em NÚMERO DE DIAS.
@@ -526,7 +527,7 @@ async function confirmar(req, res) {
   try {
     agendamento = await prisma.$transaction(async (tx) => {
       const existentes = await tx.agendamento.findMany({
-        where: { barbeariaId: b, usuarioId: barbeiro.id, data: dataObjFinal, status: { not: 'cancelado' } },
+        where: { barbeariaId: b, usuarioId: barbeiro.id, data: dataObjFinal, status: { notIn: STATUS_INATIVOS } },
         include: { itens: { include: { servico: true } } },
       });
       const conflita = existentes.some((ag) => {

@@ -11,11 +11,12 @@ const precos = require('./precos');
 const { dataLocal, paraMinutos, duracaoComEncaixe, horariosDisponiveis, todosHorarios } = require('./disponibilidade');
 const { normalizarTelefone, variantesTelefone, telefoneCanonicoBR } = require('../utils/telefone');
 const planoServ = require('./plano');
+const { INATIVOS: STATUS_INATIVOS, CANCELADO_POR: STATUS_CANCELADO_POR } = require('../config/statusAgendamento');
 
 // Há sobreposição com algum atendimento ativo do barbeiro nessa data?
 async function temConflito(tx, barbeariaId, usuarioId, dataDate, iniNovo, fimNovo) {
   const existentes = await tx.agendamento.findMany({
-    where: { barbeariaId, usuarioId, data: dataDate, status: { not: 'cancelado' } },
+    where: { barbeariaId, usuarioId, data: dataDate, status: { notIn: STATUS_INATIVOS } },
     include: { itens: { include: { servico: true } } },
   });
   return existentes.some((ag) => {
@@ -164,6 +165,7 @@ async function reagendarAgendamento(barbeariaId, dados) {
   const ag = await prisma.agendamento.findFirst({ where, include: { itens: { include: { servico: true } } } });
   if (!ag) return { erro: 'nao_encontrado', mensagem: 'Agendamento não encontrado (ou não é seu).' };
   if (ag.status === 'cancelado') return { erro: 'cancelado', mensagem: 'Esse agendamento está cancelado.' };
+  if (ag.status === 'faltou') return { erro: 'faltou', mensagem: 'Esse agendamento está marcado como falta.' };
   if (ag.status === 'concluido') return { erro: 'concluido', mensagem: 'Esse atendimento já foi concluído.' };
 
   const dur = duracaoDoAgendamento(ag);
@@ -182,7 +184,7 @@ async function reagendarAgendamento(barbeariaId, dados) {
   try {
     const atualizado = await prisma.$transaction(async (tx) => {
       const existentes = await tx.agendamento.findMany({
-        where: { barbeariaId, usuarioId: ag.usuarioId, data: dataDate, status: { not: 'cancelado' }, id: { not: ag.id } },
+        where: { barbeariaId, usuarioId: ag.usuarioId, data: dataDate, status: { notIn: STATUS_INATIVOS }, id: { not: ag.id } },
         include: { itens: { include: { servico: true } } },
       });
       const conflita = existentes.some((o) => {
@@ -205,13 +207,21 @@ async function reagendarAgendamento(barbeariaId, dados) {
 // Não apaga nada (mantém histórico); concluído não pode ser cancelado por aqui.
 async function cancelarAgendamento(barbeariaId, dados) {
   const { agendamentoId, usuarioIdRestrito } = dados || {};
+  // Spec 12 (B3): quem cancelou. A secretária cancela a pedido do cliente no
+  // WhatsApp; o assistente, a pedido de alguém da equipe (`porUsuarioId`).
+  const canceladoPor = STATUS_CANCELADO_POR.includes(dados && dados.canceladoPor) ? dados.canceladoPor : null;
+  const canceladoPorId = Number.isInteger(dados && dados.porUsuarioId) ? dados.porUsuarioId : null;
   const where = { id: Number(agendamentoId), barbeariaId };
   if (usuarioIdRestrito) where.usuarioId = usuarioIdRestrito;
   const ag = await prisma.agendamento.findFirst({ where });
   if (!ag) return { erro: 'nao_encontrado', mensagem: 'Agendamento não encontrado (ou não é seu).' };
   if (ag.status === 'cancelado') return { ok: true, jaCancelado: true, clienteNome: ag.clienteNome };
   if (ag.status === 'concluido') return { erro: 'concluido', mensagem: 'Esse atendimento já foi concluído; não dá pra cancelar por aqui.' };
-  await prisma.agendamento.update({ where: { id: ag.id }, data: { status: 'cancelado' } });
+  if (ag.status === 'faltou') return { erro: 'faltou', mensagem: 'Esse agendamento já está marcado como falta.' };
+  await prisma.agendamento.update({
+    where: { id: ag.id },
+    data: { status: 'cancelado', canceladoEm: new Date(), canceladoPor, canceladoPorId },
+  });
   // Se foi agendado por PLANO, devolve 1 uso (limitado; ilimitado não muda) —
   // mesma regra do cancelamento pelo painel.
   if (ag.clientePlanoId) await planoServ.ajustarUso(ag.clientePlanoId, +1, await planoServ.servicosCobertosDe(ag.id));
