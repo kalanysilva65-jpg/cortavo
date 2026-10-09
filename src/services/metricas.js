@@ -854,6 +854,208 @@ async function calcularComissoes(ctx, inicio, fimExcl) {
   });
 }
 
+// ------------------------------------------------------- B5: G11–G15 -------
+
+// G11 — retenção por coorte: clientes cuja 1ª visita (de todos os tempos) caiu
+// em cada um dos 12 meses até o fim do período, e quantos % voltaram em até
+// 30, 60 e 90 dias. Conta pela data do atendimento. Só barbearia toda.
+async function retencao(ctx, p, { agora = new Date() } = {}) {
+  const b = ctx.barbeariaId;
+  const fimRef = new Date(Math.min(p.fimExcl.getTime(), inicioDoDia(agora).getTime() + DIA_MS));
+  const fimMes = new Date(fimRef.getFullYear(), fimRef.getMonth() + 1, 1);
+  const iniJanela = new Date(fimMes.getFullYear(), fimMes.getMonth() - 12, 1);
+  const primeiros = await prisma.agendamento.groupBy({
+    by: ['clienteId'],
+    where: { barbeariaId: b, status: 'concluido', clienteId: { not: null } },
+    _min: { data: true },
+  });
+  const naJanela = primeiros.filter((g) => g._min.data && g._min.data >= iniJanela && g._min.data < fimMes);
+  const ids = naJanela.map((g) => g.clienteId);
+  const visitas = ids.length
+    ? await prisma.agendamento.findMany({ where: { barbeariaId: b, status: 'concluido', clienteId: { in: ids } }, select: { clienteId: true, data: true } })
+    : [];
+  const porCliente = new Map();
+  for (const v of visitas) {
+    if (!porCliente.has(v.clienteId)) porCliente.set(v.clienteId, []);
+    porCliente.get(v.clienteId).push(new Date(v.data).getTime());
+  }
+  const coortes = [];
+  for (let d = new Date(iniJanela); d < fimMes; d.setMonth(d.getMonth() + 1)) {
+    coortes.push({ mes: iso(d).slice(0, 7), t0: d.getTime(), clientes: 0, v30: 0, v60: 0, v90: 0, maduro30: 0, maduro60: 0, maduro90: 0 });
+  }
+  const hojeT = inicioDoDia(agora).getTime();
+  for (const g of naJanela) {
+    const t1 = new Date(g._min.data).getTime();
+    let i = coortes.length - 1;
+    while (i > 0 && coortes[i].t0 > t1) i--;
+    const c = coortes[i];
+    c.clientes++;
+    const voltas = (porCliente.get(g.clienteId) || []).filter((t) => t > t1).sort((x, y) => x - y);
+    const prox = voltas.length ? (voltas[0] - t1) / DIA_MS : null;
+    for (const n of [30, 60, 90]) {
+      // Só entra na conta quem já teve n dias para voltar.
+      if (hojeT - t1 >= n * DIA_MS) {
+        c['maduro' + n]++;
+        if (prox != null && prox <= n) c['v' + n]++;
+      }
+    }
+  }
+  const pct = (a, b2) => (b2 > 0 ? Math.round((a / b2) * 100) : null);
+  const soma = (k) => coortes.reduce((s, c) => s + c[k], 0);
+  return {
+    resumo: {
+      clientes: naJanela.length,
+      voltou30Pct: pct(soma('v30'), soma('maduro30')),
+      voltou60Pct: pct(soma('v60'), soma('maduro60')),
+      voltou90Pct: pct(soma('v90'), soma('maduro90')),
+      coortes: coortes.map((c) => ({ mes: c.mes, clientes: c.clientes, voltou30Pct: pct(c.v30, c.maduro30), voltou60Pct: pct(c.v60, c.maduro60), voltou90Pct: pct(c.v90, c.maduro90) })),
+    },
+  };
+}
+
+// G12 — clientes sumidos: última visita concluída há mais de `dias` (padrão
+// 45, de 15 a 365). Barbeiro: os que tiveram a última visita com ELE. Telefone
+// e link do WhatsApp só com `clientes_contato`.
+async function sumidos(ctx, p, { query = {}, agora = new Date() } = {}) {
+  const b = ctx.barbeariaId;
+  const dias = Math.min(365, Math.max(15, parseInt(query.dias, 10) || 45));
+  const corte = inicioDoDia(agora);
+  corte.setDate(corte.getDate() - dias);
+  const ultimas = await prisma.agendamento.groupBy({
+    by: ['clienteId'],
+    where: { barbeariaId: b, status: 'concluido', clienteId: { not: null } },
+    _max: { data: true },
+    _count: { _all: true },
+  });
+  let alvo = ultimas.filter((g) => g._max.data && g._max.data < corte);
+  if (!alvo.length) return { resumo: { dias, total: 0, clientes: [] } };
+  // Quem atendeu na última visita (recorte do barbeiro e informação da tela).
+  const ultimosAg = await prisma.agendamento.findMany({
+    where: { barbeariaId: b, status: 'concluido', clienteId: { in: alvo.map((g) => g.clienteId) } },
+    select: { clienteId: true, data: true, usuarioId: true },
+    orderBy: [{ data: 'desc' }],
+  });
+  const quem = new Map();
+  for (const a of ultimosAg) if (!quem.has(a.clienteId)) quem.set(a.clienteId, a.usuarioId);
+  if (ctx.usuarioId) alvo = alvo.filter((g) => quem.get(g.clienteId) === ctx.usuarioId);
+  const cadastros = await prisma.cliente.findMany({ where: { barbeariaId: b, id: { in: alvo.map((g) => g.clienteId) } }, select: { id: true, nome: true, telefone: true } });
+  const cad = new Map(cadastros.map((c) => [c.id, c]));
+  const verTel = ctx.verContato !== false;
+  const hoje0 = inicioDoDia(agora);
+  const lista = alvo
+    .filter((g) => cad.has(g.clienteId))
+    .map((g) => {
+      const c = cad.get(g.clienteId);
+      const tel = String(c.telefone || '').replace(/\D/g, '');
+      return {
+        clienteId: c.id,
+        nome: c.nome,
+        telefone: verTel ? c.telefone : '•••• ' + tel.slice(-4),
+        whatsapp: verTel && tel ? 'https://wa.me/' + (tel.startsWith('55') ? tel : '55' + tel) : null,
+        ultimaVisita: iso(new Date(g._max.data)),
+        diasSemVir: Math.round((hoje0 - inicioDoDia(new Date(g._max.data))) / DIA_MS),
+        visitas: g._count._all,
+        ultimoBarbeiroId: quem.get(g.clienteId) || null,
+      };
+    })
+    .sort((a, b2) => b2.diasSemVir - a.diasSemVir);
+  return { resumo: { dias, total: lista.length, clientes: lista.slice(0, 100) } };
+}
+
+// G13 — cancelamentos do período (pela data do atendimento): número, % dos
+// agendamentos do período, quem cancelou, motivos e antecedência média.
+async function cancelamentos(ctx, p) {
+  const ags = await prisma.agendamento.findMany({
+    where: { barbeariaId: ctx.barbeariaId, data: { gte: p.inicio, lt: p.fimExcl }, ...filtroU(ctx) },
+    select: { id: true, status: true, data: true, horaInicio: true, canceladoEm: true, canceladoPor: true, motivoCancelamento: true },
+  });
+  const canc = ags.filter((a) => a.status === 'cancelado');
+  const porQuem = new Map();
+  const motivos = new Map();
+  let somaAntecedenciaH = 0;
+  let comData = 0;
+  for (const a of canc) {
+    const q = a.canceladoPor || 'sem_registro';
+    porQuem.set(q, (porQuem.get(q) || 0) + 1);
+    const m = (a.motivoCancelamento || '').trim();
+    if (m) motivos.set(m, (motivos.get(m) || 0) + 1);
+    if (a.canceladoEm) {
+      const ini = new Date(a.data);
+      ini.setMinutes(paraMinutos(a.horaInicio));
+      somaAntecedenciaH += (ini - new Date(a.canceladoEm)) / 3600000;
+      comData++;
+    }
+  }
+  return {
+    resumo: {
+      total: canc.length,
+      agendamentos: ags.length,
+      pct: pctDe(canc.length, ags.length),
+      porQuem: Array.from(porQuem.entries()).map(([quem, total]) => ({ quem, total })).sort((a, b) => b.total - a.total),
+      motivos: Array.from(motivos.entries()).map(([motivo, total]) => ({ motivo, total })).sort((a, b) => b.total - a.total).slice(0, 10),
+      antecedenciaMediaHoras: comData ? Math.round(somaAntecedenciaH / comData) : null,
+      semRegistro: canc.filter((a) => !a.canceladoEm).length, // cancelados antes da B3
+    },
+  };
+}
+
+// G14 — faltas (no-show): número, % dos atendimentos que deveriam ter
+// acontecido (concluídos + faltas) e os clientes que mais faltaram (sem telefone).
+async function faltas(ctx, p) {
+  const ags = await prisma.agendamento.findMany({
+    where: { barbeariaId: ctx.barbeariaId, data: { gte: p.inicio, lt: p.fimExcl }, status: { in: ['concluido', 'faltou'] }, ...filtroU(ctx) },
+    select: { status: true, clienteId: true, clienteNome: true },
+  });
+  const f = ags.filter((a) => a.status === 'faltou');
+  const porCliente = new Map();
+  for (const a of f) {
+    const k = a.clienteId ? 'c' + a.clienteId : 'n' + a.clienteNome;
+    if (!porCliente.has(k)) porCliente.set(k, { clienteId: a.clienteId || null, nome: a.clienteNome, faltas: 0 });
+    porCliente.get(k).faltas++;
+  }
+  return {
+    resumo: {
+      total: f.length,
+      base: ags.length,
+      pct: pctDe(f.length, ags.length),
+      clientes: Array.from(porCliente.values()).sort((a, b) => b.faltas - a.faltas).slice(0, 10),
+    },
+  };
+}
+
+// G15 — comissões do período, o que já foi pago (ComissaoPagamento cujo
+// período está DENTRO do período escolhido) e o que falta pagar.
+// Barbeiro: só a dele. Admin: todos.
+async function comissoes(ctx, p) {
+  const calc = await calcularComissoes(ctx, p.inicio, p.fimExcl);
+  const pagos = await prisma.comissaoPagamento.findMany({
+    where: { barbeariaId: ctx.barbeariaId, periodoInicio: { gte: p.inicio }, periodoFim: { lt: p.fimExcl }, ...filtroU(ctx) },
+    orderBy: { pagoEm: 'desc' },
+  });
+  const pagoPor = new Map();
+  for (const x of pagos) pagoPor.set(x.usuarioId, (pagoPor.get(x.usuarioId) || 0) + x.valor);
+  const barbeiros = calc
+    .filter((c) => c.comissao > 0 || pagoPor.has(c.usuarioId) || ctx.usuarioId)
+    .map((c) => {
+      const pago = pagoPor.get(c.usuarioId) || 0;
+      return { ...c, pago, aPagar: Math.max(0, c.comissao - pago), situacao: c.comissao > 0 && pago >= c.comissao ? 'paga' : pago > 0 ? 'parcial' : 'aberta' };
+    });
+  return {
+    resumo: {
+      total: barbeiros.reduce((s, x) => s + x.comissao, 0),
+      pago: barbeiros.reduce((s, x) => s + x.pago, 0),
+      aPagar: barbeiros.reduce((s, x) => s + x.aPagar, 0),
+      barbeiros,
+    },
+    detalhe: {
+      pagamentos: pagos.map((x) => ({
+        id: x.id, usuarioId: x.usuarioId, de: iso(new Date(x.periodoInicio)), ate: iso(new Date(x.periodoFim)),
+        valor: x.valor, valorCalculado: x.valorCalculado, pagoEm: x.pagoEm, pagoPorNome: x.pagoPorNome, observacao: x.observacao, caixaId: x.caixaId,
+      })),
+    },
+  };
+}
+
 // ------------------------------------------------------------ catálogo -----
 // Cada cartão: código da spec, função, o que libera e o plano. `acesso`:
 //   'proprio'   -> qualquer um no próprio escopo (agenda própria: G4, G5, G6)
@@ -874,11 +1076,16 @@ const CARTOES = [
   { slug: 'servicos', codigo: 'G8', titulo: 'Serviços mais vendidos', acesso: 'numeros', plano: 'relatorios', fn: (c, p, o) => maisVendidos(c, p, false, o) },
   { slug: 'produtos', codigo: 'G9', titulo: 'Produtos mais vendidos', acesso: 'numeros', plano: 'relatorios', fn: (c, p, o) => maisVendidos(c, p, true, o) },
   { slug: 'clientes', codigo: 'G10', titulo: 'Clientes novos e recorrentes', acesso: 'numeros', plano: 'relatorios', fn: clientes },
+  { slug: 'faltas', codigo: 'G14', titulo: 'Faltas', acesso: 'numeros', plano: 'relatorios', fn: faltas },
+  { slug: 'comissoes', codigo: 'G15', titulo: 'Comissões', acesso: 'comissoes', plano: 'comissoes', fn: comissoes },
   { slug: 'pagamentos', codigo: 'G16', titulo: 'Formas de pagamento', acesso: 'numeros', plano: null, fn: pagamentos },
   { slug: 'metas', codigo: 'G17', titulo: 'Metas', acesso: 'metas', plano: 'metas', fn: metas },
   { slug: 'lucro', codigo: 'G18', titulo: 'Lucro e gastos', acesso: 'barbearia', plano: 'relatorios', fn: lucro },
   { slug: 'origem', codigo: 'G19', titulo: 'Origem dos agendamentos', acesso: 'numeros', plano: 'relatorios', fn: origem },
   { slug: 'planos', codigo: 'G20', titulo: 'Planos vendidos', acesso: 'barbearia', plano: 'relatorios', fn: planos },
+  { slug: 'clientes-sumidos', codigo: 'G12', titulo: 'Clientes sumidos', acesso: 'clientes', plano: 'relatorios', fn: sumidos },
+  { slug: 'retencao', codigo: 'G11', titulo: 'Retenção', acesso: 'barbearia', plano: 'relatorios', fn: retencao },
+  { slug: 'cancelamentos', codigo: 'G13', titulo: 'Cancelamentos', acesso: 'numeros', plano: 'relatorios', fn: cancelamentos },
   { slug: 'atendimentos-lista', codigo: null, titulo: 'Lista de atendimentos', acesso: 'numeros', plano: null, fn: listaAtendimentos, oculto: true },
 ];
 const POR_SLUG = new Map(CARTOES.map((c) => [c.slug, c]));
@@ -906,6 +1113,8 @@ function contextoCalculo({ barbeariaId, permissoes, barbeiroFiltro = null }, car
     case 'barbearia': if (!verBarbearia) negar(); break;
     case 'equipe': if (!podeVerEquipe) negar(); break;
     case 'metas': if (!verMeus && !podeVerEquipe) negar(); break;
+    case 'clientes': if (!verMeus || !perm.pode('clientes')) negar(); break;
+    case 'comissoes': if (!perm.pode('comissoes')) negar(); break;
     default: break; // 'proprio'
   }
 
@@ -913,7 +1122,10 @@ function contextoCalculo({ barbeariaId, permissoes, barbeiroFiltro = null }, car
   let usuarioId = null;
   if (barbeiroFiltro != null) {
     if (barbeiroFiltro !== eu && !podeVerEquipe) negar();
+    if (cartao.acesso === 'comissoes' && barbeiroFiltro !== eu && !admin) negar();
     usuarioId = barbeiroFiltro;
+  } else if (cartao.acesso === 'comissoes') {
+    usuarioId = admin ? null : eu; // comissão dos colegas é só do admin
   } else if (cartao.acesso === 'equipe') {
     usuarioId = null; // o ranking compara todos (podeVerEquipe já conferido)
   } else if (!verBarbearia) {
@@ -924,6 +1136,7 @@ function contextoCalculo({ barbeariaId, permissoes, barbeiroFiltro = null }, car
     barbeariaId, usuarioId, eu, ehAdmin: admin, podeVerEquipe, verBarbearia, verMeus,
     filtroBarbeiro: barbeiroFiltro,
     verComissaoDeTodos: admin,
+    verContato: perm.pode('clientes_contato'),
   };
 }
 
@@ -938,7 +1151,7 @@ async function calcular(slug, { barbeariaId, permissoes, query = {}, barbeiroFil
   const ctx = contextoCalculo({ barbeariaId, permissoes, barbeiroFiltro }, cartao);
   const p = resolverPeriodo(query, agora);
   const detalhe = query.detalhe === '1' || query.detalhe === 'true';
-  const chave = [barbeariaId, slug, ctx.usuarioId || 'todos', ctx.eu, ctx.podeVerEquipe ? 'eq' : '', ctx.verBarbearia ? 'bb' : '', p.de, p.ate, detalhe ? 'd' : ''].join('|');
+  const chave = [barbeariaId, slug, ctx.usuarioId || 'todos', ctx.eu, ctx.podeVerEquipe ? 'eq' : '', ctx.verBarbearia ? 'bb' : '', ctx.verContato ? 'ct' : '', p.de, p.ate, detalhe ? 'd' : '', query.dias || ''].join('|');
   const emCache = cacheLer(chave, agora.getTime());
   const base = {
     metrica: slug,
@@ -948,7 +1161,7 @@ async function calcular(slug, { barbeariaId, permissoes, query = {}, barbeiroFil
     escopo: ctx.usuarioId ? { tipo: 'barbeiro', usuarioId: ctx.usuarioId } : { tipo: 'barbearia', usuarioId: null },
   };
   if (emCache) return { ...base, ...emCache, cache: true };
-  const r = await cartao.fn(ctx, p, { detalhe, agora });
+  const r = await cartao.fn(ctx, p, { detalhe, agora, query });
   cacheGravar(chave, r, agora.getTime());
   return { ...base, ...r, geradoEm: agora.toISOString(), cache: false };
 }
@@ -983,4 +1196,5 @@ module.exports = {
   // funções expostas para a Home (B6) e para os testes de paridade
   faturamento, atendimentos, ticket, ocupacao, ocupacaoBase, horasLivres, equipe, faturamentoPorBarbeiro,
   maisVendidos, clientes, pagamentos, metas, lucro, origem, planos, listaAtendimentos, calcularComissoes,
+  retencao, sumidos, cancelamentos, faltas, comissoes,
 };

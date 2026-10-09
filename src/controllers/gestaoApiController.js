@@ -67,4 +67,89 @@ async function metrica(req, res) {
   }
 }
 
-module.exports = { cartoes, metrica, responderErro, lerBarbeiroFiltro, semCache };
+// ---------------------------------------------------- baixa de comissão ----
+// POST /painel/api/gestao/comissoes/baixa (só admin; plano com Comissões)
+// Corpo: { usuarioId, de, ate, valor?, observacao?, lancarNoCaixa?, formaPagamento? }
+//  - de/ate: "AAAA-MM-DD", o período da comissão (o mesmo da tela);
+//  - valor: centavos; sem valor = o que falta pagar do período;
+//  - lancarNoCaixa: true grava também a SAÍDA no caixa ("Comissão — Nome").
+const FORMAS_CAIXA = ['pix', 'credito', 'debito', 'dinheiro'];
+async function baixarComissao(req, res) {
+  semCache(res);
+  const b = req.barbeariaId;
+  const body = req.body || {};
+  const usuarioId = Number(body.usuarioId);
+  if (!Number.isInteger(usuarioId) || !metricas.dataValida(body.de) || !metricas.dataValida(body.ate)) {
+    return res.status(400).json({ erro: 'Informe o barbeiro e o período.' });
+  }
+  let [de, ate] = [String(body.de), String(body.ate)];
+  if (de > ate) [de, ate] = [ate, de];
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, barbeariaId: b }, select: { id: true, nome: true } });
+  if (!barbeiro) return res.status(400).json({ erro: 'Barbeiro inválido.' });
+
+  const inicio = metricas.dataLocal(de);
+  const fimDia = metricas.dataLocal(ate);
+  const fimExcl = new Date(fimDia);
+  fimExcl.setDate(fimExcl.getDate() + 1);
+  const [calc] = await metricas.calcularComissoes({ barbeariaId: b, usuarioId }, inicio, fimExcl);
+  const calculado = calc ? calc.comissao : 0;
+  const jaPago = (await prisma.comissaoPagamento.findMany({
+    where: { barbeariaId: b, usuarioId, periodoInicio: { gte: inicio }, periodoFim: { lt: fimExcl } },
+    select: { valor: true },
+  })).reduce((s, x) => s + x.valor, 0);
+  const valor = body.valor == null || body.valor === '' ? Math.max(0, calculado - jaPago) : Math.trunc(Number(body.valor));
+  if (!Number.isFinite(valor) || valor <= 0 || valor > 100000000) {
+    return res.status(400).json({ erro: 'Nada a pagar neste período, ou valor inválido.' });
+  }
+  const u = req.session.usuario;
+  const observacao = String(body.observacao || '').trim().slice(0, 200) || null;
+  let caixaId = null;
+  const lancar = body.lancarNoCaixa === true || body.lancarNoCaixa === 'true' || body.lancarNoCaixa === '1' || body.lancarNoCaixa === 'on';
+  const registro = await prisma.$transaction(async (tx) => {
+    if (lancar) {
+      const forma = FORMAS_CAIXA.includes(body.formaPagamento) ? body.formaPagamento : null;
+      const ddmm = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const saida = await tx.caixa.create({
+        data: {
+          barbeariaId: b,
+          descricao: `Comissão — ${barbeiro.nome} (${ddmm(inicio)} a ${ddmm(fimDia)})`.slice(0, 120),
+          valor,
+          tipo: 'saida',
+          data: new Date(),
+          categoriaId: null,
+          formaPagamento: forma,
+        },
+      });
+      caixaId = saida.id;
+    }
+    return tx.comissaoPagamento.create({
+      data: {
+        barbeariaId: b, usuarioId, periodoInicio: inicio, periodoFim: fimDia, valor, valorCalculado: calculado,
+        pagoPorId: u.id, pagoPorNome: u.nome || 'Admin', observacao, caixaId,
+      },
+    });
+  });
+  metricas.invalidar(b);
+  res.json({
+    ok: true,
+    pagamento: { id: registro.id, usuarioId, de, ate, valor, valorCalculado: calculado, caixaId },
+    situacao: { comissao: calculado, pago: jaPago + valor, aPagar: Math.max(0, calculado - jaPago - valor) },
+  });
+}
+
+// POST /painel/api/gestao/comissoes/baixa/:id/desfazer (só admin): apaga a
+// baixa e a saída de caixa que ela tiver criado.
+async function desfazerBaixaComissao(req, res) {
+  semCache(res);
+  const b = req.barbeariaId;
+  const reg = await prisma.comissaoPagamento.findFirst({ where: { id: Number(req.params.id) || 0, barbeariaId: b } });
+  if (!reg) return res.status(404).json({ erro: 'Pagamento não encontrado.' });
+  await prisma.$transaction(async (tx) => {
+    if (reg.caixaId) await tx.caixa.deleteMany({ where: { id: reg.caixaId, barbeariaId: b } });
+    await tx.comissaoPagamento.delete({ where: { id: reg.id } });
+  });
+  metricas.invalidar(b);
+  res.json({ ok: true });
+}
+
+module.exports = { cartoes, metrica, responderErro, lerBarbeiroFiltro, semCache, baixarComissao, desfazerBaixaComissao };

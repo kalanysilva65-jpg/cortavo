@@ -165,6 +165,15 @@ router.use(async (req, res, next) => {
 // Plano da Cortavo (fase 2.2): rotas fora do plano param aqui, no servidor.
 router.use(exigeFuncaoDoPlano);
 
+// Para rotas de API cujo caminho não é o da tela (/api/...): a função do plano
+// é dita explicitamente.
+function exigeFuncaoPlanoApi(funcao) {
+  return (req, res, next) => {
+    if (planoCortavo.libera(res.locals.planoCortavo || planoCortavo.planoDe(null), funcao)) return next();
+    return res.status(403).json({ erro: planoCortavo.textoForaDoPlano(funcao), foraDoPlano: true });
+  };
+}
+
 // Painel (dashboard).
 router.get('/', dashboardController.ver);
 
@@ -175,6 +184,9 @@ router.get('/', dashboardController.ver);
 // squads/app-cortavo/output/gestao-dados-apis.md.
 router.get('/api/gestao/cartoes', gestaoApiController.cartoes);
 router.get('/api/gestao/:metrica', gestaoApiController.metrica);
+// Baixa de comissão (B5): só admin, e só se o plano tem Comissões.
+router.post('/api/gestao/comissoes/baixa', exigeAdmin, exigeFuncaoPlanoApi('comissoes'), gestaoApiController.baixarComissao);
+router.post('/api/gestao/comissoes/baixa/:id/desfazer', exigeAdmin, exigeFuncaoPlanoApi('comissoes'), gestaoApiController.desfazerBaixaComissao);
 
 // Foto do próprio usuário logado (hero do painel).
 router.get('/logo', exigeAdmin, logoController.ver);
