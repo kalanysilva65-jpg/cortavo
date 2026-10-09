@@ -8,10 +8,13 @@
   // trazem o próprio cabeçalho. A lista cresce a cada fatia do plano de
   // migração; quando todas estiverem aqui, a pilha antiga sai (fatia F11).
   // A faixa do teste grátis mora só na Início (partials/faixa-teste.ejs).
-  var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao', '/painel/agenda', '/painel/caixa', '/painel/caixa/fechar', '/painel/comissoes'];
+  var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao', '/painel/agenda', '/painel/caixa', '/painel/caixa/fechar', '/painel/comissoes', '/painel/secretaria', '/painel/meu-plano', '/painel/perfil'];
   // Folha de estilo e script próprios de uma tela v3 (além de cv-telas).
-  var EXTRA_V3 = { '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes' };
+  var EXTRA_V3 = { '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes', '/painel/secretaria': 'cv-secretaria', '/painel/meu-plano': 'cv-secretaria', '/painel/perfil': 'cv-secretaria' };
   var extraV3 = EXTRA_V3[currentPath] || null;
+  // Script próprio da tela (nem toda tela v3 tem).
+  var JS_V3 = { '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes' };
+  var jsV3 = JS_V3[currentPath] || null;
   var ehV3 = TELAS_V3.indexOf(currentPath) !== -1;
   var ehSuave = !ehV3 && TELAS_SUAVE.indexOf(currentPath) !== -1;
 %>
@@ -149,6 +152,6 @@
 <script src="/js/foto-comprimir.js" defer></script>
 <script src="/js/folha-arrastar.js" defer></script>
 <script src="/js/cv-casca.js?v=<%= assetV %>" defer></script>
-<% if (extraV3) { %><script src="/js/<%= extraV3 %>.js?v=<%= assetV %>" defer></script><% } %>
+<% if (jsV3) { %><script src="/js/<%= jsV3 %>.js?v=<%= assetV %>" defer></script><% } %>
 </body>
 </html>

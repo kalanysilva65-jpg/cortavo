@@ -1,209 +1,120 @@
-<%/* Perfil no design SUAVE (pedido do dono, 2026-07-31): substitui o Turno 6
-     (título em caixa alta, foto de 110px ao lado do nome, seções separadas por
-     sobrancelha) pelo HTML de referência — cartão de identidade centrado no
-     topo, seções com cartões arredondados e o cartão preto "Sua semana"
-     fechando a tela.
-     A foto continua editável AQUI: o cabeçalho antigo, que tinha o campo de
-     upload, fica escondido no design novo (`.pg-sv .app-topo-fixo`), então este
-     é o único lugar onde o usuário troca a própria foto.
-     Estilos em public/css/sv-planos-perfil.css. */%>
+<%/* Perfil (redesign v3, F8): abre pelo cartão do topo da tela Mais.
+     Foto (é o único lugar onde a pessoa troca a própria foto), conta, avisos
+     no aparelho, backup (admin), a jornada editável (a mesma que o link de
+     agendamento usa para oferecer horários) e Sair. Mesmos campos e IDs de
+     antes; estilos em public/css/cv-secretaria.css (telas de ajustes). */%>
 <%
-  var cargo = ehDono ? 'Dono do sistema' : (usuario.papel === 'admin' ? 'Admin' : 'Barbeiro');
-  // `usuarioFotoUrl` vem do res.locals (lido do banco a cada requisição).
-  // `usuario.fotoUrl` NÃO existe: a sessão guarda só id/nome/papel.
-  var inicial = (usuario.nome || '?').charAt(0).toUpperCase();
-  var diasTrabalhados = jornada.filter(function (d) { return d.trabalha; });
+  var cargo = ehDono ? 'Dono do sistema' : (usuario.papel === 'admin' ? 'Responsável' : 'Barbeiro');
+  var partes = String(usuario.nome || '?').trim().split(/\s+/);
+  var iniciais = ((partes[0] || '?')[0] + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase();
 %>
-
-<div class="sv-tela">
-
-  <div class="sv-pf-topo sv-reveal">
-    <div class="sv-titulo">Perfil</div>
-    <%/* v3 (F1): o Perfil abre pelo cartão do topo da tela Mais; o "x"
-         volta para lá. O redesenho desta tela é a fatia F8. */%>
-    <a href="/painel/mais" class="sv-pf-fechar" title="Mais" aria-label="Voltar para Mais">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </a>
+<header class="cv-cab">
+  <div class="cv-cab-txt">
+    <a class="cv-cx-voltar" href="/painel/mais"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--20' }) %>Mais</a>
+    <h1>Perfil</h1>
   </div>
+</header>
 
-  <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="sv-cartao sv-pf-cabeca sv-reveal sv-pf-p2">
-    <label class="sv-pf-foto" title="Trocar foto">
-      <% if (usuarioFotoUrl) { %>
-        <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
-      <% } else { %>
-        <span class="sv-pf-foto-inicial"><%= inicial %></span>
-      <% } %>
-      <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+<div class="cv-secao" style="margin-top:12px">
+  <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="cv-cartao cv-pf-cab">
+    <label class="cv-pf-foto" title="Trocar a foto">
+      <% if (usuarioFotoUrl) { %><img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" /><% } else { %><span aria-hidden="true"><%= iniciais %></span><% } %>
+      <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" class="cv-oculto" aria-label="Trocar a foto" />
     </label>
-    <div class="sv-pf-nome"><%= usuario.nome %></div>
-    <div class="sv-pf-funcao"><%= cargo %></div>
-    <div class="sv-pf-dica">Toque no círculo para trocar a foto</div>
+    <div class="cv-pf-nome"><b><%= usuario.nome %></b><span><%= cargo %><%= barbeariaAtual ? ' na ' + barbeariaAtual.nome : '' %></span><span class="cv-ajuda">Toque na foto para trocar</span></div>
   </form>
   <% if (usuarioFotoUrl) { %>
-    <form method="POST" action="/painel/perfil/foto/remover" class="sv-pf-remover">
-      <button type="submit" class="sv-foto-rem" onclick="return confirm('Remover a sua foto de perfil?')">Remover foto</button>
+    <form method="POST" action="/painel/perfil/foto/remover" class="cv-pf-remover">
+      <button type="submit" class="cv-btn cv-btn--texto cv-btn--p" onclick="return confirm('Remover a sua foto de perfil?')">Remover foto</button>
     </form>
   <% } %>
+</div>
 
-  <div class="sv-pf-secao sv-reveal sv-pf-p3">
-    <div class="sv-pf-secao-tit">Conta</div>
-    <div class="sv-cartao sv-pf-lista">
-      <div class="sv-pf-item">
-        <div class="sv-pf-item-rot">Barbearia</div>
-        <div class="sv-pf-item-val"><%= barbeariaAtual ? barbeariaAtual.nome : '—' %></div>
-      </div>
-      <div class="sv-pf-item">
-        <div class="sv-pf-item-rot">Função</div>
-        <div class="sv-pf-item-val"><%= cargo %></div>
-      </div>
-      <% if (usuario.barbeariaId) { %>
-        <div class="sv-pf-item">
-          <div class="sv-pf-item-rot">Atendimentos concluídos</div>
-          <div class="sv-pf-item-val"><%= atendimentos %></div>
-        </div>
-      <% } %>
+<section class="cv-secao" aria-labelledby="pf-conta">
+  <div class="cv-secao-cab"><h2 id="pf-conta">Conta</h2></div>
+  <ul class="cv-lista cv-lista--sem-ic">
+    <li><div class="cv-linha"><span class="corpo"><span class="s">Barbearia</span><span class="t"><%= barbeariaAtual ? barbeariaAtual.nome : '—' %></span></span></div></li>
+    <li><div class="cv-linha"><span class="corpo"><span class="s">Função</span><span class="t"><%= cargo %></span></span></div></li>
+    <% if (usuario.barbeariaId) { %><li><div class="cv-linha"><span class="corpo"><span class="s">Atendimentos concluídos</span><span class="t"><%= atendimentos %></span></span></div></li><% } %>
+    <% if (ehAdmin && typeof planoCortavo !== 'undefined' && planoCortavo) { %>
+      <li><a class="cv-linha" href="/painel/meu-plano"><span class="corpo"><span class="s">Meu plano</span><span class="t"><%= planoCortavo.nome %>, o que inclui e o uso do mês</span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+      <li><a class="cv-linha" href="/painel/logo"><span class="corpo"><span class="s">Agendamento online</span><span class="t">Logo da barbearia no link</span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+    <% } %>
+  </ul>
+</section>
+
+<%/* Avisos no aparelho. A permissão só pode ser pedida a partir de um toque:
+     por isso é um botão, não um interruptor que "já vem ligado". */%>
+<section class="cv-secao" id="pf-avisos" aria-labelledby="pf-avisos-tit" hidden>
+  <div class="cv-secao-cab"><h2 id="pf-avisos-tit">Avisos</h2><span class="cv-ajuda" id="pf-avisos-estado"></span></div>
+  <div class="cv-cartao">
+    <p class="cv-texto-apoio" id="pf-avisos-texto">Receba um aviso neste aparelho quando cair um agendamento novo na sua agenda.</p>
+    <div class="cv-sec-botoes">
+      <button type="button" class="cv-btn cv-btn--2" id="pf-avisos-ligar">Ativar avisos</button>
+      <button type="button" class="cv-btn cv-btn--2" id="pf-avisos-testar" hidden>Enviar teste</button>
+      <button type="button" class="cv-btn cv-btn--texto" id="pf-avisos-desligar" hidden>Desativar</button>
     </div>
   </div>
+</section>
 
-  <% if (ehAdmin && typeof planoCortavo !== 'undefined' && planoCortavo) { %>
-    <%/* Fase 2.4: plano da Cortavo (só admin/dono; barbeiro não vê plano). */%>
-    <div class="sv-pf-secao sv-reveal">
-      <div class="sv-pf-secao-tit">Plano</div>
-      <a class="sv-cartao sv-pf-lista sv-pf-link" href="/painel/meu-plano">
-        <div class="sv-pf-item" style="display:flex;justify-content:space-between;align-items:center">
-          <div><div class="sv-pf-item-rot">Meu plano</div><div class="sv-pf-item-val"><%= planoCortavo.nome %> · o que inclui e uso do mês</div></div>
-          <span aria-hidden="true">›</span>
-        </div>
-      </a>
-    </div>
-  <% } %>
-
-  <% if (ehAdmin) { %>
-    <div class="sv-pf-secao sv-reveal">
-      <div class="sv-pf-secao-tit">Agendamento online</div>
-      <a class="sv-cartao sv-pf-lista sv-pf-link" href="/painel/logo">
-        <div class="sv-pf-item" style="display:flex;justify-content:space-between;align-items:center">
-          <div><div class="sv-pf-item-rot">Logo da barbearia</div><div class="sv-pf-item-val">Adicionar, trocar, posição e tamanho</div></div>
-          <span aria-hidden="true">›</span>
-        </div>
-      </a>
-    </div>
-  <% } %>
-
-  <% if (ehAdmin) { %>
-    <%/* Backup manual dos dados (só admin: inclui financeiro e todos os
-         clientes). Dois formatos com propósitos diferentes — o PDF é para ler
-         e imprimir; o JSON é o que realmente permite restaurar se o banco for
-         perdido. São <a download> apontando para as rotas de exportação.
-         Observação: o download funciona no NAVEGADOR; dentro do app da loja
-         (WKWebView) o arquivo pode abrir em vez de baixar — por isso o texto
-         sugere fazer pelo navegador. */%>
-    <div class="sv-pf-secao sv-reveal" id="pf-backup">
-      <div class="sv-pf-secao-tit">Backup dos dados</div>
-      <div class="sv-cartao sv-pf-avisos">
-        <div class="sv-pf-avisos-texto">
-          Baixe uma cópia de todos os dados desta barbearia — clientes, agenda, caixa, catálogo, estoque e equipe.
-          O <strong>PDF</strong> é para ler, imprimir e arquivar. O <strong>arquivo de dados</strong> é o que permite recuperar tudo caso algo se perca — guarde-o num lugar seguro.
-        </div>
-        <div class="sv-pf-avisos-botoes">
-          <a class="sv-btn sv-pf-avisos-btn" href="/painel/exportar/relatorio">Abrir PDF</a>
-          <a class="sv-pf-avisos-sec" href="/painel/exportar/dados.json" download>Baixar dados (backup)</a>
-        </div>
-        <div class="sv-pf-dica" style="margin-top:10px;">Dica: faça pelo navegador (cortavo.com.br) para o download funcionar melhor.</div>
+<% if (ehAdmin) { %>
+  <%/* Backup manual (só admin: inclui financeiro e todos os clientes). O PDF é
+       para ler e arquivar; o arquivo de dados é o que permite restaurar. */%>
+  <section class="cv-secao" id="pf-backup" aria-labelledby="pf-backup-tit">
+    <div class="cv-secao-cab"><h2 id="pf-backup-tit">Backup dos dados</h2></div>
+    <div class="cv-cartao">
+      <p class="cv-texto-apoio">Baixe uma cópia de todos os dados desta barbearia: clientes, agenda, caixa, catálogo, estoque e equipe. O <strong>PDF</strong> é para ler, imprimir e arquivar. O <strong>arquivo de dados</strong> é o que permite recuperar tudo caso algo se perca; guarde num lugar seguro.</p>
+      <div class="cv-sec-botoes">
+        <a class="cv-btn cv-btn--2" href="/painel/exportar/relatorio"><%- include('../partials/icone', { cvIc: 'exportar', cvCls: 'cv-ic--18' }) %>Abrir PDF</a>
+        <a class="cv-btn cv-btn--texto" href="/painel/exportar/dados.json" download>Baixar dados (backup)</a>
       </div>
+      <p class="cv-ajuda" style="margin-top:10px">Dica: faça pelo navegador (cortavo.com.br) para o download funcionar melhor.</p>
     </div>
-  <% } %>
+  </section>
+<% } %>
 
-  <%/* Avisos no aparelho. A permissão de notificação só pode ser pedida a
-       partir de um TOQUE do usuário — navegador nenhum concede no carregamento
-       da página —, então isto é um botão de verdade, não um interruptor que
-       "já vem ligado". O estado real é lido do navegador ao abrir a tela. */%>
-  <div class="sv-pf-secao sv-reveal" id="pf-avisos" hidden>
-    <div class="sv-pf-secao-topo">
-      <div class="sv-pf-secao-tit">Avisos</div>
-      <div class="sv-pf-secao-lado" id="pf-avisos-estado"></div>
-    </div>
-    <div class="sv-cartao sv-pf-avisos">
-      <div class="sv-pf-avisos-texto" id="pf-avisos-texto">
-        Receba um aviso neste aparelho quando cair um agendamento novo na sua agenda.
-      </div>
-      <div class="sv-pf-avisos-botoes">
-        <button type="button" class="sv-btn sv-pf-avisos-btn" id="pf-avisos-ligar">Ativar avisos</button>
-        <button type="button" class="sv-pf-avisos-sec" id="pf-avisos-testar" hidden>Enviar teste</button>
-        <button type="button" class="sv-pf-avisos-sec" id="pf-avisos-desligar" hidden>Desativar</button>
-      </div>
-    </div>
-  </div>
-
-  <% if (usuario.barbeariaId) { %>
-    <%/* Jornada EDITÁVEL aqui (pedido do dono, 2026-08-01): a tela
-         /painel/horarios saiu do menu e a edição veio para o Perfil.
-         Um formulário só para dias e horas: marcar o dia sem definir a hora
-         não faz sentido, e são a mesma decisão ("quando eu atendo").
-         É esta jornada que o agendamento público lê para oferecer horários —
-         desmarcar um dia aqui o fecha para o cliente na hora. */%>
-    <form method="POST" action="/painel/perfil/jornada" class="sv-pf-secao sv-reveal" id="pf-jornada">
-      <input type="hidden" name="retorno" value="perfil" />
-
-      <div class="sv-pf-secao-topo">
-        <div class="sv-pf-secao-tit">Dias de trabalho</div>
-        <div class="sv-pf-secao-lado" id="pf-conta-dias"><%= semana.dias ? semana.dias + ' dias' : 'nenhum dia' %></div>
-      </div>
-
-      <div class="sv-pf-dias">
-        <% jornada.forEach(function (d) { %>
-          <%/* O <input> real carrega o estado e vai no POST; o <label> é o
-               ladrilho visível. `trabalha_<dia>` é o nome que o controller
-               espera. */%>
-          <label class="sv-pf-dia-caixa">
-            <input type="checkbox" name="trabalha_<%= d.dia %>" <%= d.trabalha ? 'checked' : '' %> onchange="pfAtualizarDia(this, <%= d.dia %>)" />
-            <span class="sv-pf-dia <%= d.trabalha ? 'on' : '' %>"><%= d.label %></span>
-          </label>
-        <% }) %>
-      </div>
-
-      <div class="sv-pf-secao-tit sv-pf-horas-tit">Horários</div>
+<% if (usuario.barbeariaId) { %>
+  <%/* Jornada editável: é ela que o link de agendamento lê para oferecer
+       horários. Os nomes dos campos (trabalha_<dia>, inicio_<dia>, fim_<dia>)
+       são os que o horarioController espera. */%>
+  <form method="POST" action="/painel/perfil/jornada" class="cv-secao" id="pf-jornada" aria-labelledby="pf-jornada-tit">
+    <input type="hidden" name="retorno" value="perfil" />
+    <div class="cv-secao-cab"><h2 id="pf-jornada-tit">Dias de trabalho</h2><span class="cv-ajuda" id="pf-conta-dias"><%= semana.dias ? semana.dias + ' dias' : 'nenhum dia' %></span></div>
+    <div class="cv-pf-dias" role="group" aria-label="Dias em que você atende">
       <% jornada.forEach(function (d) { %>
-        <div class="sv-cartao sv-pf-hora <%= d.trabalha ? '' : 'folga' %>" id="pf-hora-<%= d.dia %>">
-          <div class="sv-pf-hora-dia"><%= d.label %></div>
-          <div class="sv-pf-hora-faixa">
-            <input class="sv-pf-hora-input" type="time" name="inicio_<%= d.dia %>" value="<%= d.horaInicio %>" aria-label="Início <%= d.label %>" />
-            <span class="sv-pf-hora-sep">às</span>
-            <input class="sv-pf-hora-input" type="time" name="fim_<%= d.dia %>" value="<%= d.horaFim %>" aria-label="Fim <%= d.label %>" />
-          </div>
-        </div>
+        <label class="cv-pf-dia-caixa">
+          <input type="checkbox" class="cv-oculto" name="trabalha_<%= d.dia %>" <%= d.trabalha ? 'checked' : '' %> onchange="pfAtualizarDia(this, <%= d.dia %>)" />
+          <span class="sv-pf-dia cv-pf-dia <%= d.trabalha ? 'on' : '' %>"><%= d.label %></span>
+        </label>
       <% }) %>
-
-      <div class="sv-pf-nota"><%= horarioTrabalho %></div>
-      <button type="submit" class="sv-btn sv-pf-salvar">Salvar jornada</button>
-    </form>
-
-    <div class="sv-cartao sv-cartao--escuro sv-pf-semana sv-reveal">
-      <div class="sv-pf-semana-rot">Sua semana</div>
-      <div class="sv-pf-semana-num"><%= semana.horas %></div>
-      <div class="sv-pf-semana-linha"><%= semana.linha %></div>
     </div>
-  <% } %>
+    <ul class="cv-lista cv-lista--sem-ic cv-pf-horas">
+      <% jornada.forEach(function (d) { %>
+        <li><div class="cv-linha cv-pf-hora <%= d.trabalha ? '' : 'folga' %>" id="pf-hora-<%= d.dia %>">
+          <span class="corpo"><span class="t"><%= d.label %></span></span>
+          <input class="cv-entrada" type="time" name="inicio_<%= d.dia %>" value="<%= d.horaInicio %>" aria-label="Início <%= d.label %>" />
+          <span class="cv-ajuda">às</span>
+          <input class="cv-entrada" type="time" name="fim_<%= d.dia %>" value="<%= d.horaFim %>" aria-label="Fim <%= d.label %>" />
+        </div></li>
+      <% }) %>
+    </ul>
+    <p class="cv-ajuda" style="margin:10px 4px 0"><%= horarioTrabalho %></p>
+    <section class="cv-objeto cv-gravada cv-pf-semana" aria-label="Sua semana"><span class="rot">Sua semana</span><b><%= semana.horas %></b><span class="rot"><%= semana.linha.replace(' · ', ', ') %></span></section>
+    <button type="submit" class="cv-btn cv-btn--largo" style="margin-top:16px">Salvar jornada</button>
+  </form>
+<% } %>
 
-  <% if (ehDono) { %>
-    <%/* O aviso de "operando como dono" e a saída para o painel-mestre viviam
-         no cabeçalho fixo, escondido neste design — moram aqui. */%>
-    <div class="sv-cartao sv-pf-dono sv-reveal">
-      <div class="sv-pf-dono-txt">
-        Você está operando <strong><%= barbeariaAtual ? barbeariaAtual.nome : 'uma barbearia' %></strong> como dono do sistema.
-      </div>
-      <form method="POST" action="/mestre/sair">
-        <button class="sv-pf-dono-btn" type="submit">← Voltar ao painel-mestre</button>
-      </form>
+<% if (ehDono) { %>
+  <div class="cv-secao">
+    <div class="cv-cartao cv-nota-dono">
+      <span>Você está operando <strong><%= barbeariaAtual ? barbeariaAtual.nome : 'uma barbearia' %></strong> como dono do sistema.</span>
+      <form method="POST" action="/mestre/sair"><button class="cv-btn cv-btn--2 cv-btn--p" type="submit"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--18' }) %>Voltar ao painel-mestre</button></form>
     </div>
-  <% } %>
-
-  <div class="sv-pf-rodape">
-    <form method="POST" action="/logout">
-      <button class="sv-pf-sair" type="submit">Sair da conta</button>
-    </form>
   </div>
+<% } %>
 
+<div class="cv-secao">
+  <form method="POST" action="/logout"><button class="cv-btn cv-btn--2 cv-btn--largo cv-pf-sair" type="submit"><%- include('../partials/icone', { cvIc: 'sair', cvCls: 'cv-ic--18' }) %>Sair da conta</button></form>
 </div>
 
 <script>
@@ -346,7 +257,7 @@
       fetch('/painel/notificacoes/testar', { method: 'POST', credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
         .then(function (j) {
-          btnTestar.textContent = j.entregues > 0 ? 'Enviado!' : 'Nenhum aparelho';
+          btnTestar.textContent = j.entregues > 0 ? 'Enviado' : 'Nenhum aparelho';
         })
         .catch(function () { btnTestar.textContent = 'Falhou'; })
         .then(function () {

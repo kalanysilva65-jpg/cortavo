@@ -1,57 +1,65 @@
-<%/* "Meu plano" (fase 2.4, spec 04). Só admin/dono. Design suave (mesmos
-     cartões do Perfil, sv-planos-perfil.css). SEM botão de pagar nem preço
-     para contratar dentro do app (regra da Apple): trocar de plano é com a
-     Cortavo, fora do app. */%>
+<%/* "Meu plano" (fase 2.4, spec 04; redesign v3, F8). Só admin/dono.
+     Objeto preto com o plano, o que ele libera (o que falta aparece com o
+     cadeado e o nome do plano, como subtítulo) e o uso do mês com barra.
+     SEM botão de pagar nem preço para contratar dentro do app (regra da
+     Apple): trocar de plano é com a Cortavo, fora do app. */%>
 <%
   function linhaUso(u) {
     if (u.desligado) return 'Não incluso no plano';
     return u.usado + ' de ' + u.teto + ' no mês';
   }
+  function pct(u) { return (!u.desligado && u.teto) ? Math.min(1, u.usado / u.teto) : 0; }
+  var contato = typeof suporteCortavo !== 'undefined' ? suporteCortavo : 'cortavo.app@gmail.com';
 %>
-<div class="sv-tela">
-
-  <div class="sv-pf-topo sv-reveal">
-    <div class="sv-titulo">Meu plano</div>
-    <a href="/painel/mais" class="sv-pf-fechar" title="Perfil" aria-label="Voltar ao perfil">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </a>
+<header class="cv-cab">
+  <div class="cv-cab-txt">
+    <a class="cv-cx-voltar" href="/painel/mais"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--20' }) %>Mais</a>
+    <h1>Meu plano</h1>
   </div>
+</header>
 
-  <div class="sv-cartao sv-cartao--escuro sv-mp-plano sv-reveal">
-    <div class="sv-mp-plano-rot">Plano Cortavo</div>
-    <div class="sv-mp-plano-nome"><%= plano.nome %></div>
-    <% if (desde) { %><div class="sv-mp-plano-sub">Desde <%= new Date(desde).toLocaleDateString('pt-BR') %></div><% } %>
-  </div>
-
-  <div class="sv-pf-secao sv-reveal">
-    <div class="sv-pf-secao-tit">O que o plano libera</div>
-    <div class="sv-cartao sv-pf-lista">
-      <div class="sv-pf-item"><div class="sv-pf-item-rot">Agenda, link de agendamento, caixa e clientes</div><div class="sv-pf-item-val">Incluso</div></div>
-      <% funcoes.forEach(function (f) { %>
-        <div class="sv-pf-item<%= f.liberada ? '' : ' sv-mp-trancado' %>">
-          <div class="sv-pf-item-rot"><% if (!f.liberada) { %><span class="sv-mp-cadeado"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.5a4.8 4.8 0 0 0-4.8 4.8v2.4H6.4A2.4 2.4 0 0 0 4 12.1v7A2.4 2.4 0 0 0 6.4 21.5h11.2a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-.8V7.3A4.8 4.8 0 0 0 12 2.5zm2.6 7.2V7.3a2.6 2.6 0 1 0-5.2 0v2.4z"/></svg></span> <% } %><%= f.rotulo %></div>
-          <div class="sv-pf-item-val"><%= f.liberada ? 'Incluso' : f.texto %></div>
-        </div>
-      <% }) %>
-    </div>
-  </div>
-
-  <div class="sv-pf-secao sv-reveal">
-    <div class="sv-pf-secao-tit">Uso deste mês</div>
-    <div class="sv-cartao sv-pf-lista">
-      <div class="sv-pf-item<%= uso.secretaria.desligado ? ' sv-mp-trancado' : '' %>"><div class="sv-pf-item-rot">Secretária de IA (respostas)</div><div class="sv-pf-item-val"><%= linhaUso(uso.secretaria) %></div></div>
-      <div class="sv-pf-item<%= uso.assistente.desligado ? ' sv-mp-trancado' : '' %>"><div class="sv-pf-item-rot">Assistente (consultas)</div><div class="sv-pf-item-val"><%= linhaUso(uso.assistente) %></div></div>
-      <% if (uso.lembretesRef) { %>
-        <div class="sv-pf-item"><div class="sv-pf-item-rot">Lembretes por mês</div><div class="sv-pf-item-val">Referência: <%= uso.lembretesRef %> (nunca corta)</div></div>
-      <% } %>
-      <div class="sv-pf-item">
-        <div class="sv-pf-item-rot">Barbeiros</div>
-        <div class="sv-pf-item-val"><%= uso.barbeiros %><% if (uso.barbeirosRef) { %> (referência do plano: até <%= uso.barbeirosRef %>)<% } %></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="sv-cartao sv-pf-avisos sv-reveal">
-    <p class="sv-mp-fale">Quer mudar de plano? Fale com a Cortavo.</p>
-  </div>
+<div class="cv-secao" style="margin-top:12px">
+  <section class="cv-objeto cv-gravada" aria-label="Plano Cortavo">
+    <span class="rot">Plano Cortavo</span>
+    <b class="cv-mp-nome"><%= plano.nome %></b>
+    <% if (desde) { %><span class="rot">Desde <%= new Date(desde).toLocaleDateString('pt-BR') %></span><% } %>
+    <% if (typeof faixaTeste !== 'undefined' && faixaTeste) { %><p class="cv-mp-teste"><%= faixaTeste.texto %></p><% } %>
+  </section>
 </div>
+
+<section class="cv-secao" aria-labelledby="mp-libera">
+  <div class="cv-secao-cab"><h2 id="mp-libera">O que o plano libera</h2></div>
+  <ul class="cv-lista cv-lista--sem-ic">
+    <li><div class="cv-linha"><span class="corpo"><span class="t">Agenda, link de agendamento, caixa e clientes</span></span><span class="fim">Incluso</span></div></li>
+    <% funcoes.forEach(function (f) { %>
+      <li><div class="cv-linha cv-linha--quebra<%= f.liberada ? '' : ' bloqueada' %>">
+        <span class="corpo"><span class="t"><%= f.rotulo %></span><% if (!f.liberada) { %><span class="s"><%= f.texto %></span><% } %></span>
+        <span class="fim"><% if (f.liberada) { %>Incluso<% } else { %><span class="cv-cadeado"><%- include('../partials/icone', { cvIc: 'cadeado' }) %>Fora do plano</span><% } %></span>
+      </div></li>
+    <% }) %>
+  </ul>
+</section>
+
+<section class="cv-secao" aria-labelledby="mp-uso">
+  <div class="cv-secao-cab"><h2 id="mp-uso">Uso deste mês</h2></div>
+  <ul class="cv-lista cv-lista--sem-ic">
+    <% [['Secretária de IA (respostas)', uso.secretaria], ['Assistente (consultas)', uso.assistente]].forEach(function (x) { var u = x[1]; %>
+      <li><div class="cv-linha cv-linha--quebra cv-mp-uso<%= u.desligado ? ' bloqueada' : '' %>">
+        <span class="corpo"><span class="t"><%= x[0] %></span><span class="s"><%= linhaUso(u) %></span>
+          <% if (!u.desligado && u.teto) { %><span class="cv-mp-barra" role="progressbar" aria-valuemin="0" aria-valuemax="<%= u.teto %>" aria-valuenow="<%= u.usado %>" aria-label="<%= x[0] %>"><b style="transform:scaleX(<%= pct(u).toFixed(3) %>)"></b></span><% } %>
+        </span>
+      </div></li>
+    <% }) %>
+    <% if (uso.lembretesRef) { %>
+      <li><div class="cv-linha"><span class="corpo"><span class="t">Lembretes por mês</span><span class="s">Referência: <%= uso.lembretesRef %> (nunca corta)</span></span></div></li>
+    <% } %>
+    <li><div class="cv-linha"><span class="corpo"><span class="t">Barbeiros</span><span class="s"><%= uso.barbeiros %><% if (uso.barbeirosRef) { %> (referência do plano: até <%= uso.barbeirosRef %>)<% } %></span></span></div></li>
+  </ul>
+</section>
+
+<section class="cv-secao">
+  <div class="cv-cartao cv-mp-fale">
+    <p class="cv-texto-apoio">Quer mudar de plano? Fale com a Cortavo.</p>
+    <a class="cv-btn cv-btn--2 cv-btn--largo" href="mailto:<%= contato %>" style="margin-top:12px"><%- include('../partials/icone', { cvIc: 'conversa', cvCls: 'cv-ic--18' }) %>Falar com a Cortavo</a>
+  </div>
+</section>

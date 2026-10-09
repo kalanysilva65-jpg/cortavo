@@ -360,3 +360,41 @@ test('F6 Fechar caixa: conferência da gaveta com o esperado; dia já fechado mo
   assert.ok(js.includes("fetch('/painel/api/caixa/fechar'"));
   assert.ok(js.includes("C.selo({ botao: btn, processando:"));
 });
+
+// ---------- F8: Secretária, Meu plano e Perfil ----------
+function sec(extra = {}) {
+  const arq = path.join(VIEWS, 'painel/secretaria-config.ejs');
+  const base = {
+    ehDono: false, iaPausada: false, whatsapp: { conectado: true, numero: '+55 11 98765-4321' }, numeroCortavo: { disponivel: true, nomeSugerido: 'Vila Rosa' },
+    cfg: { modo: 'cortavo', link: '', regras: '', tetoMes: '', copilotoTetoMes: '', privacidadeLink: '', lembretesAtivos: false, lembreteTemplate: 'x', lembreteAntecedencia: '60' },
+    planoCortavo: { tetos: { secretaria: 800 } }, suporteCortavo: 'cortavo.app@gmail.com',
+  };
+  return ejs.render(fs.readFileSync(arq, 'utf8'), { ...base, ...extra }, { filename: arq });
+}
+test('F8 Secretária: estado no topo, Zona de risco com DESCONECTAR, sem emoji', () => {
+  const on = sec();
+  assert.match(on, /data-estado="on"><i aria-hidden="true"><\/i>Atendendo agora/);
+  assert.match(on, /WhatsApp final 4321/);
+  assert.match(on, /Zona de risco[\s\S]*name="confirmacao"[\s\S]*cv-btn--perigo/);
+  assert.match(sec({ iaPausada: true }), />Pausada[\s\S]*Reativar IA/);
+  const fora = sec({ planoCortavo: { tetos: { secretaria: 0 } } });
+  assert.match(fora, /Fora do plano/);
+  assert.doesNotMatch(fora, /Reativar IA<\/button>/);
+  const desconectado = sec({ whatsapp: { conectado: false } });
+  assert.match(desconectado, /id="svNumPasso1"/);
+  assert.doesNotMatch(desconectado, /Zona de risco/);
+  for (const h of [on, desconectado]) assert.doesNotMatch(h, /[\u{1F300}-\u{1FAFF}✅⏸]/u, 'sem emoji');
+});
+test('F8 Perfil: foto, jornada (campos do controller), avisos e backup com os IDs de antes', () => {
+  const arq = path.join(VIEWS, 'painel/perfil.ejs');
+  const html = ejs.render(fs.readFileSync(arq, 'utf8'), {
+    ehDono: false, ehAdmin: true, usuario: { nome: 'Rafael Moreira', papel: 'admin', barbeariaId: 1 }, usuarioFotoUrl: null, barbeariaAtual: { nome: 'Vila Rosa' },
+    atendimentos: 312, horarioTrabalho: 'Seg a sáb', planoCortavo: { nome: 'Barbearia' }, semana: { horas: '60h', dias: 6, linha: '6 dias · 10h por dia' },
+    jornada: [{ dia: 1, label: 'Seg', trabalha: true, horaInicio: '09:00', horaFim: '19:00' }, { dia: 0, label: 'Dom', trabalha: false, horaInicio: '09:00', horaFim: '19:00' }],
+  }, { filename: arq });
+  for (const id of ['pf-avisos', 'pf-avisos-ligar', 'pf-backup', 'pf-jornada', 'pf-conta-dias', 'pf-hora-1', 'pf-hora-0']) assert.match(html, new RegExp('id="' + id + '"'), id);
+  for (const n of ['trabalha_1', 'inicio_1', 'fim_0', 'retorno']) assert.match(html, new RegExp('name="' + n + '"'), n);
+  assert.match(html, /action="\/painel\/perfil\/foto"/);
+  assert.match(html, /action="\/logout"/);
+  assert.match(html, /class="cv-linha cv-pf-hora folga" id="pf-hora-0"/);
+});
