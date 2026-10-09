@@ -130,6 +130,11 @@ router.use(async (req, res, next) => {
   // Telas que ESTE funcionário não pode abrir (escolhidas pelo admin na Equipe).
   // Admin/dono nunca é restringido.
   const bloqueados = req.ehAdmin ? new Set() : permissoes.bloqueadosDe(usuarioDb);
+  // Spec 12 (B1): contexto de permissões da requisição (chaves de telas E de
+  // dados, já cruzadas com o plano da barbearia). Rotas e controllers perguntam
+  // `req.permissoes.pode('caixa_ver')` / `req.permissoes.escopo()`.
+  req.permissoes = permissoes.contexto(u, usuarioDb, planoCortavo.planoDe(barbearia && barbearia.planoCortavo));
+  res.locals.pode = req.permissoes.pode;
   res.locals.podeAcessar = (href) => {
     const mod = permissoes.moduloDoCaminho(String(href || '').replace(/^\/painel/, '') || '/');
     return !mod || !bloqueados.has(mod.chave);

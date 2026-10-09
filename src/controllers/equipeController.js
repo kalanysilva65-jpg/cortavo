@@ -218,7 +218,9 @@ async function criar(req, res) {
 
   const { email, senha } = credenciaisInternas(nome, b);
   await prisma.usuario.create({
-    data: { barbeariaId: b, nome, email, senhaHash: await bcrypt.hash(senha, 10), papel: 'funcionario' },
+    // Spec 12 (B1): barbeiro novo nasce com o padrão NOVO de permissões
+    // (estoque, conversas, números da barbearia, ranking e caixa bloqueados).
+    data: { barbeariaId: b, nome, email, senhaHash: await bcrypt.hash(senha, 10), papel: 'funcionario', acessosBloqueados: permissoes.padraoNovoSerializado() },
   });
   req.session.flash = { tipo: 'sucesso', texto: `${nome} adicionado à equipe.` };
   res.redirect('/painel/equipe');
@@ -262,7 +264,8 @@ async function atualizar(req, res) {
   // quando o formulário o envia; valor inválido vira null (centralizado).
   if (req.body.fotoPos !== undefined) data.fotoPos = normalizarFotoPos(req.body.fotoPos);
   // Acessos do funcionário: só quando o formulário traz o bloco (marcador).
-  if (req.body.acessosForm && membro.papel === 'funcionario') data.acessosBloqueados = permissoes.bloqueadosDoForm(req.body);
+  // Spec 12 (B1): só decide as chaves que a tela mostrou; o resto fica como estava.
+  if (req.body.acessosForm && membro.papel === 'funcionario') data.acessosBloqueados = permissoes.bloqueadosDoForm(req.body, membro.acessosBloqueados);
 
   await prisma.usuario.update({ where: { id }, data });
   req.session.flash = { tipo: 'sucesso', texto: 'Membro atualizado.' };
