@@ -200,3 +200,53 @@ test('F2 casca: "+" abre a folha e ?abrir= abre a folha da tela de destino', () 
     assert.ok(fs.readFileSync(path.join(VIEWS, v), 'utf8').includes(fn), v);
   }
 });
+
+// ---------- F4: Agenda ----------
+function agenda(extra = {}) {
+  const arq = path.join(VIEWS, 'painel/agenda.ejs');
+  const hoje = '2026-10-09';
+  const D = { id: 3, nome: 'Diego Santos' };
+  const it = (n, v) => ({ servico: { nome: n }, valor: v, quantidade: 1 });
+  const ag = (id, h, cli, status) => ({ id, horaInicio: h, clienteNome: cli, clienteTelefone: '51999990000', itens: [it('Corte', 4000)], usuario: D, status, valorTotal: 4000, pagamentos: [], clientePlanoId: null });
+  const base = {
+    ehAdmin: true, usuario: { id: 2, nome: 'Rafael Moreira' }, faixaDias: [{ iso: hoje, num: 9, rotulo: 'Sex', selecionado: true, ehHoje: true }],
+    diaNum: 9, proxDiaNum: 10, proximoId: 3, mesLabel: 'Outubro', anoMes: 2026, anoPicker: 2026, mesesPicker: [],
+    agendamentos: [ag(1, '09:00', 'Gustavo Nunes', 'concluido'), ag(2, '10:30', 'Renato Alves', 'cancelado'), ag(3, '23:50', 'Lucas Andrade', 'agendado')],
+    bloqueios: [{ id: 1, horaInicio: '12:00', horaFim: '13:00', motivo: 'Almoço da equipe', usuario: D }],
+    barbeiros: [D], servicos: [], clientes: [], formasPagamento: [{ valor: 'pix', label: 'Pix' }], maxParcelas: 12,
+    dataStr: hoje, dataExtenso: 'sexta, 09/10/2026', barbeiroSelecionado: 'todos', dataPrev: hoje, dataNext: hoje, dataHoje: hoje, hojeIso: hoje,
+    mostrarBarbeiroNoCard: true, jsonSeguro: (x) => JSON.stringify(x), fmtTelefone: (t) => t, fmtBRL: (c) => 'R$ ' + c / 100, fmtT6: (c) => 'R$' + c / 100, podeAcessar: () => true,
+  };
+  return ejs.render(fs.readFileSync(arq, 'utf8'), { ...base, ...extra }, { filename: arq });
+}
+
+test('F4 Agenda: linha do dia v3 com estado escrito, listra no bloqueio e a linha "agora" só hoje', () => {
+  const html = agenda();
+  assert.match(html, /<h1>Agenda<\/h1>/);
+  assert.match(html, /Sexta, 9 de outubro/);
+  assert.match(html, /class="cv-ag cv-toca feito"[\s\S]*?Concluído/);
+  assert.match(html, /class="cv-ag cv-toca cancelado"[\s\S]*?Cancelado/);
+  assert.match(html, /class="cv-ag bloqueado"[\s\S]*?Almoço da equipe até 13:00/);
+  assert.match(html, /class="cv-agora-linha"/);
+  assert.match(html, /abrirModal\('bloqueio'\)[^>]*>[\s\S]*?Bloquear<\/button>/);
+  assert.doesNotMatch(agenda({ dataHoje: '2026-10-10' }), /class="cv-agora-linha"/);
+  assert.match(agenda({ agendamentos: [{ id: 9, horaInicio: '09:00', clienteNome: 'Ana', itens: [], usuario: { nome: 'Diego' }, status: 'faltou', valorTotal: 0, pagamentos: [] }] }), /class="cv-ag cv-toca faltou"[\s\S]*?Faltou/);
+});
+
+test('F4 Agenda: folhas, IDs e scripts de antes continuam (novo, bloqueio, mês, tira de dias)', () => {
+  const html = agenda();
+  for (const id of ['agm-novo', 'form-novo-agendamento', 'agm-bloqueio', 'agm-mes', 'sv-ag-dias', 'hora-livre', 'hora-novo', 'data-novo', 'agm-1']) assert.match(html, new RegExp('id="' + id + '"'), id);
+  assert.match(html, /action="\/painel\/agenda\/novo"/);
+});
+
+test('F4 Agenda: livres só com um barbeiro na tela; barbeiro sem horários liberados não vê Bloquear', () => {
+  assert.match(agenda(), /id="cv-ag-tl" data-barbeiro=""/);
+  assert.match(agenda({ barbeiroSelecionado: '3' }), /id="cv-ag-tl" data-barbeiro="3"/);
+  const barbeiro = agenda({ ehAdmin: false, podeAcessar: (h) => h !== '/painel/horarios' });
+  assert.match(barbeiro, /id="cv-ag-tl" data-barbeiro="2"/);
+  assert.doesNotMatch(barbeiro, /cv-ag-bloquear/);
+  assert.match(agenda({ ehAdmin: false }), /class="cv-btn cv-btn--2 cv-btn--p cv-ag-bloquear" href="\/painel\/horarios"/);
+  const js = fs.readFileSync(path.join(RAIZ, 'public/js/cv-agenda.js'), 'utf8');
+  assert.ok(js.includes("fetch('/painel/agenda/horarios?'"));
+  assert.ok(js.includes("g.Cortavo.selo({ titulo: 'Agendamento confirmado'"));
+});

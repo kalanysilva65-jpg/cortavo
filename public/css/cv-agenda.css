@@ -1,0 +1,86 @@
+/* =========================================================================
+   Cortavo v3 · Agenda (fatia F4). Carregado por último na /painel/agenda,
+   por cima de suave.css e sv-agenda.css: o miolo é v3 (cv-cab, cv-dias,
+   cv-chips, cv-tl, cv-ag) e as folhas antigas (.ag-overlay/.ag-modal-box,
+   mesmos IDs e scripts) ganham a pele v3. Seletores com .pg-sv para vencer
+   as regras antigas (.pg-sv a, .pg-sv button). Mockups: prints 03 e 04b.
+   ========================================================================= */
+
+/* A Agenda era a única tela de página branca; na v3 é o cinza de sempre */
+html:has(> body.pg-sv) { background: var(--c-pagina); }
+.pg-sv .sv-tela.sv-ag-tela { background: var(--c-pagina); padding-bottom: var(--area-nav); }
+.pg-sv .cv-agenda { color: var(--c-tinta); font-family: var(--fonte); }
+.pg-sv .cv-agenda .cv-cab { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+
+/* Data do topo: abre a folha de mês */
+.pg-sv .cv-ag-data { display: inline-flex; align-items: center; gap: 4px; min-height: var(--toque-min); margin: -12px 0 -10px; padding: 0; font-size: var(--t-legenda); font-weight: 600; color: var(--c-apoio); background: none; border: 0; cursor: pointer; }
+.pg-sv .cv-ag-data .cv-ic { color: var(--c-decor); }
+.pg-sv .cv-ag-bloquear { background: var(--c-superficie); box-shadow: var(--s-cartao); color: var(--c-tinta); }
+
+/* Tira de dias: o mês inteiro, rolável, 7 dias por vez no celular */
+.pg-sv .cv-dias--rola { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--margem)); padding: 2px var(--margem) 8px; scroll-padding: var(--margem); scroll-snap-type: x proximity; }
+.pg-sv .cv-dias--rola::-webkit-scrollbar { display: none; }
+.pg-sv .cv-dias--rola .cv-dia { flex: 0 0 calc((100vw - 2 * var(--margem) - 36px) / 7); max-width: 64px; min-width: 44px; scroll-snap-align: start; color: var(--c-tinta); }
+.pg-sv .cv-dias--rola .cv-dia[aria-pressed="true"] { color: #fff; }
+
+/* Chips de barbeiro (links) */
+.pg-sv .cv-agenda .cv-chip { color: var(--c-tinta-2); }
+.pg-sv .cv-agenda .cv-chip[aria-pressed="true"] { color: #fff; }
+
+.pg-sv .cv-ag-resumo { margin: 16px 2px 12px; font-size: 14px; font-weight: 600; color: var(--c-tinta-2); }
+
+/* Linha do dia */
+.pg-sv .cv-agenda .cv-ag { width: 100%; border: 0; font: inherit; color: var(--c-tinta); cursor: pointer; transition: transform var(--d-press-out) var(--ease-out); }
+.pg-sv .cv-agenda .cv-ag:active { transform: scale(.985); transition-duration: var(--d-press-in); }
+.pg-sv .cv-agenda .cv-ag.proximo { color: #fff; }
+.pg-sv .cv-agenda .cv-ag.bloqueado { cursor: default; }
+.pg-sv .cv-agenda .cv-ag.bloqueado:active { transform: none; }
+.pg-sv .cv-agenda .cv-ag.cancelado .t { color: var(--c-apoio); }
+.pg-sv .cv-agenda .cv-ag.cancelado { background: var(--c-bloco-2); box-shadow: none; }
+.pg-sv .cv-agenda .cv-ag.livre { background: transparent; color: var(--c-tinta); }
+.pg-sv .cv-agenda .cv-ag .est .cv-ic { color: inherit; }
+.pg-sv .cv-agenda .cv-avatar--branco { background: #fff; color: var(--c-tinta); }
+.pg-sv .cv-agenda .cv-avatar--claro { background: var(--c-bloco-2); color: var(--c-tinta); }
+.pg-sv .cv-ag-bloq-rem { margin: 0 0 0 auto; flex-shrink: 0; }
+.pg-sv .cv-ag-bloq-rem .cv-redondo { color: var(--c-tinta); border: 0; }
+.pg-sv .cv-agora-linha span { color: var(--c-tinta); }
+.pg-sv .cv-ag-vazio { margin-bottom: 12px; }
+.pg-sv .cv-ag-vazio .cv-btn--2 { color: var(--c-tinta); }
+
+/* ---- Pele v3 nas folhas antigas (mês, bloqueio, novo, detalhe) ---------- */
+.pg-sv .ag-overlay { z-index: var(--z-folha); background: rgba(17,17,17,.32); }
+.pg-sv .ag-modal-box { background: var(--vidro-solido); border-radius: var(--r-folha) var(--r-folha) 0 0; box-shadow: var(--s-folha); padding: 8px var(--margem) calc(20px + env(safe-area-inset-bottom, 0px)); overscroll-behavior: contain; animation: cvFolhaSobe 420ms var(--ease-drawer) both; }
+@keyframes cvFolhaSobe { from { transform: translateY(100%); } }
+.pg-sv .ag-modal-box::before { width: 40px; height: 5px; border-radius: 3px; background: rgba(17,17,17,.2); margin: 0 auto 10px; }
+.pg-sv .ag-modal-x { width: var(--toque-min); height: var(--toque-min); top: 10px; right: 12px; background: rgba(17,17,17,.06); color: var(--c-tinta); }
+.pg-sv .sv-ag-folha-tit { font-size: var(--t-titulo-2); font-weight: 800; letter-spacing: var(--k-titulo-2); line-height: 1.2; color: var(--c-tinta); }
+.pg-sv .sv-ag-folha-sub { font-size: 14px; font-weight: 400; color: var(--c-apoio); }
+.pg-sv .sv-ag-campo { background: var(--c-superficie); border-radius: var(--r-campo); }
+.pg-sv .sv-ag-campo--pills { background: transparent; }
+.pg-sv .sv-ag-campo-rot { font-size: 14px; font-weight: 600; color: var(--c-tinta-2); text-transform: none; letter-spacing: 0; }
+.pg-sv .ag-modal-box input.sv-ag-inp:not([type='hidden']):not([readonly]),
+.pg-sv .ag-modal-box select.sv-ag-inp:not([multiple]):not([readonly]),
+.pg-sv .ag-modal-box textarea.sv-ag-inp:not([readonly]) { font-size: 16px; }
+.pg-sv .ag-modal-box .pill-opcao { min-height: var(--toque-min); padding: 0 16px; border-radius: var(--r-pilula); background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); border: 0; font-size: 15px; font-weight: 600; color: var(--c-tinta); font-variant-numeric: tabular-nums; }
+.pg-sv .ag-modal-box .pill-opcao.ativo { background: var(--c-tinta); color: #fff; box-shadow: none; }
+.pg-sv .ag-modal-box .pill-opcao.indisponivel { background: var(--listra-bloqueado); color: var(--c-apoio); text-decoration: line-through; text-decoration-thickness: 1px; box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+/* O resumo preto de antes vira o objeto-herói da folha, e o botão o vidro preto */
+.pg-sv .sv-ag-preto { background: var(--c-objeto); border-radius: var(--r-objeto); box-shadow: var(--s-objeto); padding: var(--e-5); position: relative; overflow: hidden; isolation: isolate; }
+.pg-sv .sv-ag-preto::after { content: ""; position: absolute; z-index: -1; top: 0; right: 0; width: 46%; height: 78%; pointer-events: none; background: var(--listra-gravada); -webkit-mask: radial-gradient(100% 100% at 100% 0%, #000 0%, rgba(0,0,0,.55) 38%, transparent 72%); mask: radial-gradient(100% 100% at 100% 0%, #000 0%, rgba(0,0,0,.55) 38%, transparent 72%); }
+.pg-sv .sv-ag-preto-rot { text-transform: none; letter-spacing: 0; font-size: var(--t-legenda); color: var(--c-sobre-objeto-2); }
+.pg-sv .sv-ag-preto-tit { color: #fff; font-weight: 600; }
+.pg-sv .sv-ag-preto-sub { color: var(--c-sobre-objeto-2); font-size: 13px; }
+.pg-sv .sv-ag-preto-num { color: #fff; font-size: 30px; font-weight: 800; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.pg-sv .sv-ag-cta { min-height: 52px; font-size: 16px; font-weight: 600; background: #fff; color: var(--c-tinta); transition: transform var(--d-press-out) var(--ease-out); }
+.pg-sv .sv-ag-cta:active { transform: scale(var(--press)); transition-duration: var(--d-press-in); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-sv .ag-modal-box { animation: cvEsmaece 200ms ease both; }
+  @keyframes cvEsmaece { from { opacity: 0; } }
+  .pg-sv .cv-agenda .cv-ag:active, .pg-sv .sv-ag-cta:active { transform: none; opacity: .7; }
+}
+@media (prefers-reduced-transparency: reduce) { .pg-sv .ag-overlay { background: rgba(17,17,17,.5); } }
+@media (min-width: 1024px) {
+  /* Até o painel do PC (F13): a navbar flutua embaixo, sem coluna lateral */
+  .pg-sv .sv-tela.sv-ag-tela { padding-bottom: var(--area-nav); }
+}

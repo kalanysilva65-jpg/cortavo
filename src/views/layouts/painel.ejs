@@ -49,6 +49,11 @@
         '/painel/conversas': 'sv-conversas',
       };
       var cssDaTela = CSS_POR_TELA[currentPath];
+      // Telas "ponte" (v3 sobre a pilha suave): o miolo já é v3, mas as folhas
+      // e scripts antigos seguem (mesmos IDs). A folha de estilo v3 da tela vem
+      // por cima da antiga, e o aviso do servidor já é o aviso v3.
+      var CSS_V3_PONTE = { '/painel/agenda': 'cv-agenda' };
+      var cssPonte = CSS_V3_PONTE[currentPath];
     %>
     <%/* `styles.css` fica nos dois caminhos: dele vêm os resets de base
          (html/body/a/img/input) que o suave.css pressupõe em vez de repetir. */%>
@@ -68,6 +73,7 @@
       <%/* Por ULTIMO: so contem uma media query de min-width 1024px, e precisa
            poder sobrescrever o que as folhas de tela definiram acima. */%>
       <link rel="stylesheet" href="/css/sv-desktop.css?v=<%= assetV %>" />
+      <% if (cssPonte) { %><link rel="stylesheet" href="/css/<%= cssPonte %>.css?v=<%= assetV %>" /><% } %>
     <% } else { %>
       <%/* Telas ainda não migradas (fidelidade, comissões, horários e os
            formulários órfãos) seguem na pilha antiga — inteira, porque elas
@@ -137,7 +143,7 @@
       <%- include('../partials/header-painel') %>
     </div>
     <main class="container conteudo">
-      <%- include('../partials/flash') %> <%- body %>
+      <%- include('../partials/flash', { flashCv: !!cssPonte }) %> <%- body %>
     </main>
     <% } %>
     <%- include('../partials/nav-inferior') %>
@@ -145,5 +151,6 @@
 <script src="/js/foto-comprimir.js" defer></script>
 <script src="/js/folha-arrastar.js" defer></script>
 <script src="/js/cv-casca.js?v=<%= assetV %>" defer></script>
+<% if (cssPonte) { %><script src="/js/<%= cssPonte %>.js?v=<%= assetV %>" defer></script><% } %>
 </body>
 </html>

@@ -29,107 +29,126 @@
   var mesCurto = mesLabel.toLowerCase().slice(0, 3);
 %>
 
-<div class="sv-tela sv-ag-tela">
+<%
+  // Redesign v3 (fatia F4): cabeçalho, tira de dias, chips e a linha do dia
+  // com os componentes cv- (redesign/v3/prints/03-agenda-390.png). As folhas
+  // (mês, bloqueio, novo e detalhe) continuam as mesmas, com os mesmos IDs e
+  // scripts, só com a pele v3 (public/css/cv-agenda.css).
+  var _diaSemana = String(dataExtenso || '').split(',')[0];
+  var _supData = _diaSemana.charAt(0).toUpperCase() + _diaSemana.slice(1) + ', ' + diaNum + ' de ' + String(mesLabel).toLowerCase();
+  var _ehHoje = dataStr === dataHoje;
+  var _agora = new Date();
+  var _minAgora = _agora.getHours() * 60 + _agora.getMinutes();
+  var _horaAgora = String(_agora.getHours()).padStart(2, '0') + ':' + String(_agora.getMinutes()).padStart(2, '0');
+  function _minA(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
+  // Agenda de um barbeiro só: dá para mostrar os horários livres (cv-agenda.js).
+  var _barbeiroUnico = ehAdmin ? (barbeiroSelecionado !== 'todos' ? barbeiroSelecionado : '') : String(usuario.id);
+  var _nAtend = agendamentos.filter(function (a) { return a.status !== 'cancelado'; }).length;
+  var _podeBloquearHorarios = !ehAdmin && (typeof podeAcessar !== 'function' || podeAcessar('/painel/horarios'));
+%>
+<div class="sv-tela sv-ag-tela cv-agenda">
 
-  <div class="sv-ag-topo sv-reveal">
-    <div>
-      <div class="sv-ag-titulo">Agenda</div>
-      <%/* A data é o gatilho da folha de mês — o selo solto do Turno 6 saiu. */%>
-      <button type="button" class="sv-ag-data" onclick="abrirModal('mes')">
-        <%= diaNum %> de <%= mesLabel %>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-      </button>
+  <header class="cv-cab">
+    <div class="cv-cab-txt">
+      <%/* A data abre a folha de mês, como antes. */%>
+      <button type="button" class="cv-cab-sup cv-ag-data" onclick="abrirModal('mes')" aria-label="Escolher mês: <%= _supData %>"><%= _supData %><%- include('../partials/icone', { cvIc: 'baixo', cvCls: 'cv-ic--16' }) %></button>
+      <h1>Agenda</h1>
     </div>
-    <div class="sv-ag-acoes">
+    <div class="cv-cab-acoes">
       <% if (ehAdmin) { %>
-        <button type="button" class="sv-ag-bloq" onclick="abrirModal('bloqueio')" title="Bloquear horário" aria-label="Bloquear horário">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
-        </button>
+        <button type="button" class="cv-btn cv-btn--2 cv-btn--p cv-ag-bloquear" onclick="abrirModal('bloqueio')"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--18' }) %>Bloquear</button>
+      <% } else if (_podeBloquearHorarios) { %>
+        <a class="cv-btn cv-btn--2 cv-btn--p cv-ag-bloquear" href="/painel/horarios"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--18' }) %>Bloquear</a>
       <% } %>
-      <button type="button" class="sv-ag-novo" onclick="abrirModal('novo')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        <span>Novo</span>
-      </button>
     </div>
-  </div>
+  </header>
 
-  <%/* Tira de dias: o mês inteiro, rolável (o Turno 6 só oferecia "o dia
-       seguinte"). Um script no fim do arquivo traz o dia selecionado para o
-       centro — sem isso, dia 28 abriria com a tira fora da tela. */%>
-  <div class="sv-ag-dias" id="sv-ag-dias">
-    <% faixaDias.forEach(function (d) { %>
-      <a href="/painel/agenda?data=<%= d.iso %><%= qsBarbeiro %>" class="sv-ag-dia <%= d.selecionado ? 'sel' : '' %>">
-        <%/* "HOJE" no lugar do dia da semana: é a única marca que hoje recebe
-             na tira, e evita inventar mais um ponto/anel só para isso. */%>
-        <span class="sv-ag-dia-rot"><%= d.ehHoje ? 'Hoje' : d.rotulo %></span>
-        <span class="sv-ag-dia-num"><%= d.num %></span>
-      </a>
-    <% }) %>
-  </div>
-
-  <% if (ehAdmin) { %>
-    <div class="sv-ag-filtros">
-      <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="sv-ag-filtro <%= barbeiroSelecionado === 'todos' ? 'sel' : '' %>">Todos</a>
-      <% barbeiros.forEach(function (b) { %>
-        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="sv-ag-filtro <%= barbeiroSelecionado === String(b.id) ? 'sel' : '' %>"><%= b.nome.split(' ')[0] %></a>
+  <div class="cv-secao" style="margin-top:18px">
+    <%/* Tira de dias: o mês inteiro, rolável. O script do fim do arquivo traz o
+         dia selecionado para o centro (procura .sv-ag-dia.sel). */%>
+    <div class="cv-dias cv-dias--rola" id="sv-ag-dias" role="group" aria-label="Dia">
+      <% faixaDias.forEach(function (d) { %>
+        <a href="/painel/agenda?data=<%= d.iso %><%= qsBarbeiro %>" class="cv-dia <%= d.selecionado ? 'sel' : '' %>" aria-pressed="<%= d.selecionado ? 'true' : 'false' %>"<% if (d.selecionado) { %> aria-current="date"<% } %>>
+          <small><%= d.ehHoje ? 'Hoje' : d.rotulo %></small><b><%= d.num %></b>
+        </a>
       <% }) %>
     </div>
-  <% } %>
 
-  <div class="sv-ag-lista">
+    <% if (ehAdmin) { %>
+      <div class="cv-chips" style="margin-top:14px" role="group" aria-label="Barbeiro">
+        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="cv-chip" aria-pressed="<%= barbeiroSelecionado === 'todos' ? 'true' : 'false' %>"><span>Todos</span></a>
+        <% barbeiros.forEach(function (b) { %>
+          <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="cv-chip" aria-pressed="<%= barbeiroSelecionado === String(b.id) ? 'true' : 'false' %>" title="<%= b.nome %>"><span><%= b.nome.split(' ')[0] %></span></a>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <p class="cv-ag-resumo" id="cv-ag-resumo" data-n="<%= _nAtend %>"><%= _nAtend ? _nAtend + (_nAtend === 1 ? ' atendimento' : ' atendimentos') : 'Nenhum atendimento marcado' %></p>
+
     <% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
-      <div class="sv-vazio">Nada agendado para esta data.</div>
-    <% } else { %>
-      <%
-        // Agendamentos e bloqueios dividem a mesma linha do tempo, ordenados
-        // pela hora de início.
-        function _min(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
-        var eventos = [];
-        agendamentos.forEach(function (ag) { eventos.push({ tipo: 'ag', ag: ag, ini: _min(ag.horaInicio) }); });
-        bloqueios.forEach(function (bl) { eventos.push({ tipo: 'bloq', bl: bl, ini: _min(bl.horaInicio) }); });
-        eventos.sort(function (a, b) { return a.ini - b.ini; });
-      %>
+      <div class="cv-cartao cv-vazio cv-ag-vazio" style="padding:28px 24px">
+        <h2 style="font-size:19px">Dia livre</h2>
+        <p>Nenhum horário marcado. Os clientes podem marcar pelo link de agendamento.</p>
+        <div class="acoes"><button type="button" class="cv-btn cv-btn--2" onclick="abrirModal('novo')"><%- include('../partials/icone', { cvIc: 'novoAg', cvCls: 'cv-ic--18' }) %>Novo agendamento</button></div>
+      </div>
+    <% } %>
+
+    <%
+      // Agendamentos e bloqueios dividem a mesma linha do tempo, pela hora.
+      var eventos = [];
+      agendamentos.forEach(function (ag) { eventos.push({ tipo: 'ag', ag: ag, ini: _minA(ag.horaInicio) }); });
+      bloqueios.forEach(function (bl) { eventos.push({ tipo: 'bloq', bl: bl, ini: _minA(bl.horaInicio) }); });
+      eventos.sort(function (a, b) { return a.ini - b.ini; });
+      var _linhaPosta = !_ehHoje;
+      // Estado escrito, nunca só cor. "Faltou" separado de "Cancelado"
+      // (spec 12). TODO(Beto B3): status `faltou` e o botão na folha de detalhe.
+      var ESTADOS = {
+        concluido: { cls: 'feito', ic: 'check', txt: 'Concluído' },
+        faltou: { cls: 'faltou', ic: 'faltou', txt: 'Faltou' },
+        cancelado: { cls: 'cancelado', ic: 'fechar', txt: 'Cancelado' },
+      };
+    %>
+    <div class="cv-tl" id="cv-ag-tl" data-barbeiro="<%= _barbeiroUnico %>" data-data="<%= dataStr %>" data-hoje="<%= _ehHoje ? '1' : '' %>" data-agora="<%= _minAgora %>">
       <% eventos.forEach(function (e) { %>
+        <% if (!_linhaPosta && e.ini > _minAgora) { _linhaPosta = true; %>
+          <div class="cv-agora-linha" data-min="<%= _minAgora %>" aria-label="Agora, <%= _horaAgora %>"><span><%= _horaAgora %></span><i></i></div>
+        <% } %>
         <% if (e.tipo === 'ag') { var ag = e.ag; %>
-          <% var servicosLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento'; %>
-          <button type="button" onclick="abrirModal(<%= ag.id %>)"
-                  class="sv-ag-card <%= (ag.id === proximoId && ag.status === 'agendado') ? 'sv-ag-card--agora' : '' %> <%= ag.status === 'concluido' ? 'sv-ag-card--feito' : '' %> <%= ag.status === 'cancelado' ? 'sv-ag-card--cancelado' : '' %>">
-            <span class="sv-ag-card-av"><%= _iniciais(ag.clienteNome) %></span>
-            <span class="sv-ag-card-corpo">
-              <span class="sv-ag-card-linha">
-                <span class="sv-ag-card-nome"><%= ag.clienteNome %></span>
-                <span class="sv-ag-selo"><%= _selo(ag) %></span>
+          <%
+            var servicosLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento';
+            var est = ESTADOS[ag.status] || (ag.id === proximoId ? { cls: 'proximo', txt: 'Agora' } : { cls: '', txt: 'Confirmado' });
+          %>
+          <div class="cv-tl-item" data-min="<%= e.ini %>">
+            <span class="cv-tl-hora"><%= ag.horaInicio %></span>
+            <button type="button" onclick="abrirModal(<%= ag.id %>)" class="cv-ag cv-toca <%= est.cls %>" aria-label="<%= ag.clienteNome %>, <%= ag.horaInicio %>, <%= est.txt %>. Abrir atendimento">
+              <span class="cv-avatar cv-avatar--p<%= est.cls === 'proximo' ? ' cv-avatar--branco' : ' cv-avatar--claro' %>" aria-hidden="true"><%= _iniciais(ag.clienteNome) %></span>
+              <span class="corpo">
+                <span class="t"><%= ag.clienteNome %></span>
+                <span class="s"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> com <%= ag.usuario.nome.split(' ')[0] %><% } %><% if (ag.clientePlanoId) { %> · <span class="sv-ag-plano-tag">Plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <%= ag.clientePlano.plano.nome %><% } %></span><% } %></span>
               </span>
-              <span class="sv-ag-card-sub"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome.split(' ')[0] %><% } %><% if (ag.clientePlanoId) { %> · <span class="sv-ag-plano-tag">Plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <%= ag.clientePlano.plano.nome %><% } %></span><% } %></span>
-            </span>
-            <span class="sv-ag-card-dir">
-              <span class="sv-ag-card-hora"><%= ag.horaInicio %></span>
-              <span class="sv-ag-card-val"><% if (ag.clientePlanoId) { %>Plano<% } else { %><%= fmtT6(ag.valorTotal) %><% } %></span>
-            </span>
-          </button>
+              <span class="est"><% if (est.ic) { %><%- include('../partials/icone', { cvIc: est.ic, cvCls: 'cv-ic--16' }) %><% } %><%= est.txt %></span>
+            </button>
+          </div>
         <% } else { var bl = e.bl; %>
-          <div class="sv-ag-card sv-ag-card--bloq">
-            <span class="sv-ag-card-av">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
-            </span>
-            <span class="sv-ag-card-corpo">
-              <span class="sv-ag-card-linha">
-                <span class="sv-ag-card-nome"><%= bl.motivo || 'Bloqueado' %></span>
-                <span class="sv-ag-selo">Bloqueio</span>
-              </span>
-              <span class="sv-ag-card-sub"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome.split(' ')[0] %><% } %></span>
-            </span>
-            <% if (ehAdmin) { %>
-              <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" onsubmit="return confirm('Remover este bloqueio?')">
-                <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-                <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-                <button title="Remover bloqueio" type="submit" class="sv-ag-card-x">×</button>
-              </form>
-            <% } %>
+          <div class="cv-tl-item" data-min="<%= e.ini %>" data-fim="<%= _minA(bl.horaFim) %>">
+            <span class="cv-tl-hora"><%= bl.horaInicio %></span>
+            <div class="cv-ag bloqueado">
+              <span class="etq"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--16' }) %><span><%= bl.motivo || 'Bloqueado' %> até <%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome.split(' ')[0] %><% } %></span></span>
+              <% if (ehAdmin) { %>
+                <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" onsubmit="return confirm('Remover este bloqueio?')" class="cv-ag-bloq-rem">
+                  <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+                  <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+                  <button type="submit" class="cv-redondo" aria-label="Remover bloqueio das <%= bl.horaInicio %>"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--16' }) %></button>
+                </form>
+              <% } %>
+            </div>
           </div>
         <% } %>
       <% }) %>
-    <% } %>
+      <% if (!_linhaPosta && eventos.length) { %>
+        <div class="cv-agora-linha" data-min="<%= _minAgora %>" aria-label="Agora, <%= _horaAgora %>"><span><%= _horaAgora %></span><i></i></div>
+      <% } %>
+    </div>
   </div>
 
 </div>
@@ -384,7 +403,7 @@
   (function () {
     var tira = document.getElementById('sv-ag-dias');
     if (!tira) return;
-    var sel = tira.querySelector('.sv-ag-dia.sel');
+    var sel = tira.querySelector('.cv-dia.sel, .sv-ag-dia.sel');
     if (!sel) return;
     var alvo = sel.offsetLeft - (tira.clientWidth - sel.offsetWidth) / 2;
     tira.scrollLeft = Math.max(0, Math.min(alvo, tira.scrollWidth - tira.clientWidth));
