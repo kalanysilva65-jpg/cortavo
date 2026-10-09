@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %>Painel-mestre</title>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/tokens.css?v=<%= assetV %>" />
+    <link rel="stylesheet" href="/css/cv.css?v=<%= assetV %>" />
     <link rel="stylesheet" href="/css/sv-mestre.css?v=<%= assetV %>" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#f2f2f2" />
@@ -29,5 +32,7 @@
   <script src="/js/aviso-conexao.js" defer></script>
 <script src="/js/foto-comprimir.js" defer></script>
 <script src="/js/folha-arrastar.js" defer></script>
+<script src="/js/cv-mola.js?v=<%= assetV %>" defer></script>
+<script src="/js/cv-movimento.js?v=<%= assetV %>" defer></script>
 </body>
 </html>

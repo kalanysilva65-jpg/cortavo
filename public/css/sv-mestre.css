@@ -3,24 +3,19 @@
    -------------------------------------------------------------------------
    O painel-mestre era escuro (styles.css + tema-minimal). O dono pediu para
    ficar igual ao app: superfície cinza #F2F2F2, cartão branco arredondado,
-   tinta #191919, fonte Overused Grotesk. Este arquivo é AUTOSSUFICIENTE — traz
+   tinta #191919, fonte da marca (v3: Plus Jakarta Sans). Este arquivo é AUTOSSUFICIENTE — traz
    os tokens e estiliza as classes que as views do mestre já usam (.card,
    .tabela, .btn, .campo, .badge-papel...), então não depende do CSS antigo nem
    do suave.css. É desktop-first (o mestre é web), mas responsivo.
    ========================================================================= */
-@font-face {
-  font-family: 'Overused Grotesk';
-  src: url('/fonts/OverusedGrotesk-VF.woff2') format('woff2-variations');
-  font-weight: 300 900;
-  font-display: swap;
-}
+/* v3 (F0): fonte Plus Jakarta Sans e cores vêm de tokens.css (carregado antes). */
 
 :root {
-  --sv-bg: #f2f2f2;
+  --sv-bg: var(--c-pagina, #f2f2f2);
   --sv-surface: #ffffff;
-  --sv-ink: #191919;
-  --sv-ink-2: #393939;
-  --sv-muted: #6b6b6b;
+  --sv-ink: var(--c-tinta, #111111);
+  --sv-ink-2: var(--c-tinta-2, #3d3d3d);
+  --sv-muted: var(--c-apoio, #666666);
   --sv-muted-2: #9c9c9c;
   --sv-line: #e0e0e0;
   --sv-line-2: #ebebeb;
@@ -31,7 +26,7 @@
   --sv-verde-bg: #e9f6ee;
   --sv-vermelho: #dc2626;
   --sv-vermelho-bg: #fbeaea;
-  --sv-fonte: 'Overused Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sv-fonte: var(--fonte, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
 }
 
 * { box-sizing: border-box; }

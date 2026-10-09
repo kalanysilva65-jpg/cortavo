@@ -15,15 +15,10 @@
    oposto do tema anterior, onde o peso vinha de números de 50-80px.
    ========================================================================= */
 
-/* A fonte que o design foi desenhado para usar. Veio no pacote que o dono
-   mandou; antes o app caía em Inter porque o arquivo não existia. Variável
-   (300-900), então um arquivo só cobre todos os pesos. */
-@font-face {
-  font-family: 'Overused Grotesk';
-  src: url('/fonts/OverusedGrotesk-VF.woff2') format('woff2-variations');
-  font-weight: 300 900;
-  font-display: swap;
-}
+/* v3 (fatia F0, 2026-10-09): a fonte do app passou a ser a Plus Jakarta Sans
+   (tokens.css, self-host em /fonts). A fonte antiga saiu daqui; os tokens
+   --sv-* abaixo apontam para os tokens da v3, para as telas ainda não
+   redesenhadas já usarem a mesma fonte e as mesmas cores. */
 
 /* A transição entre telas (deslizar) fica toda no bloco "TRANSIÇÃO ENTRE
    TELAS", mais abaixo neste arquivo — um lugar só, para não duplicar/conflitar
@@ -47,17 +42,17 @@ html:has(> body.pg-sv) {
      fundo branco, separados só por uma sombra fraca demais (o dono viu e
      apontou). Trocar de volta é uma linha; converter bloco a bloco nas 11
      telas seria reescrever cor em 8 arquivos por ganho visual nenhum. */
-  --sv-bg: #f2f2f2;
-  --sv-surface: #ffffff;
-  --sv-ink: #191919;
-  --sv-ink-2: #393939;
-  --sv-muted: #6b6b6b;
-  --sv-muted-2: #9c9c9c;
+  --sv-bg: var(--c-pagina, #f2f2f2);
+  --sv-surface: var(--c-superficie, #ffffff);
+  --sv-ink: var(--c-tinta, #111111);
+  --sv-ink-2: var(--c-tinta-2, #3d3d3d);
+  --sv-muted: var(--c-apoio, #666666);
+  --sv-muted-2: var(--c-decor, #9a9a9a);
   --sv-line: #e0e0e0;
-  --sv-line-2: #ebebeb;
+  --sv-line-2: var(--d-trilho, #ebebeb);
   /* Bloco REBAIXADO (campo, pílula inativa, ladrilho) — não é a cor da
      página: a referência usa contêiner branco em todas as telas. */
-  --sv-bloco: #f2f2f2;
+  --sv-bloco: var(--c-bloco, #f2f2f2);
 
   --sv-sombra-cartao: 0 1px 2px rgba(25, 25, 25, 0.04), 0 4px 12px rgba(25, 25, 25, 0.05);
   --sv-sombra-leve: 0 1px 2px rgba(25, 25, 25, 0.06);
@@ -65,7 +60,7 @@ html:has(> body.pg-sv) {
   --sv-sombra-barra: 0 1px 3px rgba(25, 25, 25, 0.08), 0 14px 34px rgba(25, 25, 25, 0.14);
   --sv-sombra-folha: 0 -8px 32px rgba(25, 25, 25, 0.16);
 
-  --sv-fonte: 'Overused Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --sv-fonte: var(--fonte, -apple-system, BlinkMacSystemFont, sans-serif);
 
   background: var(--sv-bg);
   color: var(--sv-ink);

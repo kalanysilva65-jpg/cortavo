@@ -9,10 +9,13 @@
     <%/* Layout próprio do login da EQUIPE (pedido do dono, 2026-07-31). O
          `blank` continua servindo as páginas de conta do cliente, que seguem
          no visual antigo — convertê-lo levaria junto telas fora deste escopo. */%>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/tokens.css<%= typeof assetV !== 'undefined' ? '?v=' + assetV : '' %>" />
+    <link rel="stylesheet" href="/css/cv.css<%= typeof assetV !== 'undefined' ? '?v=' + assetV : '' %>" />
     <link rel="stylesheet" href="/css/suave.css" />
     <link rel="stylesheet" href="/css/sv-login.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

@@ -1,0 +1,130 @@
+/* =========================================================================
+   Cortavo v3 · tokens (Dani Design, 2026-10-06)
+   Fonte única de verdade do visual. Copiado de squads/app-cortavo/output/redesign/v3/tokens.css (fatia F0).
+   Contrastes medidos (WCAG 2.1) em design-system.md, seção 2.
+   Regra: nenhuma cor, raio, sombra, curva ou duração fora daqui.
+   ========================================================================= */
+
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-600-normal.woff2') format('woff2'); font-weight: 500 600; font-display: swap; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-800-normal.woff2') format('woff2'); font-weight: 700 800; font-display: swap; }
+
+:root {
+  /* ---- Cor: superfícies ------------------------------------------------ */
+  --c-pagina:      #F2F2F2;  /* fundo de toda tela (o cinza da Kalany, tema suave) */
+  --c-superficie:  #FFFFFF;  /* cartões e listas */
+  --c-bloco:       #F2F2F2;  /* rebaixado dentro de cartão: campo, segmento, trilho */
+  --c-bloco-2:     #EBEBEB;  /* rebaixado sobre a página */
+  --c-objeto:      #111111;  /* o objeto-herói (Painel, Saldo): sólido, nunca vidro */
+
+  /* ---- Cor: tinta ------------------------------------------------------ */
+  --c-tinta:       #111111;  /* 16.87 na página, 18.88 no branco */
+  --c-tinta-2:     #3D3D3D;  /* 9.70 / 10.86. Texto secundário e texto sobre vidro */
+  --c-apoio:       #666666;  /* 5.13 / 5.74. Legendas. Nunca direto sobre vidro */
+  --c-decor:       #9A9A9A;  /* só decorativo (listra, fio forte). Nunca texto */
+  --c-fio:         rgba(17,17,17,.08);  /* separador 0.5px */
+  --c-fio-forte:   rgba(17,17,17,.14);
+
+  /* ---- Cor: sobre o objeto preto -------------------------------------- */
+  --c-sobre-objeto:    #FFFFFF;  /* 18.88 */
+  --c-sobre-objeto-2:  #A8A8A8;  /* 7.94: legendas no preto */
+  --c-fio-objeto:      rgba(255,255,255,.12);
+
+  /* ---- Cor: dados (anéis, barras). A cor nunca codifica valor ---------- */
+  --d-1:        #111111;  /* série principal / período atual */
+  --d-2:        #5E5E5E;  /* 6.48 no branco */
+  --d-3:        #949494;  /* 3.03 no branco: o mínimo para gráfico (WCAG 1.4.11) */
+  --d-trilho:   #EBEBEB;  /* trilho do anel, barra vazia */
+  --d-sombra:   #D9D9D9;  /* período anterior (sempre com legenda e tabela) */
+  --d-1-objeto: #FFFFFF;  /* as mesmas séries sobre o objeto preto */
+  --d-2-objeto: #A8A8A8;
+  --d-3-objeto: #6E6E6E;  /* 3.70 no preto */
+  --d-trilho-objeto: rgba(255,255,255,.10);
+
+  /* ---- Cor: estado (raro). Sucesso é o C com check, não verde ---------- */
+  --c-perigo:      #B42318;  /* 6.57 no branco; só ação destrutiva e erro */
+  --c-perigo-fundo:#FBEDEB;
+
+  /* ---- Listra de barbeiro 45° (assinatura) ---------------------------- */
+  --listra-passo: 7px;   /* largura de cada faixa */
+  --listra-bloqueado: repeating-linear-gradient(-45deg, #E2E2E2 0 var(--listra-passo), #F7F7F7 var(--listra-passo) calc(var(--listra-passo) * 2));
+  --listra-poste: repeating-linear-gradient(-45deg, #111 0 6px, #FFF 6px 12px, #9A9A9A 12px 18px, #FFF 18px 24px);
+  --listra-gravada: repeating-linear-gradient(-45deg, rgba(255,255,255,.10) 0 2px, transparent 2px 9px);
+
+  /* ---- Materiais (vidro). Só no que flutua ---------------------------- */
+  --vidro:          rgba(255,255,255,.72);   /* navbar, cabeçalho, seletor de período */
+  --vidro-forte:    rgba(255,255,255,.86);   /* folhas, popover */
+  --vidro-preto:    rgba(17,17,17,.92);      /* "+", ação principal, aviso escuro */
+  --vidro-blur:     blur(18px) saturate(170%) brightness(1.04);
+  --vidro-blur-leve:blur(10px) saturate(150%);
+  --vidro-aro:      inset 0 1px 0 rgba(255,255,255,.75), inset 0 -1px 0 rgba(17,17,17,.08), inset 0 0 0 .5px rgba(255,255,255,.5);
+  --vidro-aro-preto:inset 0 1px 0 rgba(255,255,255,.24), inset 0 0 0 .5px rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4);
+  --vidro-solido:   #F7F7F7;  /* fallback e transparência reduzida */
+  --vidro-solido-preto: #1A1A1A;
+
+  /* ---- Sombras: só o que flutua tem sombra ---------------------------- */
+  --s-cartao:  0 1px 2px rgba(17,17,17,.04);
+  --s-objeto:  0 1px 2px rgba(17,17,17,.10), 0 12px 32px -8px rgba(17,17,17,.30);
+  --s-flutua:  0 10px 30px rgba(17,17,17,.14), 0 2px 6px rgba(17,17,17,.06);
+  --s-folha:   0 -10px 40px rgba(17,17,17,.18);
+  --s-preto:   0 8px 24px -4px rgba(17,17,17,.45), 0 2px 4px rgba(17,17,17,.2);
+
+  /* ---- Tipografia: Plus Jakarta Sans, 3 pesos (400 / 600 / 800) ------- */
+  --fonte: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /*        tamanho / altura / tracking                                    */
+  --t-heroi:   64px; --a-heroi: 1;    --k-heroi: -0.052em;  /* número do objeto-herói */
+  --t-num-g:   44px; --a-num-g: 1.02; --k-num-g: -0.045em;  /* número de cartão grande */
+  --t-num-m:   30px; --a-num-m: 1.05; --k-num-m: -0.035em;  /* número de cartão médio */
+  --t-num-p:   22px; --a-num-p: 1.1;  --k-num-p: -0.025em;  /* número em lista */
+  --t-titulo:  34px; --a-titulo: 1.1; --k-titulo: -0.035em; /* large title */
+  --t-titulo-2:22px; --a-titulo-2:1.2;--k-titulo-2:-0.022em;/* título de folha e seção */
+  --t-destaque:17px; --a-destaque:1.3;--k-destaque:-0.012em;/* linha de lista, título de cartão */
+  --t-corpo:   16px; --a-corpo: 1.45; --k-corpo: -0.006em;  /* corpo e campos (16 evita zoom no iOS) */
+  --t-apoio:   14px; --a-apoio: 1.4;  --k-apoio: 0;         /* subtítulo de linha */
+  --t-legenda: 13px; --a-legenda: 1.35; --k-legenda: 0.003em;
+  --t-rotulo:  11px; --a-rotulo: 1.2; --k-rotulo: 0.02em;   /* navbar e eixo de gráfico (mínimo) */
+
+  /* ---- Espaço (grade de 4) --------------------------------------------- */
+  --e-1: 4px; --e-2: 8px; --e-3: 12px; --e-4: 16px; --e-5: 20px; --e-6: 24px; --e-8: 32px; --e-10: 40px; --e-14: 56px;
+  --margem: 20px;            /* margem lateral do celular (a da Kalany) */
+  --entre-blocos: 12px;      /* entre cartões da mesma seção */
+  --entre-secoes: 32px;
+
+  /* ---- Raios: uma regra só --------------------------------------------
+     interativo = pílula (999); cartão = 24; objeto-herói = 28;
+     bloco interno = 14; folha = 32 no topo.                              */
+  --r-pilula: 999px; --r-cartao: 24px; --r-objeto: 28px; --r-interno: 14px; --r-folha: 32px; --r-campo: 14px;
+
+  /* ---- Toque ------------------------------------------------------------ */
+  --toque-min: 44px;
+  --press: 0.97;
+
+  /* ---- Movimento (valores finais em motion-spec.md) -------------------- */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);     /* entrar e sair */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);    /* mudar de lugar na tela */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);     /* folha sem gesto (fallback da mola) */
+  --d-press-in:   60ms;   /* o afundar do toque */
+  --d-press-out: 160ms;   /* o voltar do toque */
+  --d-curta:     180ms;   /* cor, realce, título compacto */
+  --d-lente:     280ms;   /* M5: lente da navbar */
+  --d-morfa:     320ms;   /* M6: barra trocando de período, dígito rolando */
+  --d-cartao:    360ms;   /* M7: cartão que abre */
+  --d-aviso:     240ms;   /* toast */
+  --d-poste:     900ms;   /* M3: um ciclo da listra (linear) */
+  --d-abertura:  700ms;   /* M2: anéis na abertura do dia */
+
+  /* ---- Camadas ----------------------------------------------------------- */
+  --z-cab: 30; --z-nav: 40; --z-veu: 50; --z-folha: 60; --z-aviso: 70; --z-selo: 80;
+
+  --area-nav: calc(64px + 14px + 28px + env(safe-area-inset-bottom, 0px)); /* reserva no fim da rolagem */
+}
+
+/* Transparência reduzida: tudo que é vidro vira sólido */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --vidro: var(--vidro-solido); --vidro-forte: var(--vidro-solido); --vidro-preto: var(--vidro-solido-preto); --vidro-blur: none; --vidro-blur-leve: none; }
+}
+/* Contraste maior: apoio escurece, fio fica visível, vidro vira branco com borda */
+@media (prefers-contrast: more) {
+  :root { --c-apoio: #3D3D3D; --c-tinta-2: #111111; --c-fio: rgba(17,17,17,.35); --c-fio-forte: rgba(17,17,17,.6);
+          --vidro: #FFFFFF; --vidro-forte: #FFFFFF; --vidro-preto: #000000; --vidro-blur: none; --c-sobre-objeto-2: #D0D0D0; --d-sombra: #A6A6A6; }
+}

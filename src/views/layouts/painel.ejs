@@ -46,6 +46,13 @@
     <%/* `styles.css` fica nos dois caminhos: dele vêm os resets de base
          (html/body/a/img/input) que o suave.css pressupõe em vez de repetir. */%>
     <link rel="stylesheet" href="/css/styles.css?v=<%= assetV %>" />
+    <%/* v3 (fatia F0): tokens e componentes da Dani. tokens.css vem DEPOIS do
+         styles.css porque os dois definem --fonte (vale a Plus Jakarta Sans);
+         cv.css traz a base nativa (mobile-native) e as classes cv-. Só o peso
+         800 é pré-carregado (números e títulos). */%>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/tokens.css?v=<%= assetV %>" />
+    <link rel="stylesheet" href="/css/cv.css?v=<%= assetV %>" />
     <% if (ehSuave) { %>
       <link rel="stylesheet" href="/css/suave.css?v=<%= assetV %>" />
       <% if (cssDaTela) { %><link rel="stylesheet" href="/css/<%= cssDaTela %>.css?v=<%= assetV %>" /><% } %>
@@ -61,7 +68,7 @@
       <link rel="stylesheet" href="/css/painel-novo.css?v=<%= assetV %>" />
     <% } %>
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#111111" />
+    <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -73,6 +80,9 @@
          quando o elemento aparece na tela. `defer` porque ele varre o DOM —
          precisa do documento montado, mas não deve segurar a pintura. */%>
     <script src="/js/suave-anim.js?v=<%= assetV %>" defer></script>
+    <%/* Movimento v3 (M1 a M7): molas da Apple em CSS linear() + WAAPI. */%>
+    <script src="/js/cv-mola.js?v=<%= assetV %>" defer></script>
+    <script src="/js/cv-movimento.js?v=<%= assetV %>" defer></script>
   </head>
   <%
     // Cada tela já convertida para o design novo ganha sua classe (.pg-*); as
