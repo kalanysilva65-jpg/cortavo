@@ -28,6 +28,9 @@ router.get('/auditoria', mestreController.auditoriaLista);
 // Uso & custos de IA por barbearia (tempo real via /uso.json)
 router.get('/uso', mestreController.usoCustos);
 router.get('/uso.json', mestreController.usoCustosJson);
+// Visão geral (redesign v3, F10): ativas, receita estimada, custo de IA e
+// WhatsApp por barbearia, margem e "Precisa de atenção".
+router.get('/visao-geral.json', mestreController.visaoGeralJson);
 // Canais de agendamento + mensagens enviadas (todas as barbearias, por mês)
 router.get('/canais', mestreController.canaisMensagensView);
 router.get('/nova', mestreController.formNova);
