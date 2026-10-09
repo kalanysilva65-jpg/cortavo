@@ -6,6 +6,7 @@ const prisma = require('../config/db');
 const planoCortavo = require('../services/planoCortavo');
 const { paraHome: metasDaHome } = require('./metaController');
 const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
+const homeServ = require('../services/home');
 const { INATIVOS: STATUS_INATIVOS } = require('../config/statusAgendamento');
 
 // Date -> meia-noite local do mesmo dia.
@@ -238,9 +239,22 @@ async function ver(req, res) {
   const u = req.session.usuario;
   const metasHome = planoCortavo.libera(plano, 'metas') ? await metasDaHome(b, u.id, !!req.ehAdmin) : [];
 
+  // Painel vivo (B6): anéis, horas livres e destaques já recortados por papel,
+  // permissão e plano (o mesmo de GET /painel/api/home). Se falhar, a tela
+  // segue com os números acima (nunca quebra a Início).
+  let home = null;
+  if (req.permissoes) {
+    try {
+      home = await homeServ.montarHome({ barbeariaId: b, permissoes: req.permissoes, faixaTeste: res.locals.faixaTeste || null });
+    } catch (e) {
+      console.error('[inicio] montarHome falhou, usando o resumo simples:', e.message);
+    }
+  }
+
   res.render('painel/dashboard', {
+    home,
     // Redesign v3 (Início "Painel vivo"): previsto do dia (anel de faturamento
-    // até existir a meta do dia, TODO(Beto B6)), hora da leitura e a fila de hoje.
+    // quando não há meta do mês), hora da leitura e a fila de hoje.
     previstoHoje,
     atualizadoAs: `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`,
     maisHoje,

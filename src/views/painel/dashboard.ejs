@@ -4,16 +4,13 @@
      dia, o Painel (objeto preto com 1 a 3 anéis), o próximo atendimento,
      horas livres e destaques.
 
-     Dados: os que o dashboardController já calcula, recortados como antes
-     (admin = barbearia toda; barbeiro = só a agenda dele, sem dinheiro).
-     O que depende do Beto aparece só quando o dado existir, nunca inventado:
-       TODO(Beto B6): GET /painel/api/home com meta do dia (anel e frase),
-         horas livres por hora (histograma) e destaques de horário vago e
-         cliente sumido. Sem `horasLivres`, o cartão não aparece.
-       TODO(Beto B1): anéis "Seu faturamento" e "Sua comissão" do barbeiro
-         (chaves meus_numeros e comissoes); hoje ele vê atendimentos e ocupação.
-     Primeiros passos (spec 11) entram na fatia F9 (branch squad/app-primeiro-acesso).
-     Plano: estoque baixo e metas só chegam aqui quando o plano libera (B3). */%>
+     Dados: `home` = services/home.montarHome (B6, o mesmo de GET
+     /painel/api/home), já recortado por papel, permissão e plano: anéis (1 a 4,
+     sem buraco), horas livres de hoje, destaques. Faturamento: contra a meta do
+     mês quando existe; sem meta, contra o previsto do dia (decisão da Kalany).
+     Se `home` não vier (falha de leitura), a tela usa os números do
+     dashboardController como antes, sem histograma.
+     Primeiros passos (spec 11) entram na fatia F9. */%>
 <%
   var admin = !!ehAdmin;
   function milhar(n) { return String(Math.round(Math.abs(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
@@ -30,14 +27,38 @@
 
   // Anéis: a ordem dos tons é fixa (preto/branco = dinheiro, depois os cinzas).
   // Com permissão menor os anéis somem e o Painel se reorganiza (spec 12).
+  var H = (typeof home !== 'undefined' && home) ? home : null;
   var aneis = [];
-  if (admin) {
+  if (H) {
+    H.aneis.forEach(function (a) {
+      if (a.chave === 'faturamento') {
+        if (a.meta) {
+          var atualM = Math.floor(a.meta.atual / 100), alvoM = Math.floor(a.meta.alvo / 100);
+          aneis.push({ rot: admin ? 'Meta do mês' : 'Sua meta do mês', p: alvoM ? atualM / alvoM : 0, moeda: true, v: atualM, txt: compacto(atualM), fixo: atualM >= 100000, de: '/' + compacto(alvoM), leitura: 'R$ ' + milhar(atualM) + ' de R$ ' + milhar(alvoM) + ' da meta do mês' });
+        } else {
+          var hj = Math.floor(a.hoje / 100), prev = previstoReais;
+          aneis.push({ rot: admin ? 'Faturamento' : 'Seu faturamento', p: prev > 0 ? hj / prev : 0, moeda: true, v: hj, txt: compacto(hj), fixo: hj >= 100000, de: prev > 0 ? '/' + compacto(prev) : '', leitura: 'R$ ' + milhar(hj) + (prev > 0 ? ' de R$ ' + milhar(prev) + ' previstos' : ' hoje') });
+        }
+      } else if (a.chave === 'atendimentos') {
+        aneis.push({ rot: admin ? 'Atendimentos' : 'Seus atendimentos', p: a.total ? a.concluidos / a.total : 0, v: a.concluidos, txt: milhar(a.concluidos), de: a.total ? '/' + milhar(a.total) : '', leitura: a.concluidos + ' de ' + a.total + ' concluídos' });
+      } else if (a.chave === 'ocupacao') {
+        aneis.push({ rot: admin ? 'Ocupação' : 'Agenda ocupada', p: (a.pct || 0) / 100, v: a.pct || 0, txt: String(a.pct || 0), suf: '%', leitura: (a.pct || 0) + '%' });
+      } else if (a.chave === 'comissao') {
+        // Comissão não tem alvo: entra só na legenda, sem anel (nada de proporção inventada).
+        var cm = Math.floor(a.mes / 100);
+        aneis.push({ rot: 'Sua comissão no mês', semAnel: true, moeda: true, v: cm, txt: compacto(cm), fixo: cm >= 100000, leitura: 'R$ ' + milhar(cm) + ' de comissão no mês' });
+      }
+    });
+  } else if (admin) {
     aneis.push({ rot: 'Faturamento', p: previstoReais > 0 ? ganhoReais / previstoReais : 0, moeda: true, v: ganhoReais, txt: compacto(ganhoReais), fixo: ganhoReais >= 100000, de: previstoReais > 0 ? '/' + compacto(previstoReais) : '', leitura: 'R$ ' + milhar(ganhoReais) + (previstoReais > 0 ? ' de R$ ' + milhar(previstoReais) + ' previstos' : '') });
   }
-  aneis.push({ rot: admin ? 'Atendimentos' : 'Seus atendimentos', p: totalHoje ? concluidosHoje / totalHoje : 0, v: concluidosHoje, txt: milhar(concluidosHoje), de: totalHoje ? '/' + milhar(totalHoje) : '', leitura: concluidosHoje + ' de ' + totalHoje + ' concluídos' });
-  aneis.push({ rot: admin ? 'Ocupação' : 'Agenda ocupada', p: (ocupacaoHoje || 0) / 100, v: ocupacaoHoje || 0, txt: String(ocupacaoHoje || 0), suf: '%', leitura: (ocupacaoHoje || 0) + '%' });
+  if (!H) {
+    aneis.push({ rot: admin ? 'Atendimentos' : 'Seus atendimentos', p: totalHoje ? concluidosHoje / totalHoje : 0, v: concluidosHoje, txt: milhar(concluidosHoje), de: totalHoje ? '/' + milhar(totalHoje) : '', leitura: concluidosHoje + ' de ' + totalHoje + ' concluídos' });
+    aneis.push({ rot: admin ? 'Ocupação' : 'Agenda ocupada', p: (ocupacaoHoje || 0) / 100, v: ocupacaoHoje || 0, txt: String(ocupacaoHoje || 0), suf: '%', leitura: (ocupacaoHoje || 0) + '%' });
+  }
+  var comAnel = aneis.filter(function (a) { return !a.semAnel; });
   var CORES = ['var(--d-1-objeto)', 'var(--d-2-objeto)', 'var(--d-3-objeto)'];
-  var tam = aneis.length === 2 ? 116 : 128, sw = aneis.length === 2 ? 15 : 13, gap = 4, centro = tam / 2;
+  var tam = comAnel.length <= 2 ? 116 : 128, sw = comAnel.length <= 2 ? 15 : 13, gap = 4, centro = tam / 2;
 
   var prox = proximoCorte;
   var etiqueta = '';
@@ -46,11 +67,32 @@
     else etiqueta = prox.diaNum + ' ' + prox.mesLabel;
   }
 
+  // Horas livres de hoje (B6): o histograma começa agora; cada hora tem a
+  // jornada e o que sobra livre. Hora sem jornada entra listrada (fechada).
+  var horasLivresV = (typeof horasLivres !== 'undefined' && horasLivres) ? horasLivres : null;
+  if (!horasLivresV && H && H.horasLivres && H.horasLivres.histograma && H.horasLivres.histograma.length) {
+    var hist = H.horasLivres.histograma, livresSlots = Math.round((H.horasLivres.livresMin || 0) / 30);
+    var comLivre = hist.filter(function (x) { return x.livresMin > 0; });
+    horasLivresV = {
+      de: parseInt(hist[0].hora, 10), agoraH: parseInt(hist[0].hora, 10), livres: livresSlots,
+      ocup: hist.map(function (x) { return x.jornadaMin > 0 ? Math.max(0, Math.min(1, 1 - x.livresMin / x.jornadaMin)) : 'b'; }),
+      faixa: comLivre.length ? 'entre ' + comLivre[0].hora + ' e ' + (parseInt(comLivre[comLivre.length - 1].hora, 10) + 1) + 'h' : '',
+    };
+  }
   var destaques = [];
-  if (admin && estoqueBaixo && estoqueBaixo.tem) {
+  if (H) {
+    H.destaques.forEach(function (d) {
+      if (d.tipo === 'horario_vago') destaques.push({ href: '/painel/agenda', ic: 'relogio', t: 'Horário vago às ' + d.hora, s: (d.livresMin >= 60 ? Math.floor(d.livresMin / 60) + (d.livresMin >= 120 ? ' horas livres' : ' hora livre') : d.livresMin + ' minutos livres') + '. O link de agendamento já oferece esse horário.' });
+      else if (d.tipo === 'meta_perto') destaques.push({ href: admin ? '/painel/metas' : null, ic: 'meta', t: d.label + ': ' + d.pct + '% da meta', s: (d.dinheiro ? brl(d.atual) + ' de ' + brl(d.alvo) : milhar(d.atual) + ' de ' + milhar(d.alvo)) + (d.escopo && d.escopo.nome ? ' · ' + d.escopo.nome.split(' ')[0] : '') });
+      else if (d.tipo === 'estoque_baixo') destaques.push({ href: '/painel/estoque', ic: 'estoque', t: d.quantidade === 1 ? 'Estoque baixo: ' + d.nomes[0] : d.quantidade + ' itens no estoque mínimo', s: d.quantidade === 1 ? 'Chegou ao mínimo definido' : d.nomes.join(', ') });
+      else if (d.tipo === 'cliente_sumido') destaques.push({ href: '/painel/clientes', ic: 'cliente', t: d.total + (d.total === 1 ? ' cliente não vem' : ' clientes não vêm') + ' há mais de ' + d.dias + ' dias', s: 'Veja quem chamar no WhatsApp' });
+      else if (d.tipo === 'aniversariante') destaques.push({ href: '/painel/clientes', ic: 'fidelidade', t: d.total === 1 ? 'Aniversário hoje: ' + d.clientes[0].nome : d.total + ' aniversariantes hoje', s: d.clientes.map(function (c) { return c.nome; }).join(', ') });
+    });
+  }
+  if (!H && admin && estoqueBaixo && estoqueBaixo.tem) {
     destaques.push({ href: '/painel/estoque', ic: 'estoque', t: estoqueBaixo.quantidade === 1 ? 'Estoque baixo: ' + estoqueBaixo.nomes : estoqueBaixo.quantidade + ' itens no estoque mínimo', s: estoqueBaixo.quantidade === 1 ? 'Chegou ao mínimo definido' : estoqueBaixo.nomes });
   }
-  (metasHome || []).forEach(function (m) {
+  if (!H) (metasHome || []).forEach(function (m) {
     var atual = m.dinheiro ? brl(m.atual) : milhar(m.atual), alvo = m.dinheiro ? brl(m.alvo) : milhar(m.alvo);
     destaques.push({ href: admin ? '/painel/metas' : null, ic: 'meta', t: m.batida ? 'Meta batida: ' + m.label.toLowerCase() : m.label + ': ' + m.pct + '% da meta do mês', s: atual + ' de ' + alvo + ' · ' + m.escopo });
   });
@@ -69,21 +111,24 @@
   <% } else if (admin) { %>Hoje são <b><%= totalHoje %> <%= plural(totalHoje, 'atendimento', 'atendimentos') %></b>, <b><%= concluidosHoje %> <%= plural(concluidosHoje, 'concluído', 'concluídos') %></b>.<% if (ganhoHoje > 0) { %> Já entraram <b><%= brl(ganhoHoje) %></b> no caixa.<% } %>
   <% } else { %>Você tem <b><%= totalHoje %> <%= plural(totalHoje, 'atendimento', 'atendimentos') %></b> hoje.<% if (prox && prox.hoje) { %> O próximo é às <b><%= prox.hora %></b>.<% } %>
   <% } %>
+  <% var metaF = H && H.aneis.filter(function (a) { return a.chave === 'faturamento' && a.meta && !a.meta.batida; })[0]; %>
+  <% if (metaF) { %> Faltam <b><%= brl(metaF.meta.alvo - metaF.meta.atual) %></b> para a meta do mês.<% } %>
+  <% if (horasLivresV && horasLivresV.livres > 0) { %> Há <b><%= horasLivresV.livres %> <%= plural(horasLivresV.livres, 'horário livre', 'horários livres') %></b> <%= horasLivresV.faixa %>.<% } %>
 </p>
 
 <div class="cv-secao" style="margin-top:20px">
   <section class="cv-objeto cv-gravada" aria-label="Resumo de hoje">
     <div class="cv-painel">
-      <svg class="cv-aneis" width="<%= tam %>" height="<%= tam %>" viewBox="0 0 <%= tam %> <%= tam %>" role="img" aria-label="<%= aneis.map(function (a) { return a.rot + ' ' + Math.round(Math.min(1, a.p) * 100) + '%'; }).join(', ') %>">
-        <% aneis.forEach(function (a, i) { var r = centro - sw / 2 - i * (sw + gap), p = Math.max(0, Math.min(1, a.p)); %>
+      <svg class="cv-aneis" width="<%= tam %>" height="<%= tam %>" viewBox="0 0 <%= tam %> <%= tam %>" role="img" aria-label="<%= comAnel.map(function (a) { return a.rot + ' ' + Math.round(Math.min(1, a.p) * 100) + '%'; }).join(', ') %>">
+        <% comAnel.forEach(function (a, i) { var r = centro - sw / 2 - i * (sw + gap), p = Math.max(0, Math.min(1, a.p)); %>
         <circle class="trilho" cx="<%= centro %>" cy="<%= centro %>" r="<%= r %>" stroke-width="<%= sw %>"/>
         <circle class="arco" cx="<%= centro %>" cy="<%= centro %>" r="<%= r %>" stroke-width="<%= sw %>" style="stroke:<%= CORES[i] %>" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="<%= (100 - p * 100).toFixed(2) %>" data-p="<%= p === 0 ? 0 : p.toFixed(4) %>"/>
         <% }) %>
       </svg>
       <ul class="cv-legenda-aneis">
-        <% aneis.forEach(function (a, i) { %>
+        <% aneis.forEach(function (a) { var iAnel = comAnel.indexOf(a); %>
         <li>
-          <span class="rot"><i style="background:<%= CORES[i] %>"></i><%= a.rot %></span>
+          <span class="rot"><% if (iAnel !== -1) { %><i style="background:<%= CORES[iAnel] %>"></i><% } %><%= a.rot %></span>
           <span class="cv-num cv-num--m" data-v="<%= a.v %>" data-casas="0" data-dig="<%= a.txt.length %>"<% if (a.fixo) { %> data-fixo<% } %> aria-label="<%= a.leitura %>"><% if (a.moeda) { %><span class="moeda" aria-hidden="true">R$</span><% } %><span class="int" aria-hidden="true"><%= a.txt %></span><% if (a.de) { %><span class="de" aria-hidden="true"><%= a.de %></span><% } %><% if (a.suf) { %><span class="de" aria-hidden="true"><%= a.suf %></span><% } %></span>
         </li>
         <% }) %>
@@ -113,9 +158,8 @@
   <% } %>
 </div>
 
-<% if (typeof horasLivres !== 'undefined' && horasLivres && horasLivres.ocup && horasLivres.ocup.length) { %>
-  <%/* Pronto para o B6: { de: 9, ocup: [0..1 | 'b'], agoraH: 14.3, livres: 5, faixa: 'entre 15h e 19h' } */%>
-  <% var hl = horasLivres, n = hl.ocup.length; %>
+<% if (horasLivresV && horasLivresV.ocup && horasLivresV.ocup.length) { %>
+  <% var hl = horasLivresV, n = hl.ocup.length; %>
   <section class="cv-secao" style="margin-top:12px">
     <div class="cv-cartao">
       <div class="cv-cartao-cab"><h3><%= admin ? 'Horas livres hoje' : 'Suas horas livres' %></h3><span class="lado">agora <%= atualizadoAs %></span></div>
