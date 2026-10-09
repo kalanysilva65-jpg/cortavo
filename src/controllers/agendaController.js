@@ -697,6 +697,32 @@ async function detalheFragmento(req, res) {
   });
 }
 
+// Desfazer um agendamento recém-criado (aviso "Agendamento criado · Desfazer"
+// do redesign v3). A tela mostra o botão por ~8 s; o servidor aceita até 30 s
+// depois da criação, para cobrir rede lenta. Fora da janela, o caminho é
+// cancelar (que guarda histórico). Só desfaz o que foi criado pela equipe no
+// painel, ainda "agendado", e por quem pode alterar aquele agendamento.
+const JANELA_DESFAZER_MS = 30 * 1000;
+
+// POST /painel/agenda/:id/desfazer
+async function desfazer(req, res) {
+  const ag = await prisma.agendamento.findFirst({ where: { id: idNum(req.params.id), barbeariaId: req.barbeariaId } });
+  if (!ag) return res.status(404).json({ erro: 'Agendamento não encontrado.' });
+  if (!podeAlterar(req, ag)) return res.status(403).json({ erro: 'Você só pode alterar os seus próprios agendamentos.' });
+  const criado = new Date(ag.criadoEm).getTime();
+  const dentro = Date.now() - criado <= JANELA_DESFAZER_MS;
+  if (!dentro || ag.status !== STATUS.AGENDADO || ag.origem !== 'barbeiro') {
+    return res.status(409).json({ erro: 'Não dá mais para desfazer. Cancele o agendamento.' });
+  }
+  if (ag.clientePlanoId) {
+    await planoServ.ajustarUso(ag.clientePlanoId, +1, await planoServ.servicosCobertosDe(ag.id));
+  }
+  await caixaServ.removerEntradaAgendamento(ag.id);
+  await prisma.agendamento.delete({ where: { id: ag.id } });
+  metricas.invalidar(req.barbeariaId);
+  return res.json({ ok: true, desfeito: ag.id });
+}
+
 // POST /painel/agenda/:id/excluir — exclui o agendamento (qualquer status)
 async function excluir(req, res) {
   const agendamento = await prisma.agendamento.findFirst({
@@ -872,6 +898,7 @@ async function criarManual(req, res) {
   }
 
   if (erros.length) {
+    if (querJson(req)) return res.status(400).json({ erro: erros.join(' ') });
     req.session.flash = { tipo: 'erro', texto: erros.join(' ') };
     const qs = new URLSearchParams();
     if (data) qs.set('data', data);
@@ -896,7 +923,7 @@ async function criarManual(req, res) {
   // Os serviços que o plano cobre (`cobertosIds`) saem 0; os demais somam normal.
   const cobertos = new Set(cobertura ? cobertura.cobertosIds : []);
   const valorTotal = servicos.reduce((soma, s) => soma + (cobertos.has(s.id) ? 0 : s.valor), 0);
-  await prisma.agendamento.create({
+  const novo = await prisma.agendamento.create({
     data: {
       barbeariaId: b,
       usuarioId,
@@ -917,6 +944,15 @@ async function criarManual(req, res) {
   if (cobertura) await planoServ.ajustarUso(cobertura.assinatura.id, -1, cobertura.cobertosIds);
 
   metricas.invalidar(b);
+  // Folha "Novo" (redesign v3): a tela pede JSON para mostrar o aviso com
+  // "Desfazer" sem recarregar. O formulário antigo continua com o redirect.
+  if (querJson(req)) {
+    return res.json({
+      ok: true,
+      agendamento: { id: novo.id, data, hora, usuarioId },
+      desfazer: { url: '/painel/agenda/' + novo.id + '/desfazer', ate: new Date(Date.now() + JANELA_DESFAZER_MS).toISOString() },
+    });
+  }
   req.session.flash = { tipo: 'sucesso', texto: 'Agendamento criado.' };
   res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));
 }
@@ -958,4 +994,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson, planosJson };
+module.exports = { desfazer, JANELA_DESFAZER_MS, verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson, planosJson };

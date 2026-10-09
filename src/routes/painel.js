@@ -285,6 +285,7 @@ router.post('/agenda/itens/:id/valor', agendaController.alterarValorItem); // pr
 router.post('/agenda/itens/:id/remover', agendaController.removerItem);
 router.post('/agenda/:id/status', agendaController.mudarStatus);
 router.post('/agenda/:id/excluir', agendaController.excluir);
+router.post('/agenda/:id/desfazer', agendaController.desfazer); // "Desfazer" logo depois de criar (janela de 30 s)
 // Bloqueios direto da agenda: barbeiro bloqueia a PRÓPRIA agenda (escopado no controller).
 router.post('/agenda/bloqueios', agendaController.criarBloqueio);
 router.post('/agenda/bloqueios/:id/remover', agendaController.removerBloqueio);
