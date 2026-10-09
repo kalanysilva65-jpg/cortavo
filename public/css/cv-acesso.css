@@ -89,3 +89,6 @@
 .cv-ac-form .cv-ac-btn { margin-top: 8px; }
 
 @media (prefers-reduced-motion: reduce) { .cv-ac-btn, .cv-ac-entrada { transition: none; } }
+/* Links com cara de botão: o suave.css pinta todo <a>; aqui a cor do botão vence. */
+.cv-ac a.cv-ac-btn, .cv-ac a.cv-ac-btn:visited { color: #fff; text-decoration: none; }
+.cv-ac a.cv-ac-btn--texto, .cv-ac a.cv-ac-btn--texto:visited { color: var(--c-tinta); }
