@@ -196,7 +196,9 @@ test('F2 folha Novo: ações filtradas pela permissão, "Agendamento" sempre e p
 test('F2 casca: "+" abre a folha e ?abrir= abre a folha da tela de destino', () => {
   const js = fs.readFileSync(path.join(RAIZ, 'public/js/cv-casca.js'), 'utf8');
   for (const t of ["C.folha.abrir(f, { gatilho: btn })", "C.folha.arrastar(f)", "e.key === 'Escape'", "g.abrirModal('novo')", "g.abrirModal('bloqueio')", "g.clAbrirFolha('novo')", "g.cxFolha('novo', true)"]) assert.ok(js.includes(t), t);
-  for (const [v, fn] of [['painel/agenda.ejs', 'function abrirModal('], ['painel/clientes.ejs', 'function clAbrirFolha('], ['painel/caixa.ejs', 'function cxFolha(']]) {
+  // A Agenda v3 expõe abrirModal no próprio script; clientes e caixa, nas views.
+  assert.ok(fs.readFileSync(path.join(RAIZ, 'public/js/cv-agenda.js'), 'utf8').includes('g.abrirModal = abrirModal'));
+  for (const [v, fn] of [['painel/clientes.ejs', 'function clAbrirFolha('], ['painel/caixa.ejs', 'function cxFolha(']]) {
     assert.ok(fs.readFileSync(path.join(VIEWS, v), 'utf8').includes(fn), v);
   }
 });
@@ -213,7 +215,7 @@ function agenda(extra = {}) {
     diaNum: 9, proxDiaNum: 10, proximoId: 3, mesLabel: 'Outubro', anoMes: 2026, anoPicker: 2026, mesesPicker: [],
     agendamentos: [ag(1, '09:00', 'Gustavo Nunes', 'concluido'), ag(2, '10:30', 'Renato Alves', 'cancelado'), ag(3, '23:50', 'Lucas Andrade', 'agendado')],
     bloqueios: [{ id: 1, horaInicio: '12:00', horaFim: '13:00', motivo: 'Almoço da equipe', usuario: D }],
-    barbeiros: [D], servicos: [], clientes: [], formasPagamento: [{ valor: 'pix', label: 'Pix' }], maxParcelas: 12,
+    barbeiros: [D], servicos: [], clientes: [], formasPagamento: [{ valor: 'pix', label: 'Pix' }, { valor: 'credito', label: 'Crédito' }], maxParcelas: 12,
     dataStr: hoje, dataExtenso: 'sexta, 09/10/2026', barbeiroSelecionado: 'todos', dataPrev: hoje, dataNext: hoje, dataHoje: hoje, hojeIso: hoje,
     mostrarBarbeiroNoCard: true, jsonSeguro: (x) => JSON.stringify(x), fmtTelefone: (t) => t, fmtBRL: (c) => 'R$ ' + c / 100, fmtT6: (c) => 'R$' + c / 100, podeAcessar: () => true,
   };
@@ -235,20 +237,46 @@ test('F4 Agenda: linha do dia v3 com estado escrito, listra no bloqueio e a linh
 
 test('F4 Agenda: folhas, IDs e scripts de antes continuam (novo, bloqueio, mês, tira de dias)', () => {
   const html = agenda();
-  for (const id of ['agm-novo', 'form-novo-agendamento', 'agm-bloqueio', 'agm-mes', 'sv-ag-dias', 'hora-livre', 'hora-novo', 'data-novo', 'agm-1']) assert.match(html, new RegExp('id="' + id + '"'), id);
+  for (const id of ['agm-novo', 'form-novo-agendamento', 'agm-bloqueio', 'agm-mes', 'cv-ag-dias', 'hora-livre', 'hora-novo', 'data-novo', 'agm-1']) assert.match(html, new RegExp('id="' + id + '"'), id);
   assert.match(html, /action="\/painel\/agenda\/novo"/);
 });
 
-test('F4 Agenda: livres só com um barbeiro na tela; barbeiro sem horários liberados não vê Bloquear', () => {
+test('F4 Agenda: livres só com um barbeiro na tela; Bloquear para admin e para quem tem "horarios"', () => {
   assert.match(agenda(), /id="cv-ag-tl" data-barbeiro=""/);
   assert.match(agenda({ barbeiroSelecionado: '3' }), /id="cv-ag-tl" data-barbeiro="3"/);
-  const barbeiro = agenda({ ehAdmin: false, podeAcessar: (h) => h !== '/painel/horarios' });
-  assert.match(barbeiro, /id="cv-ag-tl" data-barbeiro="2"/);
-  assert.doesNotMatch(barbeiro, /cv-ag-bloquear/);
-  assert.match(agenda({ ehAdmin: false }), /class="cv-btn cv-btn--2 cv-btn--p cv-ag-bloquear" href="\/painel\/horarios"/);
+  const semHorarios = agenda({ ehAdmin: false, pode: (c) => c !== 'horarios' });
+  assert.match(semHorarios, /id="cv-ag-tl" data-barbeiro="2"/);
+  assert.doesNotMatch(semHorarios, /cv-ag-bloquear|id="agm-bloqueio"/);
+  const comHorarios = agenda({ ehAdmin: false, pode: () => true });
+  assert.match(comHorarios, /cv-ag-bloquear" onclick="abrirModal\('bloqueio'\)"/);
+  assert.match(comHorarios, /id="agm-bloqueio"[\s\S]*?name="barbeiroId" value="2"/);
+  assert.doesNotMatch(comHorarios, /id="bloq-barbeiro"/);
   const js = fs.readFileSync(path.join(RAIZ, 'public/js/cv-agenda.js'), 'utf8');
   assert.ok(js.includes("fetch('/painel/agenda/horarios?'"));
-  assert.ok(js.includes("g.Cortavo.selo({ titulo: 'Agendamento confirmado'"));
+  assert.ok(js.includes("C.selo({ botao: btn, titulo: 'Agendamento confirmado'"));
+  assert.ok(js.includes("C.aviso({ titulo: p.titulo, sub: p.sub, desfazer: !!p.url"));
+});
+
+test('F4 Agenda reescrita: tudo em .cv-folha, nada da pilha antiga, e o detalhe com os ganchos do script', () => {
+  const html = agenda();
+  assert.doesNotMatch(html, /ag-overlay|ag-modal-box|sv-ag-|pill-opcao/);
+  for (const id of ['mes', 'bloqueio', 'novo', '1', '2', '3']) assert.match(html, new RegExp('<section class="cv-folha cv-ag-folha" id="agm-' + id + '" role="dialog" aria-modal="true"'), id);
+  assert.match(html, /id="cv-ag-dados">\{"clientes"/);
+  // Detalhe de um aberto: divisão de pagamento, concluir, faltou, cancelar, excluir, itens.
+  const det = html.slice(html.indexOf('id="agm-3"'));
+  for (const g of ['data-pagto', 'data-concluir', 'data-faltou', 'data-cancelar', 'data-excluir', 'data-item-valor', 'data-total-valor', 'data-add-item', 'data-item-abas']) assert.ok(det.includes(g), g);
+  // Concluído: sem divisão nem "Faltou"; mostra como foi pago e o Reabrir.
+  const concl = agenda({ agendamentos: [{ id: 5, horaInicio: '09:00', clienteNome: 'Ana', clienteTelefone: '1', itens: [{ servico: { nome: 'Corte' }, valorUnitario: 4000, quantidade: 1 }], usuario: { nome: 'Diego Santos' }, status: 'concluido', valorTotal: 4000, pagamentos: [{ formaPagamento: 'pix', valor: 2500, parcelas: 1 }, { formaPagamento: 'credito', valor: 1500, parcelas: 3 }] }] });
+  const detC = concl.slice(concl.indexOf('id="agm-5"'));
+  assert.doesNotMatch(detC, /data-pagto|data-faltou/);
+  assert.match(detC, /Crédito, 3x/);
+  assert.match(detC, /data-reabrir>Concluído\. Reabrir/);
+  // Plano: o detalhe diz que foi pelo plano.
+  const plano = agenda({ agendamentos: [{ id: 6, horaInicio: '10:00', clienteNome: 'Bia', clienteTelefone: '1', itens: [], usuario: { nome: 'Diego Santos' }, status: 'agendado', valorTotal: 0, pagamentos: [], clientePlanoId: 3, clientePlano: { plano: { nome: 'Mensal' } } }] });
+  assert.match(plano, /Pelo plano Mensal/);
+  const layout = fs.readFileSync(path.join(VIEWS, 'layouts/painel.ejs'), 'utf8');
+  assert.match(layout, /'\/painel\/agenda': 'cv-agenda'/);
+  assert.doesNotMatch(layout, /PONTE/);
 });
 
 // ---------- F5: Gestão com números (contrato do B4) ----------

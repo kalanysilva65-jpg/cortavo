@@ -1,197 +1,108 @@
-<%/* Conteúdo da folha de detalhe de UM agendamento.
+<%/* Miolo da folha de detalhe de UM atendimento (redesign v3, F4).
 
-     Vive num parcial próprio porque é renderizado em dois momentos: junto da
-     agenda (carga inicial) e sozinho, por `GET /painel/agenda/:id/detalhe`,
-     quando a folha se atualiza depois de uma ação. Antes toda ação aqui era
-     POST + redirect, o que fechava a folha e jogava o usuário de volta pra
-     lista; agora a folha se redesenha no lugar.
-
-     Recebe tudo explicitamente (ag, selo, dataStr, barbeiroSelecionado,
-     diaNum, mesCurto, formasPagamento, servicos, maxParcelas) — variáveis
-     locais do EJS pai não atravessam o include. */%>
+     Renderizado em dois momentos: junto da agenda (carga inicial) e sozinho,
+     por GET /painel/agenda/:id/detalhe, quando a folha se redesenha depois de
+     uma ação. Por isso recebe tudo explicitamente (ag, selo, dataStr,
+     barbeiroSelecionado, diaNum, mesCurto, formasPagamento, servicos,
+     maxParcelas) e não tem script: o comportamento mora em public/js/cv-agenda.js,
+     por delegação nos atributos data-* (data-pagto, data-concluir, data-reabrir,
+     data-faltou, data-cancelar, data-excluir, data-add-item, data-remover-item,
+     data-item-valor, data-total-valor, data-total-auto, data-item-abas). */%>
 <%
   var svcLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento';
-  var pagos = (ag.pagamentos || []).map(function (p) {
-    return { forma: p.formaPagamento, valor: p.valor, parcelas: p.parcelas };
-  });
-  // Sem divisão gravada, mas com a forma antiga preenchida: mostra como uma
-  // parte só, para os atendimentos concluídos antes desta tela existir.
-  if (!pagos.length && ag.formaPagamento) {
-    pagos = [{ forma: ag.formaPagamento, valor: ag.valorTotal, parcelas: 1 }];
-  }
-  function _rotuloForma(v) {
-    var achou = formasPagamento.filter(function (f) { return f.valor === v; })[0];
-    return achou ? achou.label : v;
-  }
-  // Com o total ajustado à mão, ele é a referência do atendimento e a soma dos
-  // itens vira só informação — por isso a soma aparece na legenda, para o
-  // ajuste nunca ficar invisível, com um atalho para voltar a segui-la.
-  var somaItens = ag.itens.reduce(function (s, it) { return s + it.valorUnitario * it.quantidade; }, 0);
+  var pagos = (ag.pagamentos || []).map(function (p) { return { forma: p.formaPagamento, valor: p.valor, parcelas: p.parcelas }; });
+  // Sem divisão gravada, mas com a forma antiga: mostra como uma parte só.
+  if (!pagos.length && ag.formaPagamento) pagos = [{ forma: ag.formaPagamento, valor: ag.valorTotal, parcelas: 1 }];
+  function _rotuloForma(v) { var a = formasPagamento.filter(function (f) { return f.valor === v; })[0]; return a ? a.label : v; }
+  function _reais(c) { return ((c || 0) / 100).toFixed(2).replace('.', ','); }
+  // Total ajustado à mão: a soma dos itens fica na legenda, com atalho para voltar a segui-la.
+  var somaItens = ag.itens.reduce(function (s, it) { return s + (it.valorUnitario || 0) * it.quantidade; }, 0);
   var totalAjustado = !!ag.totalManual;
+  var aberto = ag.status === 'agendado';
+  var EST = { 'Concluído': 'check', 'Faltou': 'faltou', 'Cancelado': 'fechar' };
+  var _telefone = (typeof fmtTelefone === 'function') ? fmtTelefone(ag.clienteTelefone) : ag.clienteTelefone;
+  var _svcOpts = servicos.filter(function (s) { return !s.ehProduto; }).map(function (s) { return { id: s.id, label: s.nome + ', R$ ' + _reais(s.valor) }; });
+  var _prodOpts = servicos.filter(function (s) { return s.ehProduto; }).map(function (s) { return { id: s.id, label: s.nome + ', R$ ' + _reais(s.valor) }; });
 %>
-<%/* X de fechar DENTRO do fragmento (não injetado por JS): esta folha se
-     redesenha via innerHTML a cada ação, o que apagava um X injetado — por isso
-     "sumia" o botão. Aqui ele volta em toda renderização. `fecharModal` é
-     global (definida na agenda). */%>
-<button type="button" class="ag-modal-x" aria-label="Fechar" onclick="fecharModal(this.closest('.ag-overlay'))">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-</button>
-<div class="sv-ag-folha-topo">
-  <div class="sv-ag-folha-tit"><%= ag.clienteNome %></div>
-  <span class="sv-ag-selo"><%= selo %></span>
+<div class="cv-ag-det-cab">
+  <h2 id="agm-tit-<%= ag.id %>" tabindex="-1" data-foco><%= ag.clienteNome %></h2>
+  <span class="cv-etiqueta<%= selo === 'Agora' ? ' cv-etiqueta--preta' : '' %>"><% if (EST[selo]) { %><%- include('../partials/icone', { cvIc: EST[selo], cvCls: 'cv-ic--16' }) %><% } %><%= selo %></span>
 </div>
-<div class="sv-ag-folha-sub"><%= diaNum %> <%= mesCurto %> · <%= ag.horaInicio %></div>
+<p class="cv-ag-det-sub"><%= diaNum %> <%= mesCurto %>, <%= ag.horaInicio %></p>
 
-<div class="sv-ag-campos">
-  <div class="sv-ag-campo">
-    <div class="sv-ag-campo-rot">Serviço</div>
-    <div class="sv-ag-campo-val"><%= svcLabel %></div>
-  </div>
+<ul class="cv-lista cv-lista--sem-ic cv-ag-det-info">
+  <li><div class="cv-linha"><span class="corpo"><span class="s">Serviço</span><span class="t"><%= svcLabel %></span></span></div></li>
   <% if (ag.clientePlanoId) { %>
-  <div class="sv-ag-campo sv-ag-campo--plano">
-    <div class="sv-ag-campo-rot">Plano</div>
-    <div class="sv-ag-campo-val sv-ag-campo-val--sm">✓ Agendado pelo plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <strong><%= ag.clientePlano.plano.nome %></strong><% } %> · sem custo</div>
-  </div>
+    <li><div class="cv-linha"><span class="corpo"><span class="s">Plano</span><span class="t">Pelo plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <%= ag.clientePlano.plano.nome %><% } %>, sem custo do serviço coberto</span></span><%- include('../partials/icone', { cvIc: 'check', cvCls: 'cv-ic--18' }) %></div></li>
   <% } %>
-  <div class="sv-ag-campo">
-    <div class="sv-ag-campo-rot">Barbeiro</div>
-    <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= ag.usuario.nome %></div>
-  </div>
-  <div class="sv-ag-campo">
-    <div class="sv-ag-campo-rot">Contato</div>
-    <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= fmtTelefone(ag.clienteTelefone) %></div>
-  </div>
-</div>
+  <li><div class="cv-linha"><span class="corpo"><span class="s">Barbeiro</span><span class="t"><%= ag.usuario.nome %></span></span></div></li>
+  <li><div class="cv-linha"><span class="corpo"><span class="s">Contato</span><span class="t"><%= _telefone %></span></span></div></li>
+</ul>
 
-<div class="sv-ag-preto">
-  <div class="sv-ag-preto-rot">Total a receber</div>
-  <div class="sv-ag-preto-linha">
-    <div class="sv-ag-preto-corpo">
-      <div class="sv-ag-total-edit">
-        <span class="sv-ag-total-cifrao">R$</span>
-        <input class="sv-ag-total-valor"
-               type="text"
-               inputmode="decimal"
-               data-total-valor
-               value="<%= (ag.valorTotal / 100).toFixed(2).replace('.', ',') %>"
-               aria-label="Total a receber" />
-      </div>
-      <div class="sv-ag-preto-sub">
-        <% if (totalAjustado) { %>
-          valor combinado · itens somam <%= fmtBRL(somaItens) %>
-          <button type="button" class="sv-ag-total-desfazer" data-total-auto>usar a soma</button>
-        <% } else { %>
-          <%= svcLabel %> · <%= ag.usuario.nome.split(' ')[0] %>
-        <% } %>
-      </div>
-    </div>
-  </div>
+<section class="cv-objeto cv-gravada cv-ag-det-total" aria-label="Total a receber">
+  <span class="rot">Total a receber</span>
+  <label class="cv-ag-total-edit"><span class="moeda" aria-hidden="true">R$</span><input type="text" inputmode="decimal" data-total-valor value="<%= _reais(ag.valorTotal) %>" aria-label="Total a receber, em reais" /></label>
+  <p class="rot cv-ag-det-total-sub">
+    <% if (totalAjustado) { %>Valor combinado. Os itens somam <%= fmtBRL(somaItens) %>. <button type="button" class="cv-ag-link-claro" data-total-auto>Usar a soma</button>
+    <% } else { %><%= svcLabel %>, com <%= ag.usuario.nome.split(' ')[0] %><% } %>
+  </p>
 
-  <% if (ag.status !== 'concluido') { %>
-    <%/* A divisão do pagamento é montada por script (linhas entram e saem), e
-         o "Concluir" manda tudo junto — é no fim do atendimento que se sabe
-         como o cliente pagou. A forma de pagamento é obrigatória pra concluir
-         (só atendimento de valor R$0/plano conclui sem forma). */%>
-    <div class="sv-ag-pagto"
-         data-pagto
-         data-ag="<%= ag.id %>"
-         data-total="<%= ag.valorTotal %>"
-         data-max-parcelas="<%= maxParcelas %>"
-         data-formas='<%- JSON.stringify(formasPagamento) %>'
-         data-parcelaveis='<%- JSON.stringify(["credito"]) %>'
-         data-inicial='<%- JSON.stringify(pagos) %>'>
-      <div class="sv-ag-pagto-topo">
-        <span class="sv-ag-preto-rot">Pagamento</span>
-        <span class="sv-ag-pagto-saldo" data-saldo></span>
-      </div>
-      <div class="sv-ag-pagto-linhas" data-linhas></div>
-      <button type="button" class="sv-ag-pagto-add" data-add>+ Dividir em outra forma</button>
+  <% if (aberto) { %>
+    <%/* A divisão é montada pelo script; "Concluir" manda tudo junto. A forma
+         é obrigatória para concluir, menos em atendimento de valor zero. */%>
+    <div class="cv-ag-pagto" data-pagto data-ag="<%= ag.id %>" data-total="<%= ag.valorTotal %>" data-max-parcelas="<%= maxParcelas %>"
+         data-formas='<%- JSON.stringify(formasPagamento).replace(/'/g, "&#39;") %>' data-parcelaveis='["credito"]' data-inicial='<%- JSON.stringify(pagos) %>'>
+      <div class="cv-ag-pagto-topo"><span class="rot">Pagamento</span><span class="cv-ag-pagto-saldo" data-saldo aria-live="polite"></span></div>
+      <div class="cv-ag-pagto-linhas" data-linhas></div>
+      <button type="button" class="cv-ag-link-claro" data-add>Dividir em outra forma</button>
     </div>
-    <button type="button" class="sv-ag-cta" data-concluir>Concluir atendimento</button>
+    <button type="button" class="cv-btn cv-btn--largo cv-ag-concluir" data-concluir>Concluir atendimento</button>
   <% } else { %>
-    <% if (pagos.length === 1) { %>
-      <div class="sv-ag-pag-fixa">
-        Pago em <%= _rotuloForma(pagos[0].forma) %><%= pagos[0].parcelas > 1 ? ' · ' + pagos[0].parcelas + 'x' : '' %>
-      </div>
-    <% } else if (pagos.length > 1) { %>
-      <div class="sv-ag-pagto-resumo">
-        <% pagos.forEach(function (p) { %>
-          <div class="sv-ag-pagto-resumo-linha">
-            <span><%= _rotuloForma(p.forma) %><%= p.parcelas > 1 ? ' · ' + p.parcelas + 'x' : '' %></span>
-            <span><%= fmtBRL(p.valor) %></span>
-          </div>
-        <% }) %>
-      </div>
+    <% if (ag.status === 'concluido' && pagos.length) { %>
+      <ul class="cv-ag-pagos">
+        <% pagos.forEach(function (p) { %><li><span><%= _rotuloForma(p.forma) %><%= p.parcelas > 1 ? ', ' + p.parcelas + 'x' : '' %></span><b><%= fmtBRL(p.valor) %></b></li><% }) %>
+      </ul>
     <% } %>
-    <button type="button" class="sv-ag-cta sv-ag-cta--vazado" data-reabrir>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-      <span>Concluído · toque para reabrir</span>
-    </button>
+    <button type="button" class="cv-btn cv-btn--2 cv-btn--largo cv-ag-reabrir" data-reabrir><%= ag.status === 'concluido' ? 'Concluído. Reabrir' : (selo + '. Reabrir') %></button>
   <% } %>
-</div>
+</section>
 
-<div class="sv-ag-secao">
-  <div class="sv-ag-secao-rot">Itens</div>
-  <%/* O preço é editável AQUI, dentro do atendimento: desconto, cortesia ou
-       cobrança combinada com o cliente. Mexe só neste item — o preço do
-       serviço no catálogo continua o mesmo para os próximos atendimentos.
-       O campo mostra o valor UNITÁRIO; com quantidade > 1 o total da linha
-       aparece ao lado, senão editar um item "×2" seria adivinhação. */%>
-  <ul class="sv-ag-itens">
+<section class="cv-ag-det-itens" aria-labelledby="agm-itens-<%= ag.id %>">
+  <h3 id="agm-itens-<%= ag.id %>">Itens</h3>
+  <%/* O preço muda só neste atendimento (desconto, cortesia); o catálogo fica igual.
+       O campo é o valor UNITÁRIO; com quantidade maior que 1, o total da linha aparece ao lado. */%>
+  <ul class="cv-lista cv-lista--sem-ic">
     <% ag.itens.forEach(function (it) { %>
-      <li>
-        <span class="sv-ag-item-nome"><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
-        <span class="sv-ag-item-dir">
-          <% if (it.quantidade > 1) { %>
-            <span class="sv-ag-item-linha-total"><%= fmtT6(it.valorUnitario * it.quantidade) %></span>
-          <% } %>
-          <input class="sv-ag-item-valor"
-                 type="text"
-                 inputmode="decimal"
-                 data-item-valor="<%= it.id %>"
-                 value="<%= (it.valorUnitario / 100).toFixed(2).replace('.', ',') %>"
-                 aria-label="Valor de <%= it.servico.nome %> neste atendimento" />
-          <button type="button" class="sv-ag-item-x" title="Remover item" data-remover-item="<%= it.id %>">×</button>
-        </span>
-      </li>
+      <li><div class="cv-linha cv-ag-item">
+        <span class="corpo"><span class="t"><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span><% if (it.quantidade > 1) { %><span class="s"><%= fmtBRL((it.valorUnitario || 0) * it.quantidade) %> no total</span><% } %></span>
+        <label class="cv-ag-item-valor"><span aria-hidden="true">R$</span><input type="text" inputmode="decimal" data-item-valor="<%= it.id %>" value="<%= _reais(it.valorUnitario) %>" aria-label="Valor de <%= it.servico.nome %> neste atendimento" /></label>
+        <button type="button" class="cv-redondo cv-redondo--leve" data-remover-item="<%= it.id %>" aria-label="Remover <%= it.servico.nome %>"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--16' }) %></button>
+      </div></li>
     <% }) %>
-    <% if (ag.itens.length === 0) { %>
-      <li><span class="texto-sutil">Sem itens.</span></li>
-    <% } %>
+    <% if (!ag.itens.length) { %><li><div class="cv-linha"><span class="corpo"><span class="s">Sem itens.</span></span></div></li><% } %>
   </ul>
 
-  <%/* Abas Serviços / Produtos (pedido do dono, 2026-09-03): cada aba mostra só
-       o seu tipo. As opções são montadas por JS (montarItemAbas) a partir dos
-       dados abaixo — este fragmento é reinserido via innerHTML e script inline
-       não roda aqui, então a lógica vive na agenda.ejs. O single-quote é
-       escapado (&#39;) pra não quebrar o atributo com nomes tipo "D'Angelo". */%>
-  <% var _svcOpts = servicos.filter(function (s) { return !s.ehProduto; }).map(function (s) { return { id: s.id, label: s.nome + ' — ' + fmtT6(s.valor) }; });
-     var _prodOpts = servicos.filter(function (s) { return s.ehProduto; }).map(function (s) { return { id: s.id, label: s.nome + ' — ' + fmtT6(s.valor) }; }); %>
-  <div class="sv-ag-add-abas" data-item-abas>
-    <button type="button" class="sv-ag-add-aba ativa" data-aba="servico">Serviços</button>
-    <button type="button" class="sv-ag-add-aba" data-aba="produto">Produtos</button>
+  <div class="cv-seg cv-ag-abas" data-item-abas role="group" aria-label="Tipo de item">
+    <button type="button" class="cv-ag-aba" data-aba="servico" aria-pressed="true">Serviços</button>
+    <button type="button" class="cv-ag-aba" data-aba="produto" aria-pressed="false">Produtos</button>
   </div>
-  <div class="sv-ag-add">
-    <div class="sv-ag-campo">
-      <div class="sv-ag-campo-rot">Adicionar</div>
-      <select class="sv-ag-inp" data-novo-servico
-              data-opts-servico='<%- JSON.stringify(_svcOpts).replace(/'/g, "&#39;") %>'
-              data-opts-produto='<%- JSON.stringify(_prodOpts).replace(/'/g, "&#39;") %>'>
+  <div class="cv-ag-add">
+    <label class="cv-campo"><span class="cv-rotulo">Adicionar</span>
+      <select class="cv-entrada" data-novo-servico data-opts-servico='<%- JSON.stringify(_svcOpts).replace(/'/g, "&#39;") %>' data-opts-produto='<%- JSON.stringify(_prodOpts).replace(/'/g, "&#39;") %>'>
         <option value="">Serviço…</option>
         <% _svcOpts.forEach(function (o) { %><option value="<%= o.id %>"><%= o.label %></option><% }) %>
       </select>
-    </div>
-    <div class="sv-ag-campo sv-ag-campo--qtd">
-      <div class="sv-ag-campo-rot">Qtd</div>
-      <input type="number" value="1" min="1" class="sv-ag-inp" title="Quantidade" data-nova-qtd />
-    </div>
-    <button type="button" class="sv-ag-add-btn" data-add-item>+</button>
+    </label>
+    <label class="cv-campo cv-ag-qtd"><span class="cv-rotulo">Qtd</span><input type="number" value="1" min="1" class="cv-entrada" data-nova-qtd /></label>
+    <button type="button" class="cv-btn cv-btn--2 cv-btn--p" data-add-item aria-label="Adicionar item"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--18' }) %></button>
   </div>
+</section>
 
-  <div class="sv-ag-perigo">
-    <% if (ag.status !== 'cancelado') { %>
-      <button type="button" class="sv-ag-perigo-btn" data-cancelar>Cancelar atendimento</button>
-    <% } %>
-    <button type="button" class="sv-ag-perigo-btn" data-excluir>Excluir</button>
+<section class="cv-ag-risco" aria-labelledby="agm-risco-<%= ag.id %>">
+  <h3 id="agm-risco-<%= ag.id %>">Zona de risco</h3>
+  <div class="cv-ag-risco-acoes">
+    <% if (aberto) { %><button type="button" class="cv-btn cv-btn--2 cv-btn--p" data-faltou><%- include('../partials/icone', { cvIc: 'faltou', cvCls: 'cv-ic--18' }) %>Faltou</button><% } %>
+    <% if (ag.status !== 'cancelado') { %><button type="button" class="cv-btn cv-btn--2 cv-btn--p cv-ag-perigo" data-cancelar>Cancelar atendimento</button><% } %>
+    <button type="button" class="cv-btn cv-btn--2 cv-btn--p cv-ag-perigo" data-excluir>Excluir</button>
   </div>
-</div>
+</section>

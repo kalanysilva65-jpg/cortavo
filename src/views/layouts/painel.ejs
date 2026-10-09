@@ -8,7 +8,10 @@
   // trazem o próprio cabeçalho. A lista cresce a cada fatia do plano de
   // migração; quando todas estiverem aqui, a pilha antiga sai (fatia F11).
   // A faixa do teste grátis mora só na Início (partials/faixa-teste.ejs).
-  var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao'];
+  var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao', '/painel/agenda'];
+  // Folha de estilo e script próprios de uma tela v3 (além de cv-telas).
+  var EXTRA_V3 = { '/painel/agenda': 'cv-agenda' };
+  var extraV3 = EXTRA_V3[currentPath] || null;
   var ehV3 = TELAS_V3.indexOf(currentPath) !== -1;
   var ehSuave = !ehV3 && TELAS_SUAVE.indexOf(currentPath) !== -1;
 %>
@@ -49,11 +52,6 @@
         '/painel/conversas': 'sv-conversas',
       };
       var cssDaTela = CSS_POR_TELA[currentPath];
-      // Telas "ponte" (v3 sobre a pilha suave): o miolo já é v3, mas as folhas
-      // e scripts antigos seguem (mesmos IDs). A folha de estilo v3 da tela vem
-      // por cima da antiga, e o aviso do servidor já é o aviso v3.
-      var CSS_V3_PONTE = { '/painel/agenda': 'cv-agenda' };
-      var cssPonte = CSS_V3_PONTE[currentPath];
     %>
     <%/* `styles.css` fica nos dois caminhos: dele vêm os resets de base
          (html/body/a/img/input) que o suave.css pressupõe em vez de repetir. */%>
@@ -73,7 +71,6 @@
       <%/* Por ULTIMO: so contem uma media query de min-width 1024px, e precisa
            poder sobrescrever o que as folhas de tela definiram acima. */%>
       <link rel="stylesheet" href="/css/sv-desktop.css?v=<%= assetV %>" />
-      <% if (cssPonte) { %><link rel="stylesheet" href="/css/<%= cssPonte %>.css?v=<%= assetV %>" /><% } %>
     <% } else { %>
       <%/* Telas ainda não migradas (fidelidade, comissões, horários e os
            formulários órfãos) seguem na pilha antiga — inteira, porque elas
@@ -85,6 +82,7 @@
     <%/* Por último: casca v3 (navbar, avisos) com especificidade acima das
          regras antigas (.pg-sv a) e as peças de tela das telas v3. */%>
     <link rel="stylesheet" href="/css/cv-telas.css?v=<%= assetV %>" />
+    <% if (extraV3) { %><link rel="stylesheet" href="/css/<%= extraV3 %>.css?v=<%= assetV %>" /><% } %>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -143,7 +141,7 @@
       <%- include('../partials/header-painel') %>
     </div>
     <main class="container conteudo">
-      <%- include('../partials/flash', { flashCv: !!cssPonte }) %> <%- body %>
+      <%- include('../partials/flash') %> <%- body %>
     </main>
     <% } %>
     <%- include('../partials/nav-inferior') %>
@@ -151,6 +149,6 @@
 <script src="/js/foto-comprimir.js" defer></script>
 <script src="/js/folha-arrastar.js" defer></script>
 <script src="/js/cv-casca.js?v=<%= assetV %>" defer></script>
-<% if (cssPonte) { %><script src="/js/<%= cssPonte %>.js?v=<%= assetV %>" defer></script><% } %>
+<% if (extraV3) { %><script src="/js/<%= extraV3 %>.js?v=<%= assetV %>" defer></script><% } %>
 </body>
 </html>

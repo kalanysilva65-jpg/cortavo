@@ -1,18 +1,9 @@
-<%/* Agenda no design SUAVE (pedido do dono, 2026-07-31): substitui o Turno 6
-     (título em caixa alta, dia gigante, faixas de canto vivo) pelo HTML de
-     referência que ele anexou — título discreto, tira de dias em pílulas
-     roláveis e a lista do dia em fichas arredondadas.
-
-     Duas inversões em relação ao resto do app, ambas vindas da referência:
-     a página aqui é BRANCA e as fichas são cinza; e o atendimento da vez sai
-     invertido (preto), sem precisar de ponto nem borda para se destacar.
-
-     Os pop-ups viraram FOLHA INFERIOR (sobem de baixo). No Turno 6 "Novo
-     agendamento" e o detalhe eram página inteira; agora são folha, como todo
-     pop-up do design suave. Os wrappers seguem `.ag-overlay`/`.ag-modal-box`
-     porque `abrirModal`/`fecharModal` e o Esc procuram por esses nomes.
-
-     Estilos em public/css/sv-agenda.css. */%>
+<%/* Agenda (redesign v3, fatia F4, reescrita sem a pilha antiga).
+     Mockups: redesign/v3/prints/03-agenda-390.png e 04b-novo-agendamento-390.png.
+     Cabeçalho com a data (abre a folha de mês) e "Bloquear", tira de dias,
+     chips de barbeiro, a linha do dia (cv-tl) e as quatro folhas (mês,
+     bloqueio, novo e detalhe) no componente .cv-folha.
+     Estilos em public/css/cv-agenda.css; comportamento em public/js/cv-agenda.js. */%>
 <%
   function _iniciais(nome) {
     var p = String(nome).trim().split(/\s+/);
@@ -22,6 +13,7 @@
   // invertido); os demais abertos são "Confirmado", como na referência.
   function _selo(ag) {
     if (ag.status === 'cancelado') return 'Cancelado';
+    if (ag.status === 'faltou') return 'Faltou';
     if (ag.status === 'concluido') return 'Concluído';
     return ag.id === proximoId ? 'Agora' : 'Confirmado';
   }
@@ -30,10 +22,6 @@
 %>
 
 <%
-  // Redesign v3 (fatia F4): cabeçalho, tira de dias, chips e a linha do dia
-  // com os componentes cv- (redesign/v3/prints/03-agenda-390.png). As folhas
-  // (mês, bloqueio, novo e detalhe) continuam as mesmas, com os mesmos IDs e
-  // scripts, só com a pele v3 (public/css/cv-agenda.css).
   var _diaSemana = String(dataExtenso || '').split(',')[0];
   var _supData = _diaSemana.charAt(0).toUpperCase() + _diaSemana.slice(1) + ', ' + diaNum + ' de ' + String(mesLabel).toLowerCase();
   var _ehHoje = dataStr === dataHoje;
@@ -44,9 +32,10 @@
   // Agenda de um barbeiro só: dá para mostrar os horários livres (cv-agenda.js).
   var _barbeiroUnico = ehAdmin ? (barbeiroSelecionado !== 'todos' ? barbeiroSelecionado : '') : String(usuario.id);
   var _nAtend = agendamentos.filter(function (a) { return a.status !== 'cancelado'; }).length;
-  var _podeBloquearHorarios = !ehAdmin && (typeof podeAcessar !== 'function' || podeAcessar('/painel/horarios'));
+  // Bloquear: admin sempre; barbeiro com "horarios" liberado (a própria agenda).
+  var _podeBloquear = ehAdmin || (typeof pode === 'function' ? pode('horarios') : (typeof podeAcessar !== 'function' || podeAcessar('/painel/horarios')));
 %>
-<div class="sv-tela sv-ag-tela cv-agenda">
+<div class="cv-agenda">
 
   <header class="cv-cab">
     <div class="cv-cab-txt">
@@ -55,18 +44,16 @@
       <h1>Agenda</h1>
     </div>
     <div class="cv-cab-acoes">
-      <% if (ehAdmin) { %>
+      <% if (_podeBloquear) { %>
         <button type="button" class="cv-btn cv-btn--2 cv-btn--p cv-ag-bloquear" onclick="abrirModal('bloqueio')"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--18' }) %>Bloquear</button>
-      <% } else if (_podeBloquearHorarios) { %>
-        <a class="cv-btn cv-btn--2 cv-btn--p cv-ag-bloquear" href="/painel/horarios"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--18' }) %>Bloquear</a>
       <% } %>
     </div>
   </header>
 
   <div class="cv-secao" style="margin-top:18px">
     <%/* Tira de dias: o mês inteiro, rolável. O script do fim do arquivo traz o
-         dia selecionado para o centro (procura .sv-ag-dia.sel). */%>
-    <div class="cv-dias cv-dias--rola" id="sv-ag-dias" role="group" aria-label="Dia">
+         dia selecionado para o centro (cv-agenda.js). */%>
+    <div class="cv-dias cv-dias--rola" id="cv-ag-dias" role="group" aria-label="Dia">
       <% faixaDias.forEach(function (d) { %>
         <a href="/painel/agenda?data=<%= d.iso %><%= qsBarbeiro %>" class="cv-dia <%= d.selecionado ? 'sel' : '' %>" aria-pressed="<%= d.selecionado ? 'true' : 'false' %>"<% if (d.selecionado) { %> aria-current="date"<% } %>>
           <small><%= d.ehHoje ? 'Hoje' : d.rotulo %></small><b><%= d.num %></b>
@@ -100,8 +87,7 @@
       bloqueios.forEach(function (bl) { eventos.push({ tipo: 'bloq', bl: bl, ini: _minA(bl.horaInicio) }); });
       eventos.sort(function (a, b) { return a.ini - b.ini; });
       var _linhaPosta = !_ehHoje;
-      // Estado escrito, nunca só cor. "Faltou" separado de "Cancelado"
-      // (spec 12). TODO(Beto B3): status `faltou` e o botão na folha de detalhe.
+      // Estado escrito, nunca só cor. "Faltou" separado de "Cancelado" (spec 12).
       var ESTADOS = {
         concluido: { cls: 'feito', ic: 'check', txt: 'Concluído' },
         faltou: { cls: 'faltou', ic: 'faltou', txt: 'Faltou' },
@@ -124,7 +110,7 @@
               <span class="cv-avatar cv-avatar--p<%= est.cls === 'proximo' ? ' cv-avatar--branco' : ' cv-avatar--claro' %>" aria-hidden="true"><%= _iniciais(ag.clienteNome) %></span>
               <span class="corpo">
                 <span class="t"><%= ag.clienteNome %></span>
-                <span class="s"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> com <%= ag.usuario.nome.split(' ')[0] %><% } %><% if (ag.clientePlanoId) { %> · <span class="sv-ag-plano-tag">Plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <%= ag.clientePlano.plano.nome %><% } %></span><% } %></span>
+                <span class="s"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> com <%= ag.usuario.nome.split(' ')[0] %><% } %><% if (ag.clientePlanoId) { %> · <span class="cv-ag-plano-tag">Plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <%= ag.clientePlano.plano.nome %><% } %></span><% } %></span>
               </span>
               <span class="est"><% if (est.ic) { %><%- include('../partials/icone', { cvIc: est.ic, cvCls: 'cv-ic--16' }) %><% } %><%= est.txt %></span>
             </button>
@@ -154,916 +140,155 @@
 </div>
 
 <%/* ------------------------------------------------------------------------
-     Folha: escolher mês (ano navegável + os 12 meses)
+     Folhas (M4). Uma aberta por vez, pelo Cortavo.folha (cv-movimento.js):
+     sobe com mola, arrasta, fecha pelo véu, Esc ou "×". As funções globais
+     abrirModal(id) e fecharModal() continuam existindo (cv-agenda.js), porque
+     a folha Novo da navbar abre estas folhas por ?abrir=.
      --------------------------------------------------------------------- */%>
-<div class="ag-overlay" id="agm-mes" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="sv-ag-folha-tit">Escolher mês</div>
-    <div class="sv-ag-ano">
-      <a href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker - 1 %>" class="sv-ag-ano-seta" aria-label="Ano anterior">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-      </a>
-      <span class="sv-ag-ano-num"><%= anoPicker %></span>
-      <a href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker + 1 %>" class="sv-ag-ano-seta" aria-label="Próximo ano">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-      </a>
+
+<%/* Folha: escolher mês (ano navegável + os 12 meses) */%>
+<section class="cv-folha cv-ag-folha" id="agm-mes" role="dialog" aria-modal="true" aria-labelledby="agm-mes-tit">
+  <div class="cv-folha-zona">
+    <div class="cv-puxador" aria-hidden="true"></div>
+    <div class="cv-folha-cab"><h2 id="agm-mes-tit" tabindex="-1" data-foco>Escolher mês</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button></div>
+  </div>
+  <div class="cv-folha-corpo">
+    <div class="cv-ag-ano">
+      <a class="cv-redondo cv-redondo--leve" href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker - 1 %>" aria-label="Ano anterior"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--18' }) %></a>
+      <span class="cv-num cv-num--p"><%= anoPicker %></span>
+      <a class="cv-redondo cv-redondo--leve" href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker + 1 %>" aria-label="Próximo ano"><%- include('../partials/icone', { cvIc: 'direita', cvCls: 'cv-ic--18' }) %></a>
     </div>
-    <div class="sv-ag-meses">
+    <div class="cv-ag-meses">
       <% mesesPicker.forEach(function (m) { %>
-        <a href="/painel/agenda?data=<%= m.iso %><%= qsBarbeiro %>" class="sv-ag-mes <%= m.atual ? 'sel' : '' %>"><%= m.nome %></a>
+        <a href="/painel/agenda?data=<%= m.iso %><%= qsBarbeiro %>" class="cv-chip" aria-pressed="<%= m.atual ? 'true' : 'false' %>"><span><%= m.nome %></span></a>
       <% }) %>
     </div>
   </div>
-</div>
+</section>
 
-<% if (ehAdmin) { %>
-  <%/* Folha: bloquear horário */%>
-  <div class="ag-overlay" id="agm-bloqueio" onclick="if(event.target===this)fecharModal(this)">
-    <div class="ag-modal-box">
-      <div class="sv-ag-folha-tit">Bloquear horário</div>
-      <div class="sv-ag-folha-sub"><%= dataExtenso %></div>
-      <form method="POST" action="/painel/agenda/bloqueios">
+<% if (_podeBloquear) { %>
+  <%/* Folha: bloquear horário. O barbeiro bloqueia só a própria agenda (o
+       servidor ignora outro id). */%>
+  <section class="cv-folha cv-ag-folha" id="agm-bloqueio" role="dialog" aria-modal="true" aria-labelledby="agm-bloq-tit">
+    <div class="cv-folha-zona">
+      <div class="cv-puxador" aria-hidden="true"></div>
+      <div class="cv-folha-cab"><h2 id="agm-bloq-tit" tabindex="-1" data-foco>Bloquear horário</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button></div>
+    </div>
+    <div class="cv-folha-corpo">
+      <form method="POST" action="/painel/agenda/bloqueios" id="form-bloqueio">
         <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
-        <div class="sv-ag-campos">
-          <div class="sv-ag-campo">
-            <label class="sv-ag-campo-rot" for="bloq-data">Data</label>
-            <input id="bloq-data" type="date" name="data" class="sv-ag-inp" value="<%= dataStr %>" required />
-          </div>
-          <div class="sv-ag-campo">
-            <label class="sv-ag-campo-rot" for="bloq-barbeiro">Barbeiro</label>
-            <select id="bloq-barbeiro" name="barbeiroId" class="sv-ag-inp" required>
-              <% barbeiros.forEach(function (b) { %>
-                <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
-              <% }) %>
+        <div class="cv-campo"><label for="bloq-data">Data</label><input id="bloq-data" type="date" name="data" class="cv-entrada" value="<%= dataStr %>" required /></div>
+        <% if (ehAdmin) { %>
+          <div class="cv-campo"><label for="bloq-barbeiro">Barbeiro</label>
+            <select id="bloq-barbeiro" name="barbeiroId" class="cv-entrada" required>
+              <% barbeiros.forEach(function (b) { %><option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option><% }) %>
             </select>
           </div>
-          <div class="sv-ag-campo">
-            <label class="sv-ag-campo-rot" for="bloq-ini">Início</label>
-            <input id="bloq-ini" type="time" name="horaInicio" class="sv-ag-inp" required />
-          </div>
-          <div class="sv-ag-campo">
-            <label class="sv-ag-campo-rot" for="bloq-fim">Fim</label>
-            <input id="bloq-fim" type="time" name="horaFim" class="sv-ag-inp" required />
-          </div>
-          <div class="sv-ag-campo">
-            <label class="sv-ag-campo-rot" for="bloq-motivo">Motivo (opcional)</label>
-            <input id="bloq-motivo" name="motivo" class="sv-ag-inp" placeholder="Almoço, folga…" />
-          </div>
+        <% } else { %>
+          <input type="hidden" name="barbeiroId" value="<%= usuario.id %>" />
+        <% } %>
+        <div class="cv-ag-duas">
+          <div class="cv-campo"><label for="bloq-ini">Início</label><input id="bloq-ini" type="time" name="horaInicio" class="cv-entrada" required /></div>
+          <div class="cv-campo"><label for="bloq-fim">Fim</label><input id="bloq-fim" type="time" name="horaFim" class="cv-entrada" required /></div>
         </div>
-        <div class="sv-ag-form-pe">
-          <button type="button" class="sv-btn sv-btn--claro" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button type="submit" class="sv-btn">Bloquear</button>
-        </div>
+        <div class="cv-campo"><label for="bloq-motivo">Motivo, opcional</label><input id="bloq-motivo" name="motivo" class="cv-entrada" maxlength="80" placeholder="Almoço, folga…" autocomplete="off" /></div>
+        <button type="submit" class="cv-btn cv-btn--largo" style="margin-top:20px"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--20' }) %>Bloquear</button>
       </form>
     </div>
-  </div>
-  <script>
-    /* Ao abrir, já sugere a próxima hora cheia e +1h (o campo nunca abre vazio),
-       e tocar em qualquer parte do cartão abre o seletor de hora. */
-    (function () {
-      var ini = document.getElementById('bloq-ini');
-      var fim = document.getElementById('bloq-fim');
-      var folha = document.getElementById('agm-bloqueio');
-      var dataInp = document.getElementById('bloq-data');
-      if (!ini || !fim || !folha) return;
-      function p2(n) { return (n < 10 ? '0' : '') + n; }
-      function sugerir() {
-        if (ini.value) return;
-        var h = Math.min(new Date().getHours() + 1, 22);
-        ini.value = p2(h) + ':00';
-        fim.value = p2(h + 1) + ':00';
-      }
-      new MutationObserver(sugerir).observe(folha, { attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
-      sugerir();
-      ini.addEventListener('change', function () {
-        if (!ini.value) return;
-        var p = ini.value.split(':'), h = +p[0] + 1;
-        if (!fim.value || fim.value <= ini.value) fim.value = p2(Math.min(h, 23)) + ':' + p[1];
-      });
-      [ini, fim, dataInp].filter(Boolean).forEach(function (inp) {
-        inp.closest('.sv-ag-campo').addEventListener('click', function (e) {
-          if (e.target !== inp) { inp.focus(); try { inp.showPicker(); } catch (_) {} }
-        });
-      });
-    })();
-  </script>
+  </section>
 <% } %>
 
-<%/* ------------------------------------------------------------------------
-     Folha: novo agendamento.
-     As pílulas de serviço/barbeiro/horário ficam (a referência tinha só texto
-     livre, mas o app precisa delas para checar disponibilidade de verdade) —
-     e com elas ficam também os nomes `.pill-group`/`.pill-opcao`, de que os
-     scripts desta tela dependem.
-     --------------------------------------------------------------------- */%>
-<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="sv-ag-folha-tit">Novo agendamento</div>
-    <div class="sv-ag-folha-sub">Escolha a data e o horário</div>
+<%/* Folha: novo agendamento (mockup 04b). Serviço com seleção múltipla,
+     barbeiro (admin), data, horários do servidor (/painel/agenda/horarios; o
+     ocupado sai listrado e riscado), hora exata para encaixe, plano do cliente
+     quando o telefone tem plano ativo. Envia em JSON (Desfazer + M1); sem JS,
+     o formulário posta como sempre. */%>
+<section class="cv-folha cv-ag-folha" id="agm-novo" role="dialog" aria-modal="true" aria-labelledby="agm-novo-tit">
+  <div class="cv-folha-zona">
+    <div class="cv-puxador" aria-hidden="true"></div>
+    <div class="cv-folha-cab"><h2 id="agm-novo-tit" tabindex="-1" data-foco>Novo agendamento</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button></div>
+  </div>
+  <div class="cv-folha-corpo">
+    <form method="POST" action="/painel/agenda/novo" id="form-novo-agendamento" novalidate>
+      <div class="cv-campo cv-ag-auto">
+        <label for="cliente_nome-novo">Cliente</label>
+        <input class="cv-entrada" id="cliente_nome-novo" name="cliente_nome" autocomplete="off" spellcheck="false" placeholder="Nome do cliente…" required />
+        <input type="hidden" name="clienteId" id="clienteId-novo" value="" />
+        <div id="sugestoes-cliente-novo" class="cv-ag-sugestoes" role="listbox" aria-label="Clientes cadastrados" hidden></div>
+      </div>
+      <div class="cv-campo">
+        <label for="cliente_telefone-novo">WhatsApp</label>
+        <input class="cv-entrada" id="cliente_telefone-novo" name="cliente_telefone" type="tel" inputmode="tel" autocomplete="off" placeholder="(51) 99999-9999" required />
+      </div>
 
-    <form method="POST" action="/painel/agenda/novo" id="form-novo-agendamento">
-      <div class="sv-ag-campos">
-        <%/* Data escolhível (2026-09-03): antes o manual travava na data que a
-             agenda estava mostrando; agora dá pra marcar em qualquer dia à
-             frente. min = hoje. Ao trocar, o grid de horários se refaz. */%>
-        <div class="sv-ag-campo">
-          <label class="sv-ag-campo-rot" for="data-novo">Data</label>
-          <input class="sv-ag-inp" type="date" id="data-novo" name="data" value="<%= dataStr %>" min="<%= hojeIso %>" required />
+      <div class="cv-campo">
+        <span class="cv-rotulo" id="rot-servicos">Serviço, pode escolher mais de um</span>
+        <input type="hidden" name="servicoIds" id="servicoIds-novo" />
+        <div class="cv-chips cv-ag-chips" id="pills-servico" role="group" aria-labelledby="rot-servicos">
+          <% servicos.filter(function (s) { return !s.ehProduto; }).forEach(function (s) { %>
+            <button type="button" class="cv-chip" aria-pressed="false" data-id="<%= s.id %>" data-nome="<%= s.nome %>"><span><%= s.nome %>, R$ <%= ((s.valor || 0) / 100).toFixed(2).replace('.', ',').replace(',00', '') %></span></button>
+          <% }) %>
         </div>
+      </div>
 
-        <div class="sv-ag-campo autocomplete">
-          <label class="sv-ag-campo-rot" for="cliente_nome-novo">Cliente</label>
-          <input class="sv-ag-inp" id="cliente_nome-novo" name="cliente_nome" autocomplete="off" placeholder="Nome do cliente" required />
-          <div id="sugestoes-cliente-novo" class="sugestoes"></div>
-        </div>
+      <%/* Plano: aparece só quando o telefone tem plano ativo. */%>
+      <div class="cv-campo cv-ag-plano" id="plano-novo-area" hidden>
+        <input type="hidden" name="clientePlanoId" id="clientePlanoId-novo" value="" />
+        <label class="cv-ag-check"><input type="checkbox" id="plano-novo-check" /><span id="plano-novo-label">Marcar pelo plano</span></label>
+      </div>
 
-        <div class="sv-ag-campo">
-          <label class="sv-ag-campo-rot" for="cliente_telefone-novo">Telefone</label>
-          <input class="sv-ag-inp" id="cliente_telefone-novo" name="cliente_telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
-        </div>
-
-        <div class="sv-ag-campo sv-ag-campo--pills">
-          <div class="sv-ag-campo-rot">Serviços <span class="texto-sutil">(pode escolher mais de um)</span></div>
-          <input type="hidden" name="servicoIds" id="servicoIds-novo" required />
-          <div class="pill-group" id="pills-servico">
-            <% servicos.forEach(function (s) { %>
-              <button type="button" class="pill-opcao" data-id="<%= s.id %>" data-duracao="<%= s.duracaoMin %>"><%= s.nome %></button>
+      <% if (ehAdmin) { %>
+        <div class="cv-campo">
+          <span class="cv-rotulo" id="rot-barbeiro">Barbeiro</span>
+          <input type="hidden" name="barbeiroId" id="barbeiroId-novo" value="<%= barbeiroSelecionado !== 'todos' ? barbeiroSelecionado : '' %>" />
+          <div class="cv-chips cv-ag-chips" id="pills-barbeiro" role="group" aria-labelledby="rot-barbeiro">
+            <% barbeiros.forEach(function (b) { %>
+              <button type="button" class="cv-chip" aria-pressed="<%= barbeiroSelecionado === String(b.id) ? 'true' : 'false' %>" data-id="<%= b.id %>" data-nome="<%= b.nome.split(' ')[0] %>" title="<%= b.nome %>"><span><%= b.nome.split(' ')[0] %></span></button>
             <% }) %>
           </div>
         </div>
+      <% } else { %>
+        <input type="hidden" name="barbeiroId" id="barbeiroId-novo" value="<%= usuario.id %>" data-nome="<%= usuario.nome.split(' ')[0] %>" />
+      <% } %>
 
-        <%/* Plano do cliente: aparece só se o telefone digitado tiver plano ATIVO.
-             Marcar aqui faz o plano cobrir 1 serviço (grátis) e cobrar o resto. */%>
-        <div class="sv-ag-campo sv-ag-plano-novo" id="plano-novo-area" style="display:none">
-          <input type="hidden" name="clientePlanoId" id="clientePlanoId-novo" value="" />
-          <label class="sv-ag-plano-opt">
-            <input type="checkbox" id="plano-novo-check" />
-            <span id="plano-novo-label">Marcar pelo plano</span>
-          </label>
-        </div>
-
-        <% if (ehAdmin) { %>
-          <div class="sv-ag-campo sv-ag-campo--pills">
-            <div class="sv-ag-campo-rot">Barbeiro</div>
-            <input type="hidden" name="barbeiroId" id="barbeiroId-novo" required value="<%= barbeiroSelecionado !== 'todos' ? barbeiroSelecionado : '' %>" />
-            <div class="pill-group" id="pills-barbeiro">
-              <% barbeiros.forEach(function (b) { %>
-                <button type="button" class="pill-opcao <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>" data-id="<%= b.id %>"><%= b.nome.split(' ')[0] %></button>
-              <% }) %>
-            </div>
-          </div>
-        <% } else { %>
-          <input type="hidden" name="barbeiroId" id="barbeiroId-novo" value="<%= usuario.id %>" />
-        <% } %>
-
-        <div class="sv-ag-campo sv-ag-campo--pills">
-          <div class="sv-ag-campo-rot">Horário disponível</div>
-          <input type="hidden" name="hora" id="hora-novo" required />
-          <div class="pill-group" id="pills-horario">
-            <span class="texto-sutil"><%= ehAdmin ? 'Selecione o barbeiro.' : 'Carregando horários…' %></span>
-          </div>
-          <%/* Hora livre: encaixe fora da grade de 30 min (ex.: 14:10). A grade
-               continua limpa; aqui o barbeiro digita qualquer horário. */%>
-          <div class="sv-ag-hora-livre">
-            <span class="texto-sutil">ou digite um horário exato</span>
-            <input type="time" id="hora-livre" class="sv-ag-inp" />
-          </div>
-        </div>
+      <div class="cv-campo">
+        <label for="data-novo">Dia</label>
+        <input class="cv-entrada" type="date" id="data-novo" name="data" value="<%= dataStr %>" min="<%= hojeIso %>" required />
       </div>
 
-      <%/* Cartão preto de fecho: repete o que foi escolhido antes de gravar. */%>
-      <div class="sv-ag-preto">
-        <div class="sv-ag-preto-rot">Resumo</div>
-        <div class="sv-ag-preto-linha">
-          <div class="sv-ag-preto-corpo">
-            <div class="sv-ag-preto-tit" id="resumo-cliente">—</div>
-            <div class="sv-ag-preto-sub">
-              <span id="resumo-servico">Escolha o serviço</span><span id="resumo-sep"> · </span><span id="resumo-barbeiro"><%= ehAdmin ? '' : usuario.nome.split(' ')[0] %></span>
-            </div>
-          </div>
-          <div class="sv-ag-preto-num" id="resumo-hora">--:--</div>
+      <div class="cv-campo">
+        <span class="cv-rotulo" id="rot-horas">Horário</span>
+        <input type="hidden" name="hora" id="hora-novo" />
+        <div class="cv-horas" id="pills-horario" role="group" aria-labelledby="rot-horas" aria-live="polite">
+          <p class="cv-ajuda" style="grid-column:1/-1"><%= ehAdmin ? 'Escolha o barbeiro para ver os horários.' : 'Carregando horários…' %></p>
         </div>
-        <button class="sv-ag-cta" type="submit">Confirmar agendamento</button>
+        <label class="cv-ag-hora-exata"><span>ou um horário exato</span><input type="time" id="hora-livre" class="cv-entrada" aria-label="Horário exato" /></label>
       </div>
+
+      <p class="cv-ag-resumo-novo" id="resumo-novo" aria-live="polite">Escolha o serviço e o horário.</p>
+      <p class="cv-erro" id="erro-novo" role="alert" hidden></p>
+      <button class="cv-btn cv-btn--largo" type="submit" id="confirmar-novo">Confirmar agendamento</button>
     </form>
   </div>
-</div>
+</section>
 
-<%/* ------------------------------------------------------------------------
-     Folha de detalhe — uma por agendamento (concluir/reabrir, forma de
-     pagamento, itens, cancelar e excluir).
-     --------------------------------------------------------------------- */%>
+<%/* Folha de detalhe: uma por atendimento do dia. O miolo vem do parcial e se
+     redesenha no lugar depois de cada ação (cv-agenda.js). */%>
 <% agendamentos.forEach(function (ag) { %>
-  <div class="ag-overlay" id="agm-<%= ag.id %>" onclick="if(event.target===this)fecharModal(this)">
-    <div class="ag-modal-box" data-detalhe="<%= ag.id %>">
-      <%- include("_agenda-detalhe", {
+  <section class="cv-folha cv-ag-folha" id="agm-<%= ag.id %>" role="dialog" aria-modal="true" aria-labelledby="agm-tit-<%= ag.id %>">
+    <div class="cv-folha-zona">
+      <div class="cv-puxador" aria-hidden="true"></div>
+      <div class="cv-ag-zona-fim"><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button></div>
+    </div>
+    <div class="cv-folha-corpo" data-detalhe="<%= ag.id %>">
+      <%- include('_agenda-detalhe', {
             ag: ag, selo: _selo(ag), dataStr: dataStr,
             barbeiroSelecionado: barbeiroSelecionado, diaNum: diaNum, mesCurto: mesCurto,
             formasPagamento: formasPagamento, servicos: servicos, maxParcelas: maxParcelas
           }) %>
     </div>
-  </div>
+  </section>
 <% }) %>
 
-<script>
-  // Abrir/fechar folha. Os nomes são globais de propósito: os `onclick` do HTML
-  // (fichas, "Novo", data, bloqueio) chamam por aqui.
-  function abrirModal(id) {
-    var o = document.getElementById('agm-' + id);
-    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
-  }
-  function fecharModal(o) {
-    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
-  }
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
-      document.body.classList.remove('modal-aberto');
-    }
-  });
-
-  // Botão X de fechar em cada folha (pedido do dono, 2026-09-02). Antes só
-  // dava para fechar tocando fora ou com Esc — sem um alvo claro no celular.
-  // Todas as folhas já estão no DOM (display:none), então injeta uma vez.
-  document.querySelectorAll('.ag-modal-box').forEach(function (box) {
-    if (box.querySelector('.ag-modal-x')) return;
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'ag-modal-x';
-    b.setAttribute('aria-label', 'Fechar');
-    b.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-    b.addEventListener('click', function () { fecharModal(box.closest('.ag-overlay')); });
-    box.insertBefore(b, box.firstChild);
-  });
-</script>
-
-<script>
-  // A tira cobre o mês inteiro; sem este ajuste o dia 28 abriria com a tira
-  // parada no dia 1. Centraliza o selecionado já na primeira pintura.
-  (function () {
-    var tira = document.getElementById('sv-ag-dias');
-    if (!tira) return;
-    var sel = tira.querySelector('.cv-dia.sel, .sv-ag-dia.sel');
-    if (!sel) return;
-    var alvo = sel.offsetLeft - (tira.clientWidth - sel.offsetWidth) / 2;
-    tira.scrollLeft = Math.max(0, Math.min(alvo, tira.scrollWidth - tira.clientWidth));
-  })();
-</script>
-
-<script>
-  // Espelha no cartão preto o que já foi preenchido, antes de confirmar.
-  (function () {
-    var form = document.getElementById('form-novo-agendamento');
-    if (!form) return;
-    var nome = document.getElementById('cliente_nome-novo');
-    var resumo = {
-      cliente: document.getElementById('resumo-cliente'),
-      servico: document.getElementById('resumo-servico'),
-      hora: document.getElementById('resumo-hora'),
-      barbeiro: document.getElementById('resumo-barbeiro'),
-      sep: document.getElementById('resumo-sep'),
-    };
-    function textoAtivo(grupoId) {
-      var a = document.querySelector('#' + grupoId + ' .pill-opcao.ativo');
-      return a ? a.textContent.trim() : '';
-    }
-    function textosAtivos(grupoId) {
-      return Array.prototype.map.call(
-        document.querySelectorAll('#' + grupoId + ' .pill-opcao.ativo'),
-        function (a) { return a.textContent.trim(); }
-      );
-    }
-    function atualizar() {
-      resumo.cliente.textContent = (nome && nome.value.trim()) || '—';
-      resumo.servico.textContent = textosAtivos('pills-servico').join(', ') || 'Escolha o serviço';
-      var horaLivre = document.getElementById('hora-livre');
-      resumo.hora.textContent = textoAtivo('pills-horario') || (horaLivre && horaLivre.value) || '--:--';
-      if (document.getElementById('pills-barbeiro')) {
-        resumo.barbeiro.textContent = textoAtivo('pills-barbeiro');
-      }
-      // Sem barbeiro escolhido o " · " ficaria pendurado no fim da linha.
-      resumo.sep.style.display = resumo.barbeiro.textContent ? '' : 'none';
-    }
-    if (nome) nome.addEventListener('input', atualizar);
-    form.addEventListener('click', function (e) {
-      if (e.target.closest('.pill-opcao')) setTimeout(atualizar, 0);
-    });
-    atualizar();
-  })();
-</script>
-
-<script>
-  // Autocomplete de cliente do pop-up "Novo agendamento".
-  (function () {
-    var clientes = <%- jsonSeguro(clientes) %>;
-    var inputNome = document.getElementById('cliente_nome-novo');
-    var inputTel = document.getElementById('cliente_telefone-novo');
-    var box = document.getElementById('sugestoes-cliente-novo');
-
-    function fmtTel(d) {
-      d = (d || '').replace(/\D/g, '');
-      if (d.length === 11) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
-      if (d.length === 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
-      return d;
-    }
-    function escapar(t) {
-      return String(t).replace(/[&<>"]/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-      });
-    }
-    function fechar() { box.innerHTML = ''; box.style.display = 'none'; }
-    function buscar(q) {
-      q = q.trim().toLowerCase();
-      if (!q) return [];
-      var qDig = q.replace(/\D/g, '');
-      return clientes.filter(function (c) {
-        var nomeOk = c.nome.toLowerCase().indexOf(q) !== -1;
-        var telOk = qDig && c.telefone.indexOf(qDig) !== -1;
-        return nomeOk || telOk;
-      }).slice(0, 8);
-    }
-    function render(lista) {
-      if (!lista.length) { fechar(); return; }
-      box.innerHTML = lista.map(function (c) {
-        return '<button type="button" class="sugestao" data-nome="' + escapar(c.nome) +
-          '" data-tel="' + c.telefone + '"><strong>' + escapar(c.nome) +
-          '</strong><span>' + fmtTel(c.telefone) + '</span></button>';
-      }).join('');
-      box.style.display = 'block';
-      Array.prototype.forEach.call(box.querySelectorAll('.sugestao'), function (btn) {
-        btn.addEventListener('click', function () {
-          inputNome.value = btn.getAttribute('data-nome');
-          inputTel.value = fmtTel(btn.getAttribute('data-tel'));
-          // Dispara 'input' pra quem escuta o telefone reagir (ex.: busca de plano).
-          inputTel.dispatchEvent(new Event('input', { bubbles: true }));
-          fechar();
-          inputTel.focus();
-        });
-      });
-    }
-    inputNome.addEventListener('input', function () { render(buscar(inputNome.value)); });
-    inputNome.addEventListener('focus', function () { render(buscar(inputNome.value)); });
-    document.addEventListener('click', function (e) {
-      if (!box.contains(e.target) && e.target !== inputNome) fechar();
-    });
-  })();
-</script>
-
-<script>
-  // Pop-up "Novo agendamento": seleção por pílulas (serviço/barbeiro) em vez de
-  // <select>, e o grid de horários é buscado do servidor sempre que o serviço
-  // ou o barbeiro mudam (a duração do serviço afeta quais horários cabem).
-  (function () {
-    var form = document.getElementById('form-novo-agendamento');
-    if (!form) return;
-    var dataInput = document.getElementById('data-novo');
-    var servicoInput = document.getElementById('servicoIds-novo');
-    var barbeiroInput = document.getElementById('barbeiroId-novo');
-    var horaInput = document.getElementById('hora-novo');
-    var pillsHorario = document.getElementById('pills-horario');
-    var horaLivre = document.getElementById('hora-livre');
-
-    // Seleção ÚNICA (barbeiro): troca o ativo.
-    function ligarGrupo(containerId, hiddenInput, aoMudar) {
-      var container = document.getElementById(containerId);
-      if (!container) return;
-      container.addEventListener('click', function (e) {
-        var btn = e.target.closest('.pill-opcao');
-        if (!btn || btn.classList.contains('indisponivel')) return;
-        Array.prototype.forEach.call(container.querySelectorAll('.pill-opcao'), function (b) {
-          b.classList.remove('ativo');
-        });
-        btn.classList.add('ativo');
-        hiddenInput.value = btn.getAttribute('data-id');
-        if (aoMudar) aoMudar();
-      });
-    }
-
-    // Seleção MÚLTIPLA (serviços): alterna cada pílula e junta os ids (CSV).
-    function ligarMulti(containerId, hiddenInput, aoMudar) {
-      var container = document.getElementById(containerId);
-      if (!container) return;
-      container.addEventListener('click', function (e) {
-        var btn = e.target.closest('.pill-opcao');
-        if (!btn) return;
-        btn.classList.toggle('ativo');
-        var ids = Array.prototype.map.call(container.querySelectorAll('.pill-opcao.ativo'), function (b) {
-          return b.getAttribute('data-id');
-        });
-        hiddenInput.value = ids.join(',');
-        if (aoMudar) aoMudar();
-      });
-    }
-
-    function buscarHorarios() {
-      // Preserva a hora livre digitada quando o grid é refeito (troca de serviço/data).
-      horaInput.value = (horaLivre && horaLivre.value) ? horaLivre.value : '';
-      if (!barbeiroInput || !barbeiroInput.value) {
-        pillsHorario.innerHTML = '<span class="texto-sutil">Selecione o barbeiro.</span>';
-        return;
-      }
-      // O serviço é opcional aqui: sem ele, mostra o grid com a duração
-      // mínima (o servidor usa 0 = intervalo padrão); ao escolher o
-      // serviço, o grid é refeito considerando a duração real dele.
-      var qs = new URLSearchParams({ barbeiroId: barbeiroInput.value, data: (dataInput && dataInput.value) || '', servicoIds: servicoInput.value || '' });
-      fetch('/painel/agenda/horarios?' + qs.toString())
-        .then(function (r) { return r.json(); })
-        .then(function (json) {
-          var horarios = json.horarios || [];
-          if (!horarios.length) {
-            pillsHorario.innerHTML = '<span class="texto-sutil">Sem horários livres nesse dia.</span>';
-            return;
-          }
-          pillsHorario.innerHTML = horarios.map(function (h) {
-            return '<button type="button" class="pill-opcao' + (h.livre ? '' : ' indisponivel') + '" data-hora="' + h.hora + '">' + h.hora + '</button>';
-          }).join('');
-        })
-        .catch(function () {
-          pillsHorario.innerHTML = '<span class="texto-sutil">Não foi possível carregar os horários.</span>';
-        });
-    }
-
-    pillsHorario.addEventListener('click', function (e) {
-      var btn = e.target.closest('.pill-opcao');
-      if (!btn || btn.classList.contains('indisponivel')) return;
-      Array.prototype.forEach.call(pillsHorario.querySelectorAll('.pill-opcao'), function (b) {
-        b.classList.remove('ativo');
-      });
-      btn.classList.add('ativo');
-      horaInput.value = btn.getAttribute('data-hora');
-      if (horaLivre) horaLivre.value = ''; // escolher na grade limpa a hora livre
-    });
-
-    // Hora livre: digitar aqui limpa a seleção da grade e vira a hora escolhida.
-    if (horaLivre) {
-      horaLivre.addEventListener('input', function () {
-        Array.prototype.forEach.call(pillsHorario.querySelectorAll('.pill-opcao'), function (b) {
-          b.classList.remove('ativo');
-        });
-        horaInput.value = horaLivre.value;
-        var rh = document.getElementById('resumo-hora');
-        if (rh) rh.textContent = horaLivre.value || '--:--';
-      });
-    }
-
-    ligarMulti('pills-servico', servicoInput, buscarHorarios);
-    if (barbeiroInput) ligarGrupo('pills-barbeiro', barbeiroInput, buscarHorarios);
-    // Trocar a data refaz o grid de horários daquele dia.
-    if (dataInput) dataInput.addEventListener('change', buscarHorarios);
-
-    // Se já há um barbeiro pré-selecionado (funcionário, ou admin filtrando um
-    // barbeiro específico na Agenda), já carrega os horários ao abrir.
-    if (barbeiroInput && barbeiroInput.value) buscarHorarios();
-  })();
-</script>
-
-<script>
-  // Pop-up "Novo agendamento": oferece MARCAR PELO PLANO quando o telefone
-  // digitado tem plano ATIVO. Busca em /painel/agenda/planos; marcar seta o
-  // clientePlanoId (hidden) que o criarManual usa pra cobrir 1 serviço.
-  (function () {
-    var tel = document.getElementById('cliente_telefone-novo');
-    var area = document.getElementById('plano-novo-area');
-    var check = document.getElementById('plano-novo-check');
-    var label = document.getElementById('plano-novo-label');
-    var hidden = document.getElementById('clientePlanoId-novo');
-    if (!tel || !area || !check || !hidden) return;
-    var planoAtual = null;
-    var timer = null;
-
-    function esconder() { area.style.display = 'none'; check.checked = false; hidden.value = ''; planoAtual = null; }
-    function buscar() {
-      var t = (tel.value || '').replace(/\D/g, '');
-      if (t.length < 8) { esconder(); return; }
-      fetch('/painel/agenda/planos?telefone=' + encodeURIComponent(t))
-        .then(function (r) { return r.json(); })
-        .then(function (json) {
-          var planos = (json && json.planos) || [];
-          if (!planos.length) { esconder(); return; }
-          planoAtual = planos[0];
-          var cobre = planoAtual.servicoNome ? ('cobre ' + planoAtual.servicoNome) : 'cobre 1 serviço';
-          var usos = planoAtual.ilimitado ? 'ilimitado' : (planoAtual.usosPorServico || (planoAtual.usosRestantes + ' uso(s)'));
-          label.textContent = 'Marcar pelo plano ' + planoAtual.nome + ' (' + cobre + ' · ' + usos + ')';
-          area.style.display = '';
-        })
-        .catch(function () { esconder(); });
-    }
-    tel.addEventListener('input', function () {
-      hidden.value = ''; check.checked = false;
-      clearTimeout(timer); timer = setTimeout(buscar, 400);
-    });
-    check.addEventListener('change', function () {
-      hidden.value = (check.checked && planoAtual) ? String(planoAtual.id) : '';
-    });
-    if (tel.value) buscar();
-  })();
-</script>
-
-<script>
-  // Folha de detalhe: divisão de pagamento e ações sem sair da folha.
-  //
-  // Antes, cada botão daqui era um <form> que dava POST e redirecionava para a
-  // agenda — o que fechava a folha e devolvia o usuário à lista a cada item
-  // somado. Agora as ações vão por fetch e a folha se redesenha no lugar,
-  // buscando o miolo em /painel/agenda/:id/detalhe.
-  //
-  // Tudo é por delegação no document: o miolo é substituído a cada ação, então
-  // listener preso no elemento morreria na primeira troca.
-  (function () {
-    var BARBEIRO = <%- jsonSeguro(String(barbeiroSelecionado || '')) %>;
-
-    function caixa(el) { return el.closest('.ag-modal-box'); }
-    function centavosParaTexto(c) { return (c / 100).toFixed(2).replace('.', ','); }
-    function textoParaCentavos(t) {
-      var n = parseFloat(String(t).replace(/\./g, '').replace(',', '.'));
-      return Number.isFinite(n) ? Math.round(n * 100) : 0;
-    }
-    function fmt(c) { return 'R$ ' + centavosParaTexto(c); }
-
-    // ---- Divisão de pagamento ---------------------------------------------
-    function montarPagto(raiz) {
-      var total = Number(raiz.dataset.total) || 0;
-      var formas = JSON.parse(raiz.dataset.formas || '[]');
-      var parcelaveis = JSON.parse(raiz.dataset.parcelaveis || '[]');
-      var maxP = Number(raiz.dataset.maxParcelas) || 1;
-      var alvo = raiz.querySelector('[data-linhas]');
-      var saldoEl = raiz.querySelector('[data-saldo]');
-
-      var linhas = JSON.parse(raiz.dataset.inicial || '[]');
-      if (!linhas.length) linhas = [{ forma: '', valor: total, parcelas: 1 }];
-
-      function pintarSaldo() {
-        var usadas = linhas.filter(function (l) { return l.forma; });
-        if (!usadas.length) { saldoEl.textContent = ''; saldoEl.className = 'sv-ag-pagto-saldo'; return; }
-        var soma = linhas.reduce(function (s, l) { return s + (l.forma ? l.valor : 0); }, 0);
-        var dif = total - soma;
-        if (dif === 0) {
-          saldoEl.textContent = 'fecha certo';
-          saldoEl.className = 'sv-ag-pagto-saldo sv-ag-pagto-saldo--ok';
-        } else {
-          saldoEl.textContent = (dif > 0 ? 'falta ' : 'passou ') + fmt(Math.abs(dif));
-          saldoEl.className = 'sv-ag-pagto-saldo sv-ag-pagto-saldo--alerta';
-        }
-      }
-
-      function desenhar() {
-        alvo.innerHTML = '';
-        linhas.forEach(function (l, i) {
-          var linha = document.createElement('div');
-          linha.className = 'sv-ag-pagto-linha';
-
-          var val = document.createElement('input');
-          val.type = 'text';
-          val.inputMode = 'decimal';
-          val.className = 'sv-ag-pagto-valor';
-          val.value = centavosParaTexto(l.valor);
-          val.setAttribute('aria-label', 'Valor');
-          val.addEventListener('input', function () { l.valor = textoParaCentavos(val.value); pintarSaldo(); });
-          linha.appendChild(val);
-
-          var sel = document.createElement('select');
-          sel.className = 'sv-ag-pagto-forma';
-          sel.setAttribute('aria-label', 'Forma de pagamento');
-          sel.appendChild(new Option('Forma...', ''));
-          formas.forEach(function (f) {
-            var o = new Option(f.label, f.valor);
-            if (f.valor === l.forma) o.selected = true;
-            sel.appendChild(o);
-          });
-          sel.addEventListener('change', function () {
-            l.forma = sel.value;
-            if (parcelaveis.indexOf(l.forma) === -1) l.parcelas = 1;
-            desenhar();
-          });
-          linha.appendChild(sel);
-
-          // Parcelas só aparecem onde fazem sentido (crédito): num Pix ou em
-          // dinheiro o campo seria só ruído na tela.
-          if (parcelaveis.indexOf(l.forma) !== -1) {
-            var par = document.createElement('select');
-            par.className = 'sv-ag-pagto-parcelas';
-            par.setAttribute('aria-label', 'Parcelas');
-            for (var n = 1; n <= maxP; n++) {
-              var op = new Option(n + 'x', String(n));
-              if (n === l.parcelas) op.selected = true;
-              par.appendChild(op);
-            }
-            par.addEventListener('change', function () { l.parcelas = Number(par.value) || 1; desenhar(); });
-            linha.appendChild(par);
-
-            if (l.parcelas > 1) {
-              var nota = document.createElement('span');
-              nota.className = 'sv-ag-pagto-nota';
-              nota.textContent = l.parcelas + 'x de ' + fmt(Math.round(l.valor / l.parcelas));
-              linha.appendChild(nota);
-            }
-          }
-
-          if (linhas.length > 1) {
-            var x = document.createElement('button');
-            x.type = 'button';
-            x.className = 'sv-ag-pagto-x';
-            x.title = 'Remover esta forma';
-            x.textContent = 'x';
-            x.addEventListener('click', function () {
-              linhas.splice(i, 1);
-              // O que sobrou volta pra primeira linha, senão a soma quebraria
-              // sem o usuário entender por quê.
-              var resto = total - linhas.reduce(function (s, y) { return s + y.valor; }, 0);
-              if (resto !== 0 && linhas.length) linhas[0].valor += resto;
-              desenhar();
-            });
-            linha.appendChild(x);
-          }
-
-          alvo.appendChild(linha);
-        });
-        pintarSaldo();
-      }
-
-      raiz.querySelector('[data-add]').addEventListener('click', function () {
-        var usado = linhas.reduce(function (s, l) { return s + l.valor; }, 0);
-        var sobra = Math.max(total - usado, 0);
-        // Nada sobrando: tira metade da primeira linha, que é o que a pessoa
-        // quer dizer com "dividir" quando o total já está todo numa forma.
-        if (sobra === 0 && linhas.length) {
-          var meta = Math.floor(linhas[0].valor / 2);
-          linhas[0].valor -= meta;
-          sobra = meta;
-        }
-        linhas.push({ forma: '', valor: sobra, parcelas: 1 });
-        desenhar();
-      });
-
-      // `valorCentavos` no nome: aqui dentro dinheiro é sempre centavos, e o
-      // servidor precisa saber disso sem adivinhar (o campo `valor` no POST de
-      // formulário significa reais).
-      raiz._coletar = function () {
-        return linhas
-          .filter(function (l) { return l.forma && l.valor > 0; })
-          .map(function (l) { return { forma: l.forma, valorCentavos: l.valor, parcelas: l.parcelas }; });
-      };
-
-      // Linhas com valor mas sem forma escolhida. São descartadas na hora de
-      // enviar, então sem avisar disso a conta "não fecha" por um motivo que
-      // não está escrito em lugar nenhum.
-      raiz._pendentes = function () {
-        return linhas.filter(function (l) { return !l.forma && l.valor > 0; });
-      };
-      raiz._marcarPendentes = function () {
-        Array.prototype.forEach.call(alvo.querySelectorAll('.sv-ag-pagto-forma'), function (sel) {
-          sel.classList.toggle('sv-ag-pagto-forma--falta', !sel.value);
-        });
-      };
-      raiz._total = total;
-      desenhar();
-    }
-
-    // Abas Serviços / Produtos do seletor "Adicionar": cada aba repovoa o mesmo
-    // <select data-novo-servico> só com o seu tipo, a partir dos dados embutidos
-    // em data-opts-*. O select continua sendo o único [data-novo-servico], então
-    // a ação de adicionar (que lê o primeiro deles) não muda.
-    function montarItemAbas(escopo) {
-      Array.prototype.forEach.call(escopo.querySelectorAll('[data-item-abas]'), function (abas) {
-        if (abas._pronto) return;
-        var bloco = abas.parentNode;
-        var sel = bloco.querySelector('[data-novo-servico]');
-        if (!sel) return;
-        abas._pronto = true;
-        var opts;
-        try {
-          opts = {
-            servico: JSON.parse(sel.getAttribute('data-opts-servico') || '[]'),
-            produto: JSON.parse(sel.getAttribute('data-opts-produto') || '[]'),
-          };
-        } catch (e) { opts = { servico: [], produto: [] }; }
-        var botoes = abas.querySelectorAll('.sv-ag-add-aba');
-        function trocar(aba) {
-          Array.prototype.forEach.call(botoes, function (b) {
-            b.classList.toggle('ativa', b.getAttribute('data-aba') === aba);
-          });
-          var lista = opts[aba] || [];
-          sel.innerHTML = '';
-          var ph = document.createElement('option');
-          ph.value = '';
-          ph.textContent = aba === 'produto' ? 'Produto…' : 'Serviço…';
-          sel.appendChild(ph);
-          lista.forEach(function (o) {
-            var op = document.createElement('option');
-            op.value = o.id;
-            op.textContent = o.label; // textContent evita qualquer problema de escape
-            sel.appendChild(op);
-          });
-          sel.value = '';
-        }
-        Array.prototype.forEach.call(botoes, function (b) {
-          b.addEventListener('click', function () { trocar(b.getAttribute('data-aba')); });
-        });
-        trocar('servico');
-      });
-    }
-
-    function montarTudo(escopo) {
-      Array.prototype.forEach.call(escopo.querySelectorAll('[data-pagto]'), montarPagto);
-      montarItemAbas(escopo);
-    }
-
-    // ---- Ações -------------------------------------------------------------
-    function recarregar(id) {
-      return fetch('/painel/agenda/' + id + '/detalhe?barbeiro=' + encodeURIComponent(BARBEIRO), {
-        headers: { Accept: 'text/html' },
-        credentials: 'same-origin',
-      })
-        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.text(); })
-        .then(function (html) {
-          var box = document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]');
-          if (!box) return;
-          box.innerHTML = html;
-          montarTudo(box);
-        });
-    }
-
-    function enviar(url, corpo) {
-      return fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(corpo || {}),
-      }).then(function (r) {
-        return r.json().catch(function () { return {}; }).then(function (j) {
-          if (!r.ok) throw new Error(j.erro || 'Nao deu para salvar. Tente de novo.');
-          return j;
-        });
-      });
-    }
-
-    function travar(btn, ligado) {
-      if (!btn) return;
-      btn.disabled = ligado;
-      btn.style.opacity = ligado ? '0.55' : '';
-    }
-
-    // Mostra o aviso JUNTO da ação que falhou, não no topo da folha.
-    //
-    // A folha rola, e o pagamento fica no fim dela: um aviso preso no topo
-    // aparecia centenas de pixels acima da área visível justamente quando a
-    // pessoa estava olhando o botão de concluir. O efeito era o pior possível —
-    // o botão animava, nada mudava, e o motivo estava fora da tela.
-    function erro(box, msg, ancora) {
-      var anterior = box.querySelector('[data-erro]');
-      if (anterior) anterior.remove();
-
-      var faixa = document.createElement('div');
-      faixa.className = 'sv-ag-pagto-erro';
-      faixa.setAttribute('data-erro', '');
-      faixa.textContent = msg;
-
-      if (ancora && ancora.parentNode) ancora.parentNode.insertBefore(faixa, ancora);
-      else box.insertBefore(faixa, box.firstChild);
-
-      faixa.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-
-    // Preço do item e total do atendimento, editados direto na folha. Salvam ao
-    // sair do campo (change), não a cada tecla: senão "45" viraria um
-    // salvamento no caminho para "45,50". `change` só dispara se o valor
-    // realmente mudou.
-    document.addEventListener('change', function (ev) {
-      var campo = ev.target;
-      if (!campo || !campo.dataset) return;
-      var ehItem = campo.dataset.itemValor !== undefined;
-      var ehTotal = campo.dataset.totalValor !== undefined;
-      if (!ehItem && !ehTotal) return;
-
-      var box = caixa(campo);
-      if (!box || !box.dataset.detalhe) return;
-      var id = box.dataset.detalhe;
-
-      var centavos = textoParaCentavos(campo.value);
-      if (centavos < 0 || campo.value.trim() === '') {
-        erro(box, ehTotal ? 'Informe um total válido.' : 'Informe um valor válido para o item.', campo);
-        return;
-      }
-
-      var url = ehTotal
-        ? '/painel/agenda/' + id + '/total'
-        : '/painel/agenda/itens/' + campo.dataset.itemValor + '/valor';
-
-      campo.disabled = true;
-      enviar(url, { valorCentavos: centavos })
-        .then(function (r) {
-          return recarregar(id).then(function () {
-            // O total mudou e a divisão não fechava mais: o servidor reabriu o
-            // atendimento e avisa por quê.
-            if (r && r.aviso) erro(document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]'), r.aviso);
-          });
-        })
-        .catch(function (e) { campo.disabled = false; erro(box, e.message, campo); });
-    });
-
-    document.addEventListener('click', function (ev) {
-      if (!ev.target || !ev.target.closest) return;
-      var box = caixa(ev.target);
-      if (!box || !box.dataset.detalhe) return;
-      var id = box.dataset.detalhe;
-
-      function agir(btn, url, corpo, depois) {
-        ev.preventDefault();
-        travar(btn, true);
-        enviar(url, corpo)
-          .then(function (r) {
-            if (depois) return depois();
-            return recarregar(id).then(function () {
-              // Somar/remover item pode ter mudado o total a ponto de a divisão
-              // de pagamento não fechar mais; o servidor avisa o que fez.
-              if (r && r.aviso) erro(document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]'), r.aviso);
-            });
-          })
-          .catch(function (e) { travar(btn, false); erro(box, e.message, btn); });
-      }
-
-      var btn;
-
-      if ((btn = ev.target.closest('[data-concluir]'))) {
-        ev.preventDefault();
-        var raiz = box.querySelector('[data-pagto]');
-        var partes = raiz && raiz._coletar ? raiz._coletar() : [];
-        var pendentes = raiz && raiz._pendentes ? raiz._pendentes() : [];
-
-        // Forma de pagamento é OBRIGATÓRIA pra concluir (pedido da barbearia):
-        // qualquer linha com valor e sem forma segura o "Concluir", mantém o
-        // pop-up aberto e cobra a seleção — antes, sem nenhuma forma escolhida
-        // ele concluía direto (parecia que "só fechava"). Atendimento sem valor
-        // (plano/incluso, total R$0) não gera pendência, então segue concluindo.
-        if (pendentes.length) {
-          if (raiz._marcarPendentes) raiz._marcarPendentes();
-          var msgPend;
-          if (!partes.length) {
-            msgPend = 'Escolha a forma de pagamento para concluir o atendimento.';
-          } else {
-            msgPend = pendentes.length === 1
-              ? 'Escolha a forma de pagamento da outra parte (ou remova-a no ×).'
-              : 'Escolha a forma de pagamento das outras ' + pendentes.length + ' partes (ou remova-as no ×).';
-          }
-          erro(box, msgPend, btn);
-          return;
-        }
-
-        if (partes.length) {
-          var soma = partes.reduce(function (s, p) { return s + p.valorCentavos; }, 0);
-          if (soma !== raiz._total) {
-            erro(box, 'A divisão soma ' + fmt(soma) + ', mas o atendimento é ' + fmt(raiz._total) + '.', btn);
-            return;
-          }
-        }
-        // Recarrega a pagina ao concluir: sem isso, o pop-up atualizava mas o
-        // CARTAO na lista atras continuava "agendado" ate trocar de pagina.
-        agir(btn, '/painel/agenda/' + id + '/status', { status: 'concluido', pagamentos: partes }, function () { window.location.reload(); });
-        return;
-      }
-
-      // Desfaz o ajuste do total: volta a seguir a soma dos itens.
-      if ((btn = ev.target.closest('[data-total-auto]'))) {
-        agir(btn, '/painel/agenda/' + id + '/total', { auto: true });
-        return;
-      }
-
-      if ((btn = ev.target.closest('[data-reabrir]'))) {
-        agir(btn, '/painel/agenda/' + id + '/status', { status: 'agendado' }, function () { window.location.reload(); });
-        return;
-      }
-
-      if ((btn = ev.target.closest('[data-cancelar]'))) {
-        ev.preventDefault();
-        if (!confirm('Cancelar este atendimento?')) return;
-        agir(btn, '/painel/agenda/' + id + '/status', { status: 'cancelado' }, function () { window.location.reload(); });
-        return;
-      }
-
-      if ((btn = ev.target.closest('[data-add-item]'))) {
-        ev.preventDefault();
-        var sel = box.querySelector('[data-novo-servico]');
-        var qtd = box.querySelector('[data-nova-qtd]');
-        if (!sel || !sel.value) { erro(box, 'Escolha um item para adicionar.', btn); return; }
-        agir(btn, '/painel/agenda/' + id + '/itens', { servicoId: sel.value, quantidade: qtd ? qtd.value : 1 });
-        return;
-      }
-
-      if ((btn = ev.target.closest('[data-remover-item]'))) {
-        agir(btn, '/painel/agenda/itens/' + btn.dataset.removerItem + '/remover', {});
-        return;
-      }
-
-      // Excluir é o único que fecha a folha: o atendimento deixa de existir,
-      // não há o que redesenhar, e a lista atrás precisa refletir a remoção.
-      if ((btn = ev.target.closest('[data-excluir]'))) {
-        ev.preventDefault();
-        if (!confirm('Excluir este agendamento? Esta acao nao pode ser desfeita.')) return;
-        agir(btn, '/painel/agenda/' + id + '/excluir', {}, function () { window.location.reload(); });
-        return;
-      }
-    });
-
-    montarTudo(document);
-  })();
-</script>
+<%/* Dados para o script: clientes do autocomplete e o barbeiro filtrado. */%>
+<script type="application/json" id="cv-ag-dados"><%- jsonSeguro({ clientes: clientes, barbeiro: String(barbeiroSelecionado || ''), ehAdmin: !!ehAdmin }) %></script>

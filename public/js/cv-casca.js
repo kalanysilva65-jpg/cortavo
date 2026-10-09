@@ -75,7 +75,7 @@
     btn.setAttribute('aria-controls', 'folha-novo');
     btn.setAttribute('aria-expanded', 'false');
     C.folha.arrastar(f);
-    function fechar() { if (C.folha.atual()) C.folha.fechar(f); }
+    function fechar() { if (C.folha.atual()) C.folha.fechar(); } // a folha aberta, seja qual for
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       if (C.folha.atual()) { fechar(); return; }
