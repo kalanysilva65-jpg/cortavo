@@ -4,10 +4,8 @@
      com o mesmo filtro de sempre: admin vê tudo (com cadeado no que o plano
      não libera); o barbeiro vê só o que foi liberado e nada do plano que falta.
      Barbeiro sem nada liberado: estado vazio da spec 12, nunca 403.
-     TODO(Beto B4): seletor de período em vidro + cartões-resumo consumindo
-     /painel/api/gestao/* (fatia F5). TODO(Beto B1/B2): "Meus números" e a
-     leitura do caixa por chave (caixa_ver, numeros_barbearia) no lugar do
-     exigeAdmin. Sem esses dados, nada de número aparece aqui. */%>
+     Os números (seletor de período e cartões-resumo) vêm do B4 via
+     services/gestaoTela.js, já recortados por permissão (B1/B2) e plano. */%>
 <%
   var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
   var pode = (typeof podeAcessar === 'function') ? podeAcessar : function () { return true; };

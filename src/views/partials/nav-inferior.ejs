@@ -50,15 +50,15 @@
   // mesmo filtro das telas de destino. "Agendamento" aparece sempre.
   // Cada ação abre a tela que já faz aquilo, com a folha dela aberta
   // (?abrir=..., cv-casca.js), reaproveitando as rotas e validações de hoje.
-  // TODO(Beto B1): filtrar Lançamento e Bloqueio pelas chaves caixa_lancar e
-  // horarios no lugar de "só admin" quando as chaves novas existirem.
-  var _pode = (typeof podeAcessar === 'function') ? podeAcessar : function () { return true; };
+  // Chaves do B1 (pode): clientes, caixa_lancar, horarios. Admin pode tudo.
+  var _acessa = (typeof podeAcessar === 'function') ? podeAcessar : function () { return true; };
   var _adm = (typeof ehAdmin !== 'undefined') && !!ehAdmin;
+  var _chave = function (k, href) { return _adm || ((typeof pode === 'function') ? pode(k) : (href ? _acessa(href) : false)); };
   var ACOES_NOVO = [
     { ic: 'novoAg', t: 'Agendamento', s: 'Cliente, serviço e horário', href: '/painel/agenda?abrir=agendamento', ok: true },
-    { ic: 'clienteMais', t: 'Cliente', s: 'Cadastrar contato', href: '/painel/clientes?abrir=cliente', ok: _pode('/painel/clientes') },
-    { ic: 'lancamento', t: 'Lançamento', s: 'Entrada ou saída no caixa', href: '/painel/caixa?abrir=lancamento', ok: _adm },
-    { ic: 'bloqueio', t: 'Bloqueio', s: 'Fechar um horário', href: _adm ? '/painel/agenda?abrir=bloqueio' : '/painel/horarios', ok: _adm || _pode('/painel/horarios') },
+    { ic: 'clienteMais', t: 'Cliente', s: 'Cadastrar contato', href: '/painel/clientes?abrir=cliente', ok: _chave('clientes', '/painel/clientes') },
+    { ic: 'lancamento', t: 'Lançamento', s: 'Entrada ou saída no caixa', href: '/painel/caixa?abrir=lancamento', ok: _chave('caixa_lancar') },
+    { ic: 'bloqueio', t: 'Bloqueio', s: 'Fechar um horário', href: '/painel/agenda?abrir=bloqueio', ok: _chave('horarios', '/painel/horarios') },
   ].filter(function (a) { return a.ok; });
 %>
 <div class="cv-veu" aria-hidden="true"></div>

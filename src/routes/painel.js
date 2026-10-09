@@ -30,6 +30,7 @@ const secretariaController = require('../controllers/secretariaController');
 const logoController = require('../controllers/logoController');
 const meuPlanoController = require('../controllers/meuPlanoController');
 const conversasController = require('../controllers/conversasController');
+const gestaoTela = require('../services/gestaoTela');
 const gestaoApiController = require('../controllers/gestaoApiController');
 const caixaApiController = require('../controllers/caixaApiController');
 const { limiteIA } = require('../middlewares/rateLimit');
@@ -214,18 +215,25 @@ router.post('/perfil/jornada', horarioController.salvarJornada);
 // comissões, metas e cadastros; para quem não tem nada liberado mostra o
 // estado vazio da spec 12 (nunca 403). Os itens são filtrados na view pelas
 // mesmas regras de antes (podeAcessar, exigeAdmin, plano).
-// TODO(Beto B4): cartões-resumo da Gestão com /painel/api/gestao/*.
 router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Mais' }));
 router.get('/perfil', perfilController.ver);
-router.get('/gestao', (req, res) => {
+router.get('/gestao', async (req, res) => {
   // Período na URL (spec 12): ?periodo=hoje|semana|mes|ano ou ?de=&ate=.
-  // Só é validado aqui; os números (`gestao`) chegam com o B4 e, sem eles, a
-  // tela mostra a lista de telas, sem seletor e sem número inventado.
+  // Validado aqui antes de ir para o B4.
   const ISO = /^\d{4}-\d{2}-\d{2}$/;
   const { de, ate } = req.query;
   const datas = ISO.test(de || '') && ISO.test(ate || '') && de <= ate;
   const periodo = datas ? 'datas' : (['hoje', 'semana', 'mes', 'ano'].includes(req.query.periodo) ? req.query.periodo : 'semana');
-  res.render('painel/gestao', { titulo: 'Gestão', periodo, de: datas ? de : null, ate: datas ? ate : null, gestao: null });
+  // Números do B4 (services/metricas.js), recortados por permissão e plano.
+  // Sem números de dinheiro (barbeiro "só agenda"), vem null e a tela mostra
+  // o estado vazio da spec 12. Falha de leitura também cai na lista de telas.
+  let gestao = null;
+  try {
+    gestao = await gestaoTela.montarGestao({ barbeariaId: req.barbeariaId, permissoes: req.permissoes, query: datas ? { de, ate } : { periodo } });
+  } catch (e) {
+    console.error('[gestao] montarGestao falhou:', e.message);
+  }
+  res.render('painel/gestao', { titulo: 'Gestão', periodo, de: datas ? de : null, ate: datas ? ate : null, gestao });
 });
 // Fase 2.4: plano da Cortavo da barbearia (só admin/dono; barbeiro não vê plano).
 router.get('/meu-plano', exigeAdmin, meuPlanoController.ver);

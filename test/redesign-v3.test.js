@@ -97,7 +97,7 @@ test('F1 rotas: Mais é a lista de seções, Perfil tem rota própria, Gestão e
   const rotas = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
   assert.match(rotas, /router\.get\('\/mais', \(req, res\) => res\.render\('painel\/mais'/);
   assert.match(rotas, /router\.get\('\/perfil', perfilController\.ver\)/);
-  assert.match(rotas, /router\.get\('\/gestao', \(req, res\) => \{[\s\S]*?res\.render\('painel\/gestao'/);
+  assert.match(rotas, /router\.get\('\/gestao', async \(req, res\) => \{[\s\S]*?res\.render\('painel\/gestao'/);
   assert.doesNotMatch(rotas.split("router.get('/gestao'")[1].split('\n')[0], /exigeAdmin/);
   const horario = fs.readFileSync(path.join(RAIZ, 'src/controllers/horarioController.js'), 'utf8');
   assert.match(horario, /perfil: '\/painel\/perfil'/);
@@ -185,8 +185,11 @@ test('F2 folha Novo: ações filtradas pela permissão, "Agendamento" sempre e p
   assert.match(dono, /href="\/painel\/caixa\?abrir=lancamento"/);
   const basico = await render('partials/nav-inferior.ejs', locais({ admin: false }));
   assert.deepEqual(acoesDaFolha(basico), ['Agendamento', 'Cliente', 'Bloqueio']);
-  assert.match(basico, /href="\/painel\/horarios"/);
+  assert.match(basico, /href="\/painel\/agenda\?abrir=bloqueio"/);
   assert.doesNotMatch(basico, /abrir=lancamento/);
+  // Com as chaves do B1: barbeiro com caixa_lancar ganha Lançamento; sem horarios, perde Bloqueio.
+  const comChaves = await render('partials/nav-inferior.ejs', { ...locais({ admin: false }), pode: (k) => ['clientes', 'caixa_lancar'].includes(k) });
+  assert.deepEqual(acoesDaFolha(comChaves), ['Agendamento', 'Cliente', 'Lançamento']);
   const soAgenda = await render('partials/nav-inferior.ejs', locais({ admin: false, bloqueados: TUDO_BLOQUEADO }));
   assert.deepEqual(acoesDaFolha(soAgenda), ['Agendamento']);
   assert.match(dono, /role="dialog" aria-modal="true" aria-labelledby="folha-novo-titulo"/);
@@ -306,5 +309,5 @@ test('F5 Gestão: com o dado do B4 aparecem seletor de período e cartões; sem 
 test('F5 rota: período validado na URL, números só com o B4', () => {
   const rotas = fs.readFileSync(path.join(RAIZ, 'src/routes/painel.js'), 'utf8');
   assert.ok(rotas.includes("['hoje', 'semana', 'mes', 'ano'].includes(req.query.periodo)"));
-  assert.ok(rotas.includes('gestao: null'));
+  assert.ok(rotas.includes('gestaoTela.montarGestao({ barbeariaId: req.barbeariaId, permissoes: req.permissoes'));
 });

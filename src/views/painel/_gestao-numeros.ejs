@@ -1,6 +1,6 @@
 <%/* Números da Gestão (fatia F5; spec 12 §3; mockup redesign/v3/prints/05-gestao).
-     Só aparece quando a rota entrega `gestao` (contrato abaixo), que vem do
-     TODO(Beto B4): services/metricas.js + /painel/api/gestao/*, já recortado
+     Só aparece quando a rota entrega `gestao` (contrato abaixo), montado por
+     services/gestaoTela.js a partir do B4 (services/metricas.js), já recortado
      por papel, permissão e plano. Cada cartão aparece só se o dado dele vier;
      sem dado, o cartão não existe (nada inventado). Valores em centavos.
 
@@ -20,8 +20,8 @@
        lucro:        { valor, gastos },                                       G18
        caixaHoje:    { saldo, texto },
      }
-     Cada cartão abre a tela que já tem o detalhe; a folha de detalhe com M7
-     (View Transitions) entra junto com os endpoints de detalhe do B4. */%>
+     Cada cartão abre a tela que já tem o detalhe (Relatórios, Caixa,
+     Comissões, Metas); o B4 também serve o detalhe em /painel/api/gestao/:slug?detalhe=1. */%>
 <%
   var G = gestao;
   function milhar(n) { return String(Math.round(Math.abs(n || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
@@ -137,7 +137,7 @@
         <a class="cv-cartao cv-toca" href="/painel/clientes"><div class="cv-resumo"><span class="rot">Clientes novos</span><span class="cv-num cv-num--p"><span class="int"><%= milhar(G.clientes.novos) %></span></span><span class="cv-delta">de <%= milhar(G.clientes.novos + G.clientes.recorrentes) %> clientes</span><div class="mini"><div class="cv-pilha" role="img" aria-label="<%= Math.round(G.clientes.novos / tot * 100) %>% novos"><i style="width:<%= (G.clientes.novos / tot * 100).toFixed(1) %>%"></i><i style="width:<%= (G.clientes.recorrentes / tot * 100).toFixed(1) %>%;background:var(--d-trilho)"></i></div></div></div></a>
       <% } %>
       <% if (G.faltas) { %>
-        <a class="cv-cartao cv-toca" href="/painel/agenda"><div class="cv-resumo"><span class="rot">Faltas</span><span class="cv-num cv-num--p"><span class="int"><%= milhar(G.faltas.valor) %></span></span><%- delta(G.faltas.valor, G.faltas.anterior, true) %><div class="mini cv-g-nota"><%= G.faltas.total ? pctBR(G.faltas.valor / G.faltas.total) : '0%' %> dos agendamentos</div></div></a>
+        <a class="cv-cartao cv-toca" href="/painel/agenda"><div class="cv-resumo"><span class="rot">Faltas</span><span class="cv-num cv-num--p"><span class="int"><%= milhar(G.faltas.valor) %></span></span><% if (G.faltas.anterior != null) { %><%- delta(G.faltas.valor, G.faltas.anterior, true) %><% } %><div class="mini cv-g-nota"><%= G.faltas.total ? pctBR(G.faltas.valor / G.faltas.total) : '0%' %> dos agendamentos</div></div></a>
       <% } %>
     </div>
   <% } %>
