@@ -10,7 +10,7 @@
   // A faixa do teste grátis mora só na Início (partials/faixa-teste.ejs).
   var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao', '/painel/agenda', '/painel/caixa', '/painel/caixa/fechar', '/painel/comissoes', '/painel/secretaria', '/painel/meu-plano', '/painel/perfil', '/painel/link', '/painel/link/cartaz', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/metas', '/painel/logo', '/painel/horarios', '/painel/fidelidade', '/painel/conversas', '/painel/ia', '/painel/relatorios'];
   // Telas de cadastro e configuração v3: peças comuns (cv-cadastro.css/js).
-  var CAD_V3 = ['/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/metas', '/painel/logo', '/painel/horarios', '/painel/fidelidade', '/painel/conversas', '/painel/ia', '/painel/relatorios'];
+  var CAD_V3 = ['/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/metas', '/painel/logo', '/painel/horarios', '/painel/fidelidade', '/painel/conversas', '/painel/ia', '/painel/relatorios', '/painel/caixa'];
   // Formulários avulsos (links antigos) também no v3.
   var AVULSOS_V3 = /^\/painel\/(estoque|servicos|planos)\/(novo|\d+\/editar)$|^\/painel\/agenda\/novo$|^\/painel\/secretaria\/teste$/;
   var ehCad = CAD_V3.indexOf(currentPath) !== -1 || AVULSOS_V3.test(currentPath);

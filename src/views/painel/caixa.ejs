@@ -93,7 +93,7 @@
   <% if (extrato.length === 0) { %>
     <div class="cv-cartao cv-vazio" style="padding:24px"><p>Nenhum lançamento neste período. Os atendimentos concluídos entram aqui sozinhos.</p></div>
   <% } else { %>
-    <ul class="cv-lista cv-cx-extrato">
+    <ul class="cv-lista cv-cx-extrato cv-so-cel">
       <% extrato.forEach(function (ex) { %>
         <li><div class="cv-linha cv-linha--quebra">
           <span class="cv-cx-quando"><b><%= ex.hora %></b><% if (ex.diaLabel) { %><small><%= ex.diaLabel %></small><% } %></span>
@@ -109,6 +109,25 @@
         </div></li>
       <% }) %>
     </ul>
+    <%/* PC (>= 1024): o extrato em tabela (Dani, painel-pc "Caixa"). */%>
+    <div class="cv-tabela">
+      <table>
+        <thead><tr><th>Quando</th><th>Descrição</th><th>Detalhe</th><th class="dir">Valor</th><% if (typeof podeRemoverCaixa === 'undefined' || podeRemoverCaixa) { %><th><span class="cv-oculto">Ações</span></th><% } %></tr></thead>
+        <tbody>
+          <% extrato.forEach(function (ex) { %>
+            <tr style="cursor:default">
+              <td><b><%= ex.hora %></b><% if (ex.diaLabel) { %> <span style="color:var(--c-apoio)"><%= ex.diaLabel %></span><% } %></td>
+              <td><%= ex.descricao %></td>
+              <td style="color:var(--c-apoio)"><%= ex.sub || '' %></td>
+              <td class="dir"><b><%= ex.entrada ? '+' : '−' %>&nbsp;<%= fmtBRL(ex.valor) %></b></td>
+              <% if (typeof podeRemoverCaixa === 'undefined' || podeRemoverCaixa) { %>
+              <td class="dir"><form method="POST" action="/painel/caixa/<%= ex.id %>/remover" onsubmit="return confirm('Excluir este lançamento?')"><input type="hidden" name="inicio" value="<%= inicioStr %>" /><input type="hidden" name="fim" value="<%= fimStr %>" /><button class="cv-redondo cv-redondo--leve" aria-label="Excluir o lançamento <%= ex.descricao %>"><%- include('../partials/icone', { cvIc: 'lixo', cvCls: 'cv-ic--16' }) %></button></form></td>
+              <% } %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
     <% if (extratoRestantes > 0) { %><p class="cv-cx-mais">E mais <%= extratoRestantes %> <%= extratoRestantes === 1 ? 'lançamento anterior' : 'lançamentos anteriores' %> neste período.</p><% } %>
   <% } %>
 </section>
