@@ -248,7 +248,7 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   // Loga no stdout (não só stderr) para aparecer no painel de logs da Hostinger,
   // com marcador para facilitar a busca. Inclui rota e método para contexto.
-  console.log('[ERRO500]', req.method, req.originalUrl, '\n', (err && err.stack) || err);
+  console.log('[ERRO500]', req.method, req.path, /* só o caminho: a query pode ter o token do link (M2) */ '\n', (err && err.stack) || err);
 
   // Se a resposta já começou a ser enviada, não dá para renderizar a página de
   // erro — apenas encerra a conexão para não estourar outra exceção.
