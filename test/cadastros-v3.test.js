@@ -47,7 +47,7 @@ test('Equipe v3: segmento, lista, ficha em folha com o objeto do mês, foto, ace
   assert.match(html, /role="tablist"/);
   assert.match(html, /<form method="POST" enctype="multipart\/form-data" action="\/painel\/equipe\/3">/);
   assert.match(html, /name="acesso_clientes" value="1" checked/);
-  assert.match(html, /name="acesso_caixa" value="1" \/>/);
+  assert.match(html, /name="acesso_caixa" value="1"\s+\/>/);
   assert.match(html, /name="fotoPos"/);
   assert.match(html, /action="\/painel\/equipe\/3\/toggle"/);
   assert.match(html, /<form method="POST" action="\/painel\/equipe">/);
