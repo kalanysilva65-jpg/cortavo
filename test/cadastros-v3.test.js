@@ -36,3 +36,19 @@ test('Clientes v3: objeto com os 3 números, busca e filtros, lista no celular e
   assert.match(html, /action="\/painel\/clientes\/7\/remover" data-confirmar=/);
   assert.match(html, /function clAbrirFolha\(/);
 });
+
+test('Equipe v3: segmento, lista, ficha em folha com o objeto do mês, foto, acessos e mesmas rotas', async () => {
+  v3('/painel/equipe');
+  const m = { id: 3, nome: 'Diego Santos', papel: 'funcionario', ativo: true, iniciais: 'DS', comissaoPercentual: 40, jornadaLabel: 'Seg a sáb', nomePublico: '', descricao: '', fotoUrl: null, fotoPos: null, bloqueados: new Set(['caixa']),
+    stats: { ocupacaoPct: 61, faturado: 503820, atendimentos: 61, ticketMedio: 8259, comissaoReceber: 193062, clientesAtendidos: 48, taxaRetorno: 62, servicoTop: 'Corte', produtosVendidos: 7 } };
+  const html = await render('painel/equipe.ejs', { ...comuns, membros: [m], historico: [], aba: 'equipe', modulosAcesso: [{ chave: 'clientes', rotulo: 'Clientes' }, { chave: 'caixa', rotulo: 'Caixa' }] });
+  assert.doesNotMatch(html, SEM_ANTIGO);
+  assert.equal((html.match(/class="cv-objeto/g) || []).length, 1);
+  assert.match(html, /role="tablist"/);
+  assert.match(html, /<form method="POST" enctype="multipart\/form-data" action="\/painel\/equipe\/3">/);
+  assert.match(html, /name="acesso_clientes" value="1" checked/);
+  assert.match(html, /name="acesso_caixa" value="1" \/>/);
+  assert.match(html, /name="fotoPos"/);
+  assert.match(html, /action="\/painel\/equipe\/3\/toggle"/);
+  assert.match(html, /<form method="POST" action="\/painel\/equipe">/);
+});

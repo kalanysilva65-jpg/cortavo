@@ -1,366 +1,177 @@
+<%/* Equipe (redesign v3). Sem mockup próprio: o sistema da Dani aplicado
+     com o mesmo rigor. Segmento Barbeiros / Histórico; a ficha do barbeiro
+     sobe em folha, com o objeto preto dos números do mês; foto, nome público,
+     descrição, acessos e comissão no mesmo formulário de sempre
+     (/painel/equipe/:id, multipart). Mesmas rotas e campos. */%>
 <%
   var PAPEL_LABEL = { admin: 'Administrador', funcionario: 'Barbeiro' };
+  var dinheiro = function (c, tam) { return include('../partials/dinheiro', { cvC: c, cvTam: tam || 'p' }); };
+  var fechar = include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' });
 %>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup"><%= membros.length %> <%= membros.length === 1 ? 'pessoa' : 'pessoas' %></p><h1>Equipe</h1></div>
+  <div class="cv-cab-acoes"><button class="cv-btn" type="button" data-abrir-folha="eq-folha-novo"><%- include('../partials/icone', { cvIc: 'clienteMais', cvCls: 'cv-ic--18' }) %>Novo</button></div>
+</header>
 
-<%/* Equipe no design SUAVE (pedido do dono, 2026-07-31): as faixas de fio com
-     o nome em 40px do Turno 6 dão lugar aos cartões arredondados da
-     referência, sob um par de abas em pílula (Barbeiros / Histórico) que fica
-     FIXO junto com o título.
-     Tocar num barbeiro continua abrindo a PÁGINA DO BARBEIRO em tela cheia —
-     mas agora ela é clara e feita de cartões (foto arredondada, dois números,
-     bloco escuro, comissão e desempenho) em vez dos blocos pretos de canto
-     vivo. Estilos em public/css/sv-clientes-equipe.css. */%>
-<div class="sv-tela sv-eq-tela">
-
-  <div class="sv-eq-topo sv-reveal">
-    <div class="sv-eq-topo-linha">
-      <div class="sv-titulo">Equipe</div>
-      <button type="button" class="sv-btn sv-eq-novo" onclick="eqAbrirFolha('novo')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        <span>Novo</span>
-      </button>
-    </div>
-    <div class="sv-eq-abas">
-      <button type="button" class="sv-eq-aba <%= aba === 'equipe' ? 'ativo' : '' %>" data-aba="equipe" onclick="eqSelecionarAba(this)">Barbeiros</button>
-      <button type="button" class="sv-eq-aba <%= aba === 'historico' ? 'ativo' : '' %>" data-aba="historico" onclick="eqSelecionarAba(this)">Histórico</button>
-    </div>
-  </div>
-
-  <div class="sv-eq-painel sv-rolagem" id="eq-painel-equipe" <%= aba === 'equipe' ? '' : 'hidden' %>>
-    <% if (membros.length === 0) { %>
-      <div class="sv-vazio">Nenhum membro na equipe ainda.</div>
-    <% } else { %>
-      <div class="sv-eq-lista">
-        <% membros.forEach(function (m) { %>
-          <button type="button" class="sv-eq-item" onclick="eqAbrirPagina(<%= m.id %>)">
-            <span class="sv-eq-av">
-              <% if (m.fotoUrl) { %><img src="<%= m.fotoUrl %>" alt="" /><% } else { %><%= m.iniciais %><% } %>
-            </span>
-            <span class="sv-eq-item-corpo">
-              <span class="sv-eq-nome-linha">
-                <span class="sv-eq-nome"><%= m.nome %></span>
-                <% if (!m.ativo) { %><span class="sv-eq-selo">inativo</span><% } %>
-              </span>
-              <span class="sv-eq-sub"><%= PAPEL_LABEL[m.papel] || m.papel %> · <%= m.comissaoPercentual %>% comissão</span>
-            </span>
-            <span class="sv-eq-lado">
-              <span class="sv-eq-lado-num"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></span>
-              <span class="sv-eq-lado-rot">ocupação</span>
-            </span>
-          </button>
-        <% }) %>
-      </div>
-    <% } %>
-  </div>
-
-  <%/* Histórico: feed enxuto dos últimos atendimentos concluídos da casa. O
-       relatório com comissão por período continua em Comissões — aqui é o
-       "quem atendeu quem" de relance, como na referência. */%>
-  <div class="sv-eq-painel sv-rolagem" id="eq-painel-historico" <%= aba === 'historico' ? '' : 'hidden' %>>
-    <% if (historico.length === 0) { %>
-      <div class="sv-vazio">Nenhum atendimento concluído ainda.</div>
-    <% } else { %>
-      <div class="sv-eq-hist">
-        <% historico.forEach(function (h) { %>
-          <div class="sv-eq-hist-item">
-            <div class="sv-eq-hist-quando">
-              <div class="sv-eq-hist-hora"><%= h.hora %></div>
-              <div class="sv-eq-hist-data"><%= fmtData(h.data).slice(0, 5) %></div>
-            </div>
-            <div class="sv-eq-hist-corpo">
-              <div class="sv-eq-hist-cliente"><%= h.cliente %></div>
-              <div class="sv-eq-hist-sub"><%= h.item %> · <%= h.barbeiro %></div>
-            </div>
-            <div class="sv-eq-hist-valor"><%= fmtT6(h.valor) %></div>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
+<div class="cv-secao" style="margin-top:16px">
+  <div class="cv-seg" role="tablist" aria-label="Equipe">
+    <button type="button" role="tab" id="eq-aba-equipe" aria-controls="eq-painel-equipe" aria-selected="<%= aba === 'equipe' %>" aria-pressed="<%= aba === 'equipe' %>" data-aba="equipe">Barbeiros</button>
+    <button type="button" role="tab" id="eq-aba-historico" aria-controls="eq-painel-historico" aria-selected="<%= aba === 'historico' %>" aria-pressed="<%= aba === 'historico' %>" data-aba="historico">Histórico</button>
   </div>
 </div>
 
-<%/* Novo membro — folha inferior, mesmo formato do "Novo cliente". */%>
-<div class="sv-folha-fundo" id="eq-folha-novo" hidden>
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-folha-titulo">Novo barbeiro</div>
+<section class="cv-secao" style="margin-top:14px" id="eq-painel-equipe" role="tabpanel" aria-labelledby="eq-aba-equipe"<% if (aba !== 'equipe') { %> hidden<% } %>>
+  <% if (membros.length === 0) { %>
+    <div class="cv-cartao cv-vazio" role="status"><h2>Ninguém na equipe ainda</h2><p>Cada barbeiro cadastrado aparece na agenda e no link de agendamento.</p><div class="acoes"><button class="cv-btn" type="button" data-abrir-folha="eq-folha-novo">Adicionar barbeiro</button></div></div>
+  <% } else { %>
+    <ul class="cv-lista">
+      <% membros.forEach(function (m) { %>
+        <li><button type="button" class="cv-linha" data-abrir-folha="eq-folha-<%= m.id %>">
+          <span class="cv-avatar cv-avatar--claro" aria-hidden="true"><% if (m.fotoUrl) { %><img src="<%= m.fotoUrl %>" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" /><% } else { %><%= m.iniciais %><% } %></span>
+          <span class="corpo"><span class="t"><%= m.nome %><% if (!m.ativo) { %> <span class="cv-etq cv-etq--listra">inativo</span><% } %></span><span class="s"><%= PAPEL_LABEL[m.papel] || m.papel %> · <%= m.comissaoPercentual %>% de comissão</span></span>
+          <span class="fim"><b><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></b><small>ocupação</small></span>
+        </button></li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<%/* Histórico: quem atendeu quem, de relance. A comissão por período fica em
+     Comissões. */%>
+<section class="cv-secao" style="margin-top:14px" id="eq-painel-historico" role="tabpanel" aria-labelledby="eq-aba-historico"<% if (aba !== 'historico') { %> hidden<% } %>>
+  <% if (historico.length === 0) { %>
+    <div class="cv-cartao cv-vazio" role="status"><h2>Nenhum atendimento concluído</h2><p>Os atendimentos concluídos no caixa aparecem aqui.</p></div>
+  <% } else { %>
+    <ul class="cv-lista cv-lista--sem-ic">
+      <% historico.forEach(function (h) { %>
+        <li><div class="cv-linha">
+          <span style="width:52px;flex-shrink:0;font-variant-numeric:tabular-nums"><b style="display:block;font-size:15px"><%= h.hora %></b><small style="color:var(--c-apoio);font-size:12px"><%= fmtData(h.data).slice(0, 5) %></small></span>
+          <span class="corpo"><span class="t"><%= h.cliente %></span><span class="s"><%= h.item %> · <%= h.barbeiro %></span></span>
+          <span class="fim"><b><%- dinheiro(h.valor) %></b></span>
+        </div></li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<%/* Novo barbeiro: só o nome (pedido do dono, 2026-07-28). O acesso por link
+     é enviado pelo painel-mestre. */%>
+<section class="cv-folha" id="eq-folha-novo" data-folha role="dialog" aria-modal="true" aria-labelledby="eq-novo-t">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="eq-novo-t" tabindex="-1" data-foco>Novo barbeiro</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
     <form method="POST" action="/painel/equipe">
-      <div class="sv-campo">
-        <label class="sv-campo-rot" for="eq-novo-nome">Nome</label>
-        <input class="sv-campo-input" id="eq-novo-nome" name="nome" placeholder="Nome completo" required />
-      </div>
-      <%/* Sem e-mail/senha/papel (pedido do dono, 2026-07-28: "só quem vai ter
-           acesso sou eu"). O barbeiro é cadastro para a agenda e a comissão,
-           não conta de login — o controller gera as credenciais internas que
-           o banco exige. */%>
-      <button type="submit" class="sv-btn sv-eq-btn-bloco">Adicionar</button>
+      <div class="cv-campo"><label for="eq-novo-nome">Nome</label><input class="cv-entrada" id="eq-novo-nome" name="nome" placeholder="Nome completo" autocomplete="off" required /></div>
+      <button type="submit" class="cv-btn cv-btn--largo">Adicionar</button>
     </form>
   </div>
-</div>
+</section>
 
-<%/* Página do barbeiro — tela cheia sobre a lista (referência, linhas
-     1654-1741). O formulário de edição não é um bloco separado: os campos
-     moram DENTRO dos cartões que mostram os números (o nome no cartão de
-     identidade, a comissão no cartão de comissões), que é como a referência
-     trata edição. */%>
 <% membros.forEach(function (m) { %>
-  <div class="sv-eq-pg" id="eq-pg-<%= m.id %>" hidden>
-    <div class="sv-eq-pg-rolagem sv-rolagem">
-      <div class="sv-eq-pg-topo">
-        <div class="sv-eq-pg-eyebrow">Barbeiro</div>
-        <button type="button" class="sv-eq-pg-fechar" onclick="eqFecharPagina()" aria-label="Fechar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        </button>
+<section class="cv-folha" id="eq-folha-<%= m.id %>" data-folha role="dialog" aria-modal="true" aria-labelledby="eq-t-<%= m.id %>">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="eq-t-<%= m.id %>" tabindex="-1" data-foco><%= m.nome %></h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= m.ativo ? (PAPEL_LABEL[m.papel] || m.papel) : 'Inativo' %> · <%= m.jornadaLabel %></p>
+    <section class="cv-objeto cv-gravada" aria-label="Números do mês" style="margin-bottom:18px">
+      <div class="cv-tres">
+        <div><%- dinheiro(m.stats.faturado, 'm') %><span class="rot">faturamento</span></div>
+        <div><span class="cv-num"><%= m.stats.atendimentos %></span><span class="rot">atendimentos</span></div>
+        <div><span class="cv-num"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></span><span class="rot">ocupação</span></div>
+      </div>
+    </section>
+
+    <form method="POST" enctype="multipart/form-data" action="/painel/equipe/<%= m.id %>">
+      <div class="cv-eq-foto">
+        <label class="cv-eq-foto-img" for="eq-foto-<%= m.id %>"><% if (m.fotoUrl) { %><img src="<%= m.fotoUrl %>" alt="" /><% } else { %><%- include('../partials/icone', { cvIc: 'camera' }) %><% } %><span class="cv-oculto">Trocar foto</span></label>
+        <div><input class="cv-oculto" id="eq-foto-<%= m.id %>" name="foto" type="file" accept="image/*" onchange="eqFotoEscolhida(this, <%= m.id %>)" /><b>Foto</b><small id="eq-foto-dica-<%= m.id %>">Toque na foto para trocar</small>
+          <% if (m.fotoUrl) { %><button type="submit" class="cv-perigo-link" formaction="/painel/equipe/<%= m.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
+        </div>
+      </div>
+      <div class="cv-campo"><label for="eq-nome-<%= m.id %>">Nome</label><input class="cv-entrada" id="eq-nome-<%= m.id %>" name="nome" value="<%= m.nome %>" required /></div>
+      <div class="cv-campo"><label for="eq-np-<%= m.id %>">Nome no agendamento público</label><input class="cv-entrada" id="eq-np-<%= m.id %>" name="nomePublico" maxlength="40" value="<%= m.nomePublico || '' %>" placeholder="<%= m.nome %>" autocomplete="off" /><span class="cv-ajuda">Como o cliente vê ao agendar. Em branco, usa o nome do cadastro.</span></div>
+      <div class="cv-campo"><label for="eq-desc-<%= m.id %>">Descrição no agendamento</label><textarea class="cv-entrada" id="eq-desc-<%= m.id %>" name="descricao" rows="2" maxlength="120" placeholder="Ex.: Especialista em degradê e barba desenhada"><%= m.descricao || '' %></textarea></div>
+
+      <div class="cv-campo">
+        <span class="cv-rotulo">Como aparece no agendamento</span>
+        <div class="cv-eq-prev" id="eq-prev-<%= m.id %>" data-pos="<%= m.fotoPos || '50% 50%' %>">
+          <% if (m.fotoUrl) { %><img id="eq-prev-img-<%= m.id %>" src="<%= m.fotoUrl %>" alt="" style="object-position: <%= m.fotoPos || '50% 50%' %>" /><% } else { %><img id="eq-prev-img-<%= m.id %>" alt="" hidden /><span class="vazia">Escolha uma foto acima</span><% } %>
+          <span class="nome" aria-hidden="true"><b><%= m.nomePublico || m.nome %></b><small><%= m.descricao || 'Barbeiro' %></small></span>
+        </div>
+        <span class="cv-ajuda" id="eq-prev-dica-<%= m.id %>"<% if (!m.fotoUrl) { %> hidden<% } %>>Arraste a foto para enquadrar.</span>
+        <input type="hidden" name="fotoPos" id="eq-fotopos-<%= m.id %>" value="<%= m.fotoPos || '50% 50%' %>" />
       </div>
 
-      <form method="POST" enctype="multipart/form-data" action="/painel/equipe/<%= m.id %>">
-        <div class="sv-cartao sv-eq-hero">
-          <%/* A foto É o botão de trocar: o <input file> fica escondido e o
-               <label> em cima da imagem abre a galeria. */%>
-          <label class="sv-eq-foto" for="eq-foto-<%= m.id %>">
-            <% if (m.fotoUrl) { %>
-              <img src="<%= m.fotoUrl %>" alt="<%= m.nome %>" />
-            <% } else { %>
-              <span class="sv-eq-foto-vazia">Foto</span>
-            <% } %>
-          </label>
-          <input class="sv-eq-foto-input" id="eq-foto-<%= m.id %>" name="foto" type="file" accept="image/*" onchange="eqFotoEscolhida(this, <%= m.id %>)" />
-          <div class="sv-eq-hero-corpo">
-            <input class="sv-eq-nome-input" name="nome" value="<%= m.nome %>" aria-label="Nome do barbeiro" required />
-            <div class="sv-eq-papel"><%= m.ativo ? (PAPEL_LABEL[m.papel] || m.papel) : 'Inativo' %></div>
-            <span class="sv-pilula sv-eq-hero-pilula"><%= m.jornadaLabel %></span>
-            <div class="sv-eq-foto-dica" id="eq-foto-dica-<%= m.id %>">Toque na foto para trocar</div>
-            <% if (m.fotoUrl) { %><button type="submit" class="sv-foto-rem" formaction="/painel/equipe/<%= m.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
-          </div>
-        </div>
+      <div class="cv-campo"><label for="eq-com-<%= m.id %>">Comissão sobre serviços, em %</label><input class="cv-entrada cv-entrada--num" id="eq-com-<%= m.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" inputmode="decimal" value="<%= m.comissaoPercentual %>" /><span class="cv-ajuda">A comissão de produto é por produto, na tela de Produtos.</span></div>
 
-        <div class="sv-cartao sv-eq-bloco">
-          <label class="sv-eq-bloco-tit" for="eq-np-<%= m.id %>">Nome no agendamento público</label>
-          <input class="sv-campo-input" id="eq-np-<%= m.id %>" name="nomePublico" maxlength="40" value="<%= m.nomePublico || '' %>" placeholder="<%= m.nome %>" autocomplete="off" />
-          <div class="sv-eq-desc-dica">Como o cliente vê o nome deste profissional ao agendar (ex.: "Davi", "Mestre Bruno"). Em branco, usa o nome do cadastro.</div>
-        </div>
+      <% if (m.papel === 'funcionario') { %>
+        <fieldset class="cv-campo cv-eq-acessos"><legend class="cv-rotulo">O que este barbeiro pode acessar</legend>
+          <input type="hidden" name="acessosForm" value="1" />
+          <% modulosAcesso.forEach(function (mod) { %>
+            <label class="cv-chave"><span><%= mod.rotulo %></span><input type="checkbox" name="acesso_<%= mod.chave %>" value="1" <%= m.bloqueados.has(mod.chave) ? '' : 'checked' %> /></label>
+          <% }) %>
+          <span class="cv-ajuda">A agenda dele está sempre liberada. Caixa, relatórios, metas e equipe são só do administrador.</span>
+        </fieldset>
+      <% } %>
+      <button type="submit" class="cv-btn cv-btn--largo">Salvar alterações</button>
+    </form>
 
-        <div class="sv-cartao sv-eq-bloco">
-          <label class="sv-eq-bloco-tit" for="eq-desc-<%= m.id %>">Descrição no agendamento</label>
-          <textarea class="sv-campo-input sv-eq-desc" id="eq-desc-<%= m.id %>" name="descricao" rows="2" maxlength="120"
-                    placeholder="Ex.: Especialista em degradê e barba desenhada"><%= m.descricao || '' %></textarea>
-          <div class="sv-eq-desc-dica">Aparece no card do profissional quando o cliente agenda. Em branco, mostra só o cargo.</div>
-        </div>
-
-        <% if (m.papel === 'funcionario') { %>
-          <%/* Acessos (pedido do dono, 2026-09-30): o admin escolhe as telas que
-               este barbeiro abre. Desmarcado = some do menu e o servidor bloqueia. */%>
-          <div class="sv-cartao sv-eq-bloco">
-            <div class="sv-eq-bloco-tit">O que este barbeiro pode acessar</div>
-            <input type="hidden" name="acessosForm" value="1" />
-            <div class="sv-eq-acessos">
-              <% modulosAcesso.forEach(function (mod) { %>
-                <label class="sv-eq-acesso">
-                  <input type="checkbox" name="acesso_<%= mod.chave %>" value="1" <%= m.bloqueados.has(mod.chave) ? '' : 'checked' %> />
-                  <span><%= mod.rotulo %></span>
-                </label>
-              <% }) %>
-            </div>
-            <div class="sv-eq-desc-dica">A agenda dele está sempre liberada. Caixa, relatórios, metas e equipe são só do administrador.</div>
-          </div>
-        <% } %>
-
-        <%/* Prévia de como a foto aparece no card do agendamento público, com
-             ajuste de enquadramento por ARRASTE (object-position). O que o admin
-             arrasta aqui é o que o cliente vê lá. */%>
-        <div class="sv-cartao sv-eq-prev-card">
-          <div class="sv-eq-prev-tit">Como aparece no agendamento</div>
-          <div class="sv-eq-prev" id="eq-prev-<%= m.id %>" data-pos="<%= m.fotoPos || '50% 50%' %>">
-            <% if (m.fotoUrl) { %>
-              <img id="eq-prev-img-<%= m.id %>" src="<%= m.fotoUrl %>" alt="" style="object-position: <%= m.fotoPos || '50% 50%' %>" />
-            <% } else { %>
-              <img id="eq-prev-img-<%= m.id %>" alt="" hidden />
-              <span class="sv-eq-prev-vazia">Escolha uma foto acima</span>
-            <% } %>
-            <div class="sv-eq-prev-scrim" aria-hidden="true"></div>
-            <div class="sv-eq-prev-topo" aria-hidden="true">
-              <div class="n"><%= m.nome %></div>
-              <div class="r"><%= m.papel === 'funcionario' ? 'Barbeiro' : 'Barbeiro-chefe' %></div>
-            </div>
-          </div>
-          <div class="sv-eq-prev-dica" id="eq-prev-dica-<%= m.id %>"<% if (!m.fotoUrl) { %> hidden<% } %>>Arraste a foto para enquadrar</div>
-          <input type="hidden" name="fotoPos" id="eq-fotopos-<%= m.id %>" value="<%= m.fotoPos || '50% 50%' %>" />
-        </div>
-
-        <div class="sv-eq-par">
-          <div class="sv-cartao sv-eq-par-cel">
-            <div class="sv-eq-num"><%= fmtT6(m.stats.faturado) %></div>
-            <div class="sv-eq-num-rot">Faturamento</div>
-          </div>
-          <div class="sv-cartao sv-eq-par-cel">
-            <div class="sv-eq-num"><%= m.stats.atendimentos %></div>
-            <div class="sv-eq-num-rot">Atendimentos no mês</div>
-          </div>
-        </div>
-
-        <div class="sv-cartao sv-cartao--escuro sv-eq-escuro">
-          <div class="sv-eq-par-cel">
-            <div class="sv-eq-num"><%= fmtT6(m.stats.ticketMedio) %></div>
-            <div class="sv-eq-num-rot">Ticket médio</div>
-          </div>
-          <div class="sv-eq-divisor"></div>
-          <div class="sv-eq-par-cel">
-            <div class="sv-eq-num"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></div>
-            <div class="sv-eq-num-rot">Ocupação</div>
-          </div>
-        </div>
-
-        <div class="sv-cartao sv-eq-bloco">
-          <div class="sv-eq-bloco-tit">Comissões</div>
-          <%/* A referência tem duas caixas (serviços e produtos). Aqui só a de
-               serviços é do barbeiro: a comissão de produto é por PRODUTO, e
-               fica na tela de Produtos — duplicá-la aqui daria dois donos para
-               o mesmo número. */%>
-          <div class="sv-eq-com">
-            <div class="sv-eq-com-caixa">
-              <input class="sv-eq-com-input" id="eq-com-<%= m.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= m.comissaoPercentual %>" placeholder="0" />
-              <label class="sv-eq-com-rot" for="eq-com-<%= m.id %>">% sobre serviços</label>
-            </div>
-          </div>
-          <div class="sv-eq-com-pe">
-            <span class="sv-eq-com-pe-rot">Comissão a receber</span>
-            <span class="sv-eq-com-pe-val"><%= fmtT6(m.stats.comissaoReceber) %></span>
-          </div>
-        </div>
-
-        <div class="sv-cartao sv-eq-bloco">
-          <div class="sv-eq-bloco-tit">Desempenho</div>
-          <div class="sv-eq-desemp">
-            <div class="sv-eq-desemp-linha">
-              <div class="sv-eq-desemp-cel">
-                <div class="sv-eq-desemp-num"><%= m.stats.clientesAtendidos %></div>
-                <div class="sv-eq-desemp-rot">Clientes atendidos</div>
-              </div>
-              <div class="sv-eq-desemp-cel">
-                <div class="sv-eq-desemp-num"><%= m.stats.taxaRetorno === null ? '—' : m.stats.taxaRetorno + '%' %></div>
-                <div class="sv-eq-desemp-rot">Taxa de retorno</div>
-              </div>
-            </div>
-            <div class="sv-eq-desemp-linha">
-              <div class="sv-eq-desemp-cel">
-                <div class="sv-eq-desemp-num"><%= m.stats.servicoTop || '—' %></div>
-                <div class="sv-eq-desemp-rot">Serviço mais feito</div>
-              </div>
-              <div class="sv-eq-desemp-cel">
-                <div class="sv-eq-desemp-num"><%= m.stats.produtosVendidos %></div>
-                <div class="sv-eq-desemp-rot">Produtos vendidos</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sv-eq-acoes">
-          <button type="submit" class="sv-btn sv-eq-btn-bloco">Salvar alterações</button>
-        </div>
-      </form>
-
-      <%/* Fora do formulário acima de propósito: <form> não aninha. */%>
-      <form method="POST" action="/painel/equipe/<%= m.id %>/toggle" class="sv-eq-acoes">
-        <button type="submit" class="sv-btn sv-btn--claro sv-eq-btn-bloco"><%= m.ativo ? 'Desativar membro' : 'Ativar membro' %></button>
-      </form>
+    <div class="cv-folha-sec"><h3>Desempenho no mês</h3>
+      <ul class="cv-linhas">
+        <li><span>Comissão a receber</span><b><%- dinheiro(m.stats.comissaoReceber) %></b></li>
+        <li><span>Ticket médio</span><b><%- dinheiro(m.stats.ticketMedio) %></b></li>
+        <li><span>Clientes atendidos</span><b><%= m.stats.clientesAtendidos %></b></li>
+        <li><span>Taxa de retorno</span><b><%= m.stats.taxaRetorno === null ? '—' : m.stats.taxaRetorno + '%' %></b></li>
+        <li><span>Serviço mais feito</span><b><%= m.stats.servicoTop || '—' %></b></li>
+        <li><span>Produtos vendidos</span><b><%= m.stats.produtosVendidos %></b></li>
+      </ul>
     </div>
+
+    <form method="POST" action="/painel/equipe/<%= m.id %>/toggle" class="cv-folha-acoes"<% if (m.ativo) { %> data-confirmar="Desativar <%= m.nome %>? Ele some da agenda e do link."<% } %>>
+      <button type="submit" class="cv-btn cv-btn--2 cv-btn--largo"><%= m.ativo ? 'Desativar membro' : 'Ativar membro' %></button>
+    </form>
   </div>
+</section>
 <% }) %>
 
 <script>
-  // Folha inferior (novo barbeiro): `hidden` liga/desliga. Tirar o `hidden`
-  // recria o elemento na tela, e é isso que faz a animação de subida rodar de
-  // novo a cada abertura.
-  function eqAbrirFolha(id) {
-    var f = document.getElementById('eq-folha-' + id);
-    if (f) f.hidden = false;
-  }
-  Array.prototype.forEach.call(document.querySelectorAll('.sv-folha-fundo'), function (f) {
-    // Só o fundo fecha — clique DENTRO da folha não deve fechá-la.
-    f.addEventListener('click', function (e) { if (e.target === f) f.hidden = true; });
-  });
-
-  // Página do barbeiro: sobe por cima da lista, sem recarregar.
-  function eqAbrirPagina(id) {
-    var p = document.getElementById('eq-pg-' + id);
-    if (p) p.hidden = false;
-  }
-  function eqFecharPagina() {
-    Array.prototype.forEach.call(document.querySelectorAll('.sv-eq-pg'), function (p) { p.hidden = true; });
-  }
-  // O <input file> está escondido, então sem isto nada indicaria que a foto
-  // foi escolhida antes de salvar.
+  // Segmento Barbeiros / Histórico: as duas listas já vêm prontas.
+  (function () {
+    var abas = document.querySelectorAll('[data-aba]');
+    Array.prototype.forEach.call(abas, function (b) {
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call(abas, function (x) { var on = x === b; x.setAttribute('aria-selected', String(on)); x.setAttribute('aria-pressed', String(on)); });
+        document.getElementById('eq-painel-equipe').hidden = b.dataset.aba !== 'equipe';
+        document.getElementById('eq-painel-historico').hidden = b.dataset.aba !== 'historico';
+      });
+    });
+  })();
+  function eqAbrirFolha(id) { if (window.cvAbrirFolha) window.cvAbrirFolha('eq-folha-' + id); }
+  // Foto escolhida: avisa e atualiza a prévia do agendamento (enquadramento zerado).
   function eqFotoEscolhida(input, id) {
-    var dica = document.getElementById('eq-foto-dica-' + id);
-    var arq = input.files && input.files[0];
+    var arq = input.files && input.files[0], dica = document.getElementById('eq-foto-dica-' + id);
     if (dica && arq) dica.textContent = 'Nova foto: ' + arq.name;
     if (!arq) return;
-    // Atualiza a prévia do agendamento com a foto recém-escolhida e zera o
-    // enquadramento (centralizado), pra o admin ajustar arrastando.
     var leitor = new FileReader();
     leitor.onload = function (ev) {
-      var img = document.getElementById('eq-prev-img-' + id);
-      var box = document.getElementById('eq-prev-' + id);
-      var hidden = document.getElementById('eq-fotopos-' + id);
-      var prevDica = document.getElementById('eq-prev-dica-' + id);
+      var img = document.getElementById('eq-prev-img-' + id), box = document.getElementById('eq-prev-' + id);
       if (img) { img.src = ev.target.result; img.hidden = false; img.style.objectPosition = '50% 50%'; }
-      if (box) { box.setAttribute('data-pos', '50% 50%'); var vazia = box.querySelector('.sv-eq-prev-vazia'); if (vazia) vazia.remove(); }
-      if (hidden) hidden.value = '50% 50%';
-      if (prevDica) prevDica.hidden = false;
+      if (box) { box.setAttribute('data-pos', '50% 50%'); var v = box.querySelector('.vazia'); if (v) v.remove(); }
+      document.getElementById('eq-fotopos-' + id).value = '50% 50%';
+      document.getElementById('eq-prev-dica-' + id).hidden = false;
     };
     leitor.readAsDataURL(arq);
   }
-
-  // Ajuste de enquadramento por ARRASTE em cada prévia (grab-and-move da foto).
-  // Escreve object-position no hidden input `fotoPos`, que o backend salva e o
-  // card do agendamento público aplica.
+  // Enquadramento por arraste (object-position), salvo em fotoPos.
   (function () {
     function limita(v) { return Math.max(0, Math.min(100, v)); }
-    Array.prototype.forEach.call(document.querySelectorAll('.sv-eq-prev'), function (box) {
-      var id = box.id.replace('eq-prev-', '');
-      var img = document.getElementById('eq-prev-img-' + id);
-      var hidden = document.getElementById('eq-fotopos-' + id);
-      var m = /(\d+)%\s+(\d+)%/.exec(box.getAttribute('data-pos') || '');
-      var px = m ? +m[1] : 50, py = m ? +m[2] : 50;
-      function aplica() {
-        var val = Math.round(px) + '% ' + Math.round(py) + '%';
-        if (img) img.style.objectPosition = val;
-        if (hidden) hidden.value = val;
-      }
-      var arrastando = false, sx = 0, sy = 0, spx = 0, spy = 0;
-      box.addEventListener('pointerdown', function (e) {
-        if (!img || !img.getAttribute('src')) return; // sem foto, nada a enquadrar
-        arrastando = true; sx = e.clientX; sy = e.clientY; spx = px; spy = py;
-        box.classList.add('arrastando');
-        try { box.setPointerCapture(e.pointerId); } catch (_) {}
-      });
-      box.addEventListener('pointermove', function (e) {
-        if (!arrastando) return;
-        var r = box.getBoundingClientRect();
-        px = limita(spx - (e.clientX - sx) / r.width * 100);
-        py = limita(spy - (e.clientY - sy) / r.height * 100);
-        aplica();
-      });
-      function fim() { arrastando = false; box.classList.remove('arrastando'); }
-      box.addEventListener('pointerup', fim);
-      box.addEventListener('pointercancel', fim);
+    Array.prototype.forEach.call(document.querySelectorAll('.cv-eq-prev'), function (box) {
+      var id = box.id.replace('eq-prev-', ''), img = document.getElementById('eq-prev-img-' + id), hid = document.getElementById('eq-fotopos-' + id);
+      var m = /(\d+)%\s+(\d+)%/.exec(box.getAttribute('data-pos') || ''), px = m ? +m[1] : 50, py = m ? +m[2] : 50;
+      var arr = false, sx = 0, sy = 0, spx = 0, spy = 0;
+      function aplica() { var v = Math.round(px) + '% ' + Math.round(py) + '%'; if (img) img.style.objectPosition = v; if (hid) hid.value = v; }
+      box.addEventListener('pointerdown', function (e) { if (!img || !img.getAttribute('src')) return; arr = true; sx = e.clientX; sy = e.clientY; spx = px; spy = py; e.stopPropagation(); try { box.setPointerCapture(e.pointerId); } catch (_) {} });
+      box.addEventListener('pointermove', function (e) { if (!arr) return; var r = box.getBoundingClientRect(); px = limita(spx - (e.clientX - sx) / r.width * 100); py = limita(spy - (e.clientY - sy) / r.height * 100); aplica(); });
+      function fim() { arr = false; }
+      box.addEventListener('pointerup', fim); box.addEventListener('pointercancel', fim);
     });
   })();
-
-  // Troca de aba sem recarregar: as duas listas já vêm renderizadas. O
-  // ?aba=historico do servidor só decide qual nasce visível.
-  function eqSelecionarAba(btn) {
-    var alvo = btn.getAttribute('data-aba');
-    Array.prototype.forEach.call(document.querySelectorAll('.sv-eq-aba'), function (b) {
-      b.classList.toggle('ativo', b === btn);
-    });
-    document.getElementById('eq-painel-equipe').hidden = alvo !== 'equipe';
-    document.getElementById('eq-painel-historico').hidden = alvo !== 'historico';
-  }
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    Array.prototype.forEach.call(document.querySelectorAll('.sv-folha-fundo'), function (f) { f.hidden = true; });
-    eqFecharPagina();
-  });
 </script>
