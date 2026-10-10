@@ -121,6 +121,10 @@ app.use(
 const { resolverBarbearia, barbeariaIdAtual } = require('./middlewares/tenant');
 app.use(resolverBarbearia);
 
+// --- Sessão ainda vale? (spec 13, F6) ---------------------------------------
+// Senha trocada ou pessoa desativada: as sessões abertas antes caem.
+app.use(require('./middlewares/sessaoValida').sessaoValida);
+
 // --- Variáveis disponíveis em todas as views ------------------------------
 app.use((req, res, next) => {
   res.locals.usuario = req.session.usuario || null;
@@ -217,7 +221,7 @@ app.get('/manifest.webmanifest', (req, res) => {
 // a própria tela de troca e o logout, pra não criar laço de redirecionamento.
 app.use((req, res, next) => {
   if (req.session.usuario && req.session.trocarSenha) {
-    if (req.path !== '/trocar-senha' && req.path !== '/logout') {
+    if (!['/trocar-senha', '/logout', '/criar-senha', '/esqueci-senha'].includes(req.path)) {
       return res.redirect('/trocar-senha');
     }
   }
@@ -279,6 +283,12 @@ app.listen(PORT, '0.0.0.0', () => {
     require('./services/lembretes').iniciarAgendador();
   } catch (e) {
     console.log('[lembretes] não foi possível iniciar o agendador:', (e && e.message) || e);
+  }
+  // Limpeza diária dos links de acesso antigos (spec 13, LGPD: 30 dias).
+  try {
+    require('./services/tokensAcesso').iniciarLimpeza();
+  } catch (e) {
+    console.log('[acesso] não foi possível iniciar a limpeza de links:', (e && e.message) || e);
   }
   // Rotina diária do teste grátis (fase 2.6): aviso no 12º dia e pausa no 16º.
   try {

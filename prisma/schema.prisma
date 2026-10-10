@@ -108,6 +108,10 @@ model Usuario {
   senhaProvisoria Boolean @default(false) @map("senha_provisoria") // senha padrão/criada pelo admin: força troca no 1º login
   comissaoPercentual Float @default(50) @map("comissao_percentual") // % de comissão do barbeiro
   acessosBloqueados String? @map("acessos_bloqueados") // JSON das telas bloqueadas p/ funcionário; nulo = tudo liberado
+  // Spec 13 (acesso por link): quando a PRÓPRIA pessoa criou a senha (pelo link
+  // do e-mail). Nulo = ainda não criou (conta nova aguardando). Também serve de
+  // "versão" da senha: as sessões abertas antes da troca deixam de valer (F6).
+  senhaDefinidaEm DateTime? @map("senha_definida_em")
   criadoEm  DateTime @default(now()) @map("criado_em")
 
   barbearia        Barbearia? @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
@@ -119,10 +123,34 @@ model Usuario {
   metas            Meta[]
   precosServico    ServicoPrecoBarbeiro[]
   comissoesPagas   ComissaoPagamento[]
+  tokensAcesso     TokenAcesso[]
 
   // E-mail único DENTRO de cada barbearia (o mesmo e-mail pode existir em barbearias diferentes).
   @@unique([barbeariaId, email])
   @@map("usuarios")
+}
+
+/// Link de acesso por e-mail (spec 13): a pessoa cria a PRÓPRIA senha.
+/// O token em claro só existe na memória, no e-mail e no link; aqui fica só o
+/// sha256 dele. Uso único (usadoEm), um vivo por pessoa (os outros ficam com
+/// revogadoEm) e prazo curto (72 h no primeiro acesso, 1 h para nova senha).
+model TokenAcesso {
+  id          Int       @id @default(autoincrement())
+  usuarioId   Int       @map("usuario_id")
+  tokenHash   String    @unique @map("token_hash") // sha256 hex do token
+  tipo        String // "primeiro_acesso" | "redefinir"
+  expiraEm    DateTime  @map("expira_em")
+  usadoEm     DateTime? @map("usado_em")
+  revogadoEm  DateTime? @map("revogado_em")
+  enviadoEm   DateTime? @map("enviado_em") // null = e-mail não saiu
+  erroEnvio   String?   @map("erro_envio") // motivo curto, sem dados pessoais
+  criadoPorId Int?      @map("criado_por_id") // quem pediu (Kalany) ou null ("esqueci minha senha")
+  criadoEm    DateTime  @default(now()) @map("criado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("tokens_acesso")
 }
 
 /// Aparelho autorizado a receber aviso de agendamento novo.

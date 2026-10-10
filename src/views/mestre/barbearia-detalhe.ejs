@@ -211,12 +211,15 @@
 <!-- Equipe -->
 <div class="card mb-16">
   <h2>Equipe (<%= equipe.length %>)</h2>
+  <% if (typeof avisoEmail !== 'undefined' && avisoEmail) { %>
+    <div class="alerta alerta-aviso mt-16" role="status"><%= avisoEmail %></div>
+  <% } %>
   <% if (equipe.length === 0) { %>
     <p class="texto-secundario mt-16">Nenhum barbeiro cadastrado ainda.</p>
   <% } else { %>
     <div class="tabela-rolagem">
       <table class="tabela mt-16">
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th>Acesso</th><th></th></tr></thead>
         <tbody>
           <% equipe.forEach(function (m) { %>
             <tr>
@@ -224,13 +227,26 @@
               <td><span class="texto-sutil"><%= m.email %></span></td>
               <td><%= m.papel === 'admin' ? 'Admin' : 'Barbeiro' %></td>
               <td><%= m.ativo ? 'Ativo' : 'Inativo' %></td>
+              <% var ac = (typeof acessos !== 'undefined' && acessos && acessos[m.id]) || null; %>
+              <td>
+                <% if (ac) { %>
+                  <span class="texto-sutil" <%- ac.alerta ? 'style="color:#B42318;font-weight:600"' : '' %> data-acesso="<%= ac.codigo %>"><%= ac.texto %></span>
+                  <% if (ac.detalhe) { %><br /><span class="texto-sutil"><%= ac.detalhe %></span><% } %>
+                <% } %>
+              </td>
               <td class="col-acao">
                 <div class="flex gap-8" style="justify-content:flex-end">
                   <a href="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
-                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/reset-senha" class="inline"
-                        onsubmit="return confirm('Gerar uma senha provisória para <%= m.nome %>? A senha atual deixa de valer e aparece uma nova para você repassar.')">
-                    <button class="btn btn-secundario btn-sm" type="submit">Resetar senha</button>
+                  <%/* Spec 13: substitui o antigo botão de senha provisória. O nome vai num data-atributo
+                       (escapado) e não dentro do JS, para um apóstrofo no nome não
+                       quebrar a confirmação. */%>
+                  <% if (m.ativo) { %>
+                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/enviar-link" class="inline"
+                        data-nome="<%= m.nome %>"
+                        onsubmit="return confirm('Enviar um link para ' + this.dataset.nome + ' criar uma senha nova? O link anterior deixa de valer.')">
+                    <button class="btn btn-secundario btn-sm" type="submit"><%= ac ? ac.botao : (m.senhaDefinidaEm ? 'Enviar link para nova senha' : 'Reenviar link') %></button>
                   </form>
+                  <% } %>
                   <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/toggle" class="inline">
                     <button class="btn btn-secundario btn-sm" type="submit"><%= m.ativo ? 'Desativar' : 'Ativar' %></button>
                   </form>
@@ -255,11 +271,8 @@
         <input id="bemail" type="email" name="email" required />
       </div>
     </div>
+    <p class="texto-sutil">A pessoa recebe um e-mail para criar a própria senha. Confira o e-mail antes de adicionar.</p>
     <div class="grid-2">
-      <div class="campo">
-        <label for="bsenha">Senha (mínimo 6)</label>
-        <input id="bsenha" type="text" name="senha" required />
-      </div>
       <div class="campo">
         <label for="bpapel">Papel</label>
         <select id="bpapel" name="papel">

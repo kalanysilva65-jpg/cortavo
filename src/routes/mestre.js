@@ -58,7 +58,8 @@ router.post('/barbearias/:id/equipe', mestreController.criarBarbeiro);
 router.get('/barbearias/:id/equipe/:uid/editar', mestreController.formEditarBarbeiro);
 router.post('/barbearias/:id/equipe/:uid', mestreController.atualizarBarbeiro);
 router.post('/barbearias/:id/equipe/:uid/toggle', mestreController.toggleBarbeiro);
-router.post('/barbearias/:id/equipe/:uid/reset-senha', mestreController.resetarSenha);
+// Spec 13: o antigo "Resetar senha" virou "Enviar link" (a Kalany nunca vê senha).
+router.post('/barbearias/:id/equipe/:uid/enviar-link', mestreController.enviarLinkMembro);
 
 // Marca (logo + powered-by) da barbearia
 router.post('/barbearias/:id/marca', uploadImagem, mestreController.salvarMarca);

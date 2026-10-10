@@ -1,0 +1,31 @@
+<%/* Spec 13 (F5): "Esqueci minha senha". A resposta é SEMPRE a mesma, exista o
+     e-mail ou não (não revela quem tem conta). */%>
+<main class="cv-ac">
+  <div class="cv-ac-wrap">
+    <%- include('_acesso-marca') %>
+    <h1 class="cv-ac-titulo">Esqueci minha senha</h1>
+    <% if (pedido) { %>
+      <div class="cv-ac-cartao">
+        <p class="cv-ac-ok" role="status">Se esse e-mail tiver acesso, enviamos um link.</p>
+        <p class="cv-ac-ajuda" style="margin:12px 0 0">O link vale por 1 hora. Olhe também no spam ou em Promoções.</p>
+      </div>
+      <div class="cv-ac-acoes">
+        <a href="/login" class="cv-ac-btn">Ir para o login</a>
+      </div>
+    <% } else { %>
+      <p class="cv-ac-sub">Digite o e-mail que você usa para entrar. Se ele tiver acesso, mandamos um link para você criar uma senha nova.</p>
+      <div class="cv-ac-cartao">
+        <form method="POST" action="/esqueci-senha" class="cv-ac-form">
+          <div class="cv-ac-campo">
+            <label class="cv-ac-rot" for="email">E-mail</label>
+            <input class="cv-ac-entrada" type="email" id="email" name="email" autocomplete="username" inputmode="email" required autofocus />
+          </div>
+          <button class="cv-ac-btn" type="submit">Enviar link</button>
+        </form>
+      </div>
+      <div class="cv-ac-acoes">
+        <a href="/login" class="cv-ac-btn cv-ac-btn--texto">Voltar ao login</a>
+      </div>
+    <% } %>
+  </div>
+</main>
