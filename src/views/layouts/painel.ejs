@@ -8,9 +8,9 @@
   // trazem o próprio cabeçalho. A lista cresce a cada fatia do plano de
   // migração; quando todas estiverem aqui, a pilha antiga sai (fatia F11).
   // A faixa do teste grátis mora só na Início (partials/faixa-teste.ejs).
-  var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao', '/painel/agenda', '/painel/caixa', '/painel/caixa/fechar', '/painel/comissoes', '/painel/secretaria', '/painel/meu-plano', '/painel/perfil', '/painel/link', '/painel/link/cartaz', '/painel/clientes', '/painel/equipe'];
+  var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao', '/painel/agenda', '/painel/caixa', '/painel/caixa/fechar', '/painel/comissoes', '/painel/secretaria', '/painel/meu-plano', '/painel/perfil', '/painel/link', '/painel/link/cartaz', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos'];
   // Telas de cadastro e configuração v3: peças comuns (cv-cadastro.css/js).
-  var CAD_V3 = ['/painel/clientes', '/painel/equipe'];
+  var CAD_V3 = ['/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos'];
   var ehCad = CAD_V3.indexOf(currentPath) !== -1;
   // Folha de estilo e script próprios de uma tela v3 (além de cv-telas).
   var EXTRA_V3 = { '/painel': 'cv-link', '/painel/link': 'cv-link', '/painel/link/cartaz': 'cv-link', '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes', '/painel/secretaria': 'cv-secretaria', '/painel/meu-plano': 'cv-secretaria', '/painel/perfil': 'cv-secretaria' };
@@ -151,6 +151,7 @@
     <%- include('../partials/nav-inferior') %>
   <script src="/js/aviso-conexao.js" defer></script>
 <script src="/js/foto-comprimir.js" defer></script>
+<% if (currentPath === '/painel/servicos') { %><script src="/js/foto-mini.js?v=<%= assetV %>" defer></script><% } %>
 <script src="/js/folha-arrastar.js" defer></script>
 <script src="/js/cv-casca.js?v=<%= assetV %>" defer></script>
 <% if (ehCad) { %><script src="/js/cv-cadastro.js?v=<%= assetV %>" defer></script><% } %>

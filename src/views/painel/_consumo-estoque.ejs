@@ -6,17 +6,11 @@
      ele o salvarInsumos não mexe na receita, pra não apagar sem querer). */%>
 <% if (estoqueItens && estoqueItens.length) { %>
   <input type="hidden" name="insumos_form" value="1" />
-  <div class="sv-campo">
-    <div class="sv-campo-rot">Consome do estoque</div>
-    <div class="sv-consumo-dica">Baixa sozinho quando o atendimento é concluído. Deixe 0 no que não consome.</div>
-    <div class="sv-consumo-lista">
-      <% estoqueItens.forEach(function (e) { %>
-        <label class="sv-consumo-linha">
-          <span class="sv-consumo-nome"><%= e.nome %></span>
-          <input class="sv-campo-input sv-consumo-inp" type="number" name="insumo_<%= e.id %>" min="0" step="1" inputmode="numeric"
-                 value="<%= mapa && mapa[e.id] ? mapa[e.id] : '' %>" placeholder="0" />
-        </label>
-      <% }) %>
-    </div>
-  </div>
+  <fieldset class="cv-campo cv-consumo">
+    <legend class="cv-rotulo">Consome do estoque</legend>
+    <span class="cv-ajuda">Baixa sozinho quando o atendimento é concluído. Deixe 0 no que não consome.</span>
+    <% estoqueItens.forEach(function (e) { %>
+      <label class="cv-consumo-linha"><span><%= e.nome %></span><input class="cv-entrada cv-entrada--num" type="number" name="insumo_<%= e.id %>" min="0" step="1" inputmode="numeric" value="<%= mapa && mapa[e.id] ? mapa[e.id] : '' %>" placeholder="0" /></label>
+    <% }) %>
+  </fieldset>
 <% } %>

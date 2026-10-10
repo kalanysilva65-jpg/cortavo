@@ -1,0 +1,157 @@
+<%/* Serviços e produtos (redesign v3; Dani, prints 50 a 52 e 48 no PC).
+     Uma peça para as duas telas: segmento Serviços | Produtos, a nota das
+     fotos opcionais, a lista com a miniatura (ou o quadro da câmera) e o
+     "Novo" largo no fim. Edição em folha: a foto no objeto preto com a moldura
+     do recorte, a prévia de como aparece no link (só serviço), campos, consumo
+     do estoque, ativar e excluir. Mesmas rotas (/painel/servicos...) e campos.
+     Parâmetro: tipo = 'servico' | 'produto'. */%>
+<%
+  var ehS = tipo === 'servico';
+  var itens = ehS ? servicos : produtos;
+  var palavra = ehS ? 'serviço' : 'produto';
+  var fechar = include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' });
+  var comFoto = itens.filter(function (x) { return x.fotoUrl; }).length;
+  var dinheiro = function (c, tam) { return include('../partials/dinheiro', { cvC: c, cvTam: tam || 'p' }); };
+  function dur(m) { if (!m) return 'Sem horário'; if (m < 60) return m + ' min'; var h = Math.floor(m / 60), r = m % 60; return h + 'h' + (r ? String(r).padStart(2, '0') : ''); }
+  function reais(c) { return 'R$ ' + (c / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+%>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup">Cadastros</p><h1>Serviços e produtos</h1></div>
+</header>
+
+<div class="cv-secao" style="margin-top:16px">
+  <nav class="cv-seg" aria-label="Serviços e produtos">
+    <a href="/painel/servicos" aria-pressed="<%= ehS %>"<% if (ehS) { %> aria-current="page"<% } %>>Serviços</a>
+    <a href="/painel/produtos" aria-pressed="<%= !ehS %>"<% if (!ehS) { %> aria-current="page"<% } %>>Produtos</a>
+  </nav>
+</div>
+
+<% if (!ehS && typeof resumoMes !== 'undefined' && resumoMes) { %>
+  <div class="cv-secao" style="margin-top:14px">
+    <section class="cv-objeto cv-gravada" aria-label="Vendido no mês">
+      <span class="rot" style="color:var(--c-sobre-objeto-2);font-size:14px;font-weight:600">Vendido no mês</span>
+      <div style="margin-top:6px"><%- dinheiro(resumoMes.receita, 'g') %></div>
+      <p style="margin:8px 0 0;font-size:14px;color:var(--c-sobre-objeto-2)"><%= resumoMes.unidades %> <%= resumoMes.unidades === 1 ? 'unidade' : 'unidades' %> de <%= resumoMes.itens %> <%= resumoMes.itens === 1 ? 'produto' : 'produtos' %><% if (resumoMes.topNome) { %> · <%= resumoMes.topNome %> lidera com <%= resumoMes.topQtd %><% } %></p>
+    </section>
+  </div>
+<% } %>
+
+<% if (itens.length) { %>
+  <div class="cv-secao" style="margin-top:14px">
+    <div class="cv-cartao cv-cat-nota"><%- include('../partials/icone', { cvIc: 'imagem' }) %><p><b>Fotos são opcionais.</b> <%= ehS ? 'Quando tem foto, ela aparece no seu link de agendamento.' : 'A foto ajuda a equipe a achar o produto na venda.' %> <%= comFoto %> de <%= itens.length %> <%= itens.length === 1 ? palavra : palavra + 's' %> com foto.</p></div>
+  </div>
+<% } %>
+
+<section class="cv-secao" style="margin-top:14px" aria-label="<%= ehS ? 'Serviços' : 'Produtos' %>">
+  <% if (!itens.length) { %>
+    <div class="cv-cartao cv-vazio" role="status"><h2>Nenhum <%= palavra %> ainda</h2><p><%= ehS ? 'Os serviços aparecem no link de agendamento e na agenda.' : 'Os produtos entram no caixa e na comissão.' %></p></div>
+  <% } else { %>
+    <ul class="cv-lista">
+      <% itens.forEach(function (s) { %>
+        <li><button type="button" class="cv-linha" data-abrir-folha="cat-folha-<%= s.id %>">
+          <span class="cv-cat-mini<%= s.fotoUrl ? '' : ' sem' %>"><% if (s.fotoUrl) { %><img src="<%= s.fotoMiniUrl || s.fotoUrl %>" alt="" loading="lazy" /><% } else { %><%- include('../partials/icone', { cvIc: 'camera' }) %><% } %></span>
+          <span class="corpo">
+            <span class="t"><%= s.nome %><% if (!s.ativo) { %> <span class="cv-etq cv-etq--listra">inativo</span><% } %></span>
+            <span class="s"><% if (ehS) { %><%= dur(s.duracaoMin) %> · <% } %><%= reais(s.valor) %><%= s.fotoUrl ? '' : ', sem foto' %><% if (!ehS) { %> · <%= s.vendidosMes %> no mês<% } %></span>
+          </span>
+          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button></li>
+      <% }) %>
+    </ul>
+  <% } %>
+  <button class="cv-btn cv-btn--largo" type="button" data-abrir-folha="cat-folha-novo" style="margin-top:14px"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--20' }) %>Novo <%= palavra %></button>
+  <button class="cv-btn cv-btn--texto cv-btn--largo" type="button" data-abrir-folha="cat-folha-categorias">Categorias</button>
+</section>
+
+<%/* Campos comuns de novo e editar. */%>
+<% function campos(s) { var id = s ? s.id : 'novo'; %>
+  <% if (!ehS) { %><input type="hidden" name="ehProduto" value="on" /><% } %>
+  <div class="cv-campo"><label for="nome-<%= id %>">Nome</label><input class="cv-entrada" id="nome-<%= id %>" name="nome" value="<%= s ? s.nome : '' %>" placeholder="<%= ehS ? 'Ex.: Corte simples' : 'Ex.: Pomada modeladora' %>" required /></div>
+  <% if (ehS) { %><div class="cv-campo"><label for="descricao-<%= id %>">Descrição <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><textarea class="cv-entrada" id="descricao-<%= id %>" name="descricao" rows="3" maxlength="1000" placeholder="O que está incluso"><%= s ? (s.descricao || '') : '' %></textarea></div><% } %>
+  <div class="cv-dupla" style="margin-top:14px">
+    <div class="cv-campo"><label for="valor-<%= id %>">Preço, em reais</label><input class="cv-entrada cv-entrada--num" id="valor-<%= id %>" name="valor" type="number" step="0.01" min="0" inputmode="decimal" value="<%= s ? (s.valor / 100).toFixed(2) : '' %>" placeholder="<%= ehS ? '35,00' : '45,00' %>" required /></div>
+    <% if (ehS) { %>
+      <div class="cv-campo"><label for="duracaoMin-<%= id %>">Duração, em minutos</label><input class="cv-entrada cv-entrada--num" id="duracaoMin-<%= id %>" name="duracaoMin" type="number" min="0" inputmode="numeric" value="<%= s ? s.duracaoMin : 30 %>" /></div>
+    <% } else { %>
+      <div class="cv-campo"><label for="comissaoPercentual-<%= id %>">Comissão, em %</label><input class="cv-entrada cv-entrada--num" id="comissaoPercentual-<%= id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" inputmode="decimal" value="<%= s ? s.comissaoPercentual : 10 %>" /></div>
+    <% } %>
+  </div>
+  <div class="cv-campo"><label for="categoriaId-<%= id %>">Categoria</label>
+    <select class="cv-entrada" id="categoriaId-<%= id %>" name="categoriaId"><option value="">Sem categoria</option><% categorias.forEach(function (c) { %><option value="<%= c.id %>"<%= s && s.categoriaId === c.id ? ' selected' : '' %>><%= c.nome %></option><% }) %></select>
+  </div>
+  <% if (ehS) { %>
+    <label class="cv-chave" style="margin-top:8px"><span>É um encaixe<small style="display:block;font-size:13px;color:var(--c-apoio)">Junto de outro serviço não soma tempo; sozinho, conta o próprio.</small></span><input type="checkbox" name="ehEncaixe" value="on"<%= s && s.ehEncaixe ? ' checked' : '' %> /></label>
+  <% } %>
+  <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: s ? ((insumosPorServico && insumosPorServico[s.id]) || {}) : {} }) %>
+<% } %>
+
+<section class="cv-folha" id="cat-folha-novo" data-folha role="dialog" aria-modal="true" aria-labelledby="cat-novo-t">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="cat-novo-t" tabindex="-1" data-foco>Novo <%= palavra %></h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
+    <form method="POST" enctype="multipart/form-data" action="/painel/servicos">
+      <div class="cv-campo"><label for="foto-novo">Foto <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><input class="cv-entrada cv-cat-arquivo" id="foto-novo" name="foto" type="file" accept="image/*"<% if (ehS) { %> data-foto-mini<% } %> /><span class="cv-ajuda">JPG, PNG ou WEBP. A foto é reduzida no próprio aparelho.</span></div>
+      <% campos(null) %>
+      <button class="cv-btn cv-btn--largo" type="submit">Adicionar</button>
+    </form>
+  </div>
+</section>
+
+<% itens.forEach(function (s) { %>
+<section class="cv-folha" id="cat-folha-<%= s.id %>" data-folha role="dialog" aria-modal="true" aria-labelledby="cat-t-<%= s.id %>">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="cat-t-<%= s.id %>" tabindex="-1" data-foco>Editar <%= palavra %></h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
+    <form method="POST" enctype="multipart/form-data" action="/painel/servicos/<%= s.id %>">
+      <div class="cv-objeto cv-gravada cv-cat-foto">
+        <% if (s.fotoUrl) { %><img src="<%= s.fotoUrl %>" alt="Foto de <%= s.nome %>" /><span class="moldura" aria-hidden="true"></span><span class="legenda"><%= ehS ? 'Recorte que aparece no link' : 'Foto do produto' %></span><% } else { %><span class="vazia"><%- include('../partials/icone', { cvIc: 'camera' }) %><span>Sem foto. <%= ehS ? 'O cartão no link fica só com o texto.' : '' %></span></span><% } %>
+      </div>
+      <div class="cv-dupla cv-cat-foto-acoes">
+        <label class="cv-btn cv-btn--2" for="foto-<%= s.id %>"><%- include('../partials/icone', { cvIc: 'camera', cvCls: 'cv-ic--20' }) %><%= s.fotoUrl ? 'Trocar foto' : 'Adicionar foto' %></label>
+        <% if (s.fotoUrl) { %><button type="submit" class="cv-btn cv-btn--2 cv-txt-perigo" formaction="/painel/servicos/<%= s.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')"><%- include('../partials/icone', { cvIc: 'lixo', cvCls: 'cv-ic--20' }) %>Remover foto</button><% } %>
+      </div>
+      <input class="cv-oculto" id="foto-<%= s.id %>" name="foto" type="file" accept="image/*"<% if (ehS) { %> data-foto-mini<% } %> />
+      <% if (ehS) { %>
+        <p class="cv-rotulo" style="margin:16px 0 8px">Como aparece no link de agendamento</p>
+        <div class="cv-cartao cv-cat-prev"><span class="t"><b><%= s.nome %></b><small><%= dur(s.duracaoMin) %> · <%= reais(s.valor) %></small></span><% if (s.fotoUrl) { %><span class="cv-cat-mini"><img src="<%= s.fotoMiniUrl || s.fotoUrl %>" alt="" /></span><% } %><span class="marca" aria-hidden="true"></span></div>
+      <% } %>
+      <div style="margin-top:16px"><% campos(s) %></div>
+      <button class="cv-btn cv-btn--largo" type="submit">Salvar alterações</button>
+    </form>
+    <div class="cv-folha-acoes cv-dupla">
+      <form method="POST" action="/painel/servicos/<%= s.id %>/toggle"><button class="cv-btn cv-btn--2 cv-btn--largo" type="submit"><%= s.ativo ? 'Desativar' : 'Ativar' %></button></form>
+      <form method="POST" action="/painel/servicos/<%= s.id %>/remover" data-confirmar="Excluir este <%= palavra %>?"><button class="cv-btn cv-btn--2 cv-txt-perigo cv-btn--largo" type="submit">Excluir</button></form>
+    </div>
+  </div>
+</section>
+<% }) %>
+
+<section class="cv-folha" id="cat-folha-categorias" data-folha role="dialog" aria-modal="true" aria-labelledby="cat-cats-t">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="cat-cats-t" tabindex="-1" data-foco>Categorias</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub">Remover uma categoria não apaga os itens: eles ficam sem categoria.</p>
+    <form method="POST" action="/painel/servicos/categorias" class="cv-linha-form">
+      <input type="hidden" name="retorno" value="<%= ehS ? 'servicos' : 'produtos' %>" />
+      <label class="cv-oculto" for="cat-nova">Nova categoria</label><input class="cv-entrada" id="cat-nova" name="nome" placeholder="Nova categoria" required />
+      <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Adicionar</button>
+    </form>
+    <% if (categorias.length) { %>
+      <ul class="cv-linhas" style="margin-top:12px">
+        <% categorias.forEach(function (c) { %>
+          <li>
+            <form method="POST" action="/painel/servicos/categorias/<%= c.id %>" class="cv-linha-form" style="flex:1">
+              <input type="hidden" name="retorno" value="<%= ehS ? 'servicos' : 'produtos' %>" />
+              <input class="cv-entrada" name="nome" value="<%= c.nome %>" aria-label="Nome da categoria" />
+              <span class="cv-etq" title="Itens"><%= c._count.servicos %></span>
+              <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Salvar</button>
+            </form>
+            <form method="POST" action="/painel/servicos/categorias/<%= c.id %>/remover?retorno=<%= ehS ? 'servicos' : 'produtos' %>" data-confirmar="Remover esta categoria?"><button class="cv-redondo cv-redondo--leve" type="submit" aria-label="Remover a categoria <%= c.nome %>"><%- fechar %></button></form>
+          </li>
+        <% }) %>
+      </ul>
+    <% } else { %><p class="cv-texto-apoio" style="margin-top:10px">Nenhuma categoria.</p><% } %>
+  </div>
+</section>
+
+<script>
+  // Compatível com os links antigos (abrirFolha('novo'), abrirFolha(id)).
+  function abrirFolha(id) { var ir = function () { if (window.cvAbrirFolha) cvAbrirFolha('cat-folha-' + id); }; if (window.cvAbrirFolha) ir(); else document.addEventListener('DOMContentLoaded', ir); }
+</script>

@@ -52,3 +52,24 @@ test('Equipe v3: segmento, lista, ficha em folha com o objeto do mês, foto, ace
   assert.match(html, /action="\/painel\/equipe\/3\/toggle"/);
   assert.match(html, /<form method="POST" action="\/painel\/equipe">/);
 });
+
+test('Serviços e produtos v3: uma peça, segmento, foto opcional com miniatura, edição em folha e mesmas rotas', async () => {
+  v3('/painel/servicos'); v3('/painel/produtos');
+  const s = { id: 4, nome: 'Corte', valor: 4590, duracaoMin: 40, ativo: true, fotoUrl: '/u/g.jpg', fotoMiniUrl: '/u/m.jpg', categoriaId: 1, descricao: '', ehEncaixe: false, comissaoPercentual: 10, vendidosMes: 3 };
+  const d = { ...comuns, servicos: [s, { ...s, id: 5, fotoUrl: null, fotoMiniUrl: null }], produtos: [s], categorias: [{ id: 1, nome: 'Cortes', _count: { servicos: 1 } }], estoqueItens: [{ id: 9, nome: 'Lâmina' }], insumosPorServico: { 4: { 9: 2 } }, resumoMes: { receita: 1000, unidades: 1, itens: 1 } };
+  const sv = await render('painel/servicos.ejs', d);
+  assert.doesNotMatch(sv, SEM_ANTIGO);
+  assert.match(sv, /<a href="\/painel\/servicos" aria-pressed="true" aria-current="page">Serviços<\/a>/);
+  assert.match(sv, /1 de 2 serviços com foto/);
+  assert.match(sv, /<img src="\/u\/m\.jpg" alt="" loading="lazy" \/>/);
+  assert.match(sv, /R\$ 45,90, sem foto|R\$ 45,90<\/span>/);
+  assert.match(sv, /action="\/painel\/servicos\/4" *>|enctype="multipart\/form-data" action="\/painel\/servicos\/4">/);
+  assert.match(sv, /name="foto" type="file" accept="image\/\*" data-foto-mini/);
+  assert.match(sv, /name="insumo_9"[^>]*value="2"/);
+  assert.match(sv, /name="ehEncaixe"/);
+  const pr = await render('painel/produtos.ejs', d);
+  assert.match(pr, /name="ehProduto" value="on"/);
+  assert.match(pr, /name="comissaoPercentual"/);
+  assert.equal((pr.match(/class="cv-objeto cv-gravada" aria-label="Vendido no mês"/g) || []).length, 1);
+  assert.doesNotMatch(pr, /data-foto-mini/);
+});

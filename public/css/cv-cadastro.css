@@ -116,3 +116,35 @@ fieldset.cv-campo { border: 0; padding: 0; margin: 14px 0 0; min-width: 0; }
 fieldset.cv-campo legend { padding: 0; margin-bottom: 4px; }
 .cv-eq-acessos .cv-chave + .cv-chave { border-top: .5px solid var(--c-fio-forte); }
 .cv-eq-acessos .cv-chave span { font-size: 15px; }
+
+/* ---- Serviços e produtos (Dani, prints 50 a 52) ------------------------- */
+.cv-seg a { display: grid; place-items: center; text-decoration: none; color: inherit; }
+.cv-cat-nota { display: flex; gap: 14px; align-items: center; }
+.cv-cat-nota .cv-ic { flex-shrink: 0; width: 24px; height: 24px; }
+.cv-cat-nota p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--c-tinta-2); }
+.cv-cat-nota b { color: var(--c-tinta); font-weight: 800; }
+.cv-cat-mini { width: 48px; height: 48px; border-radius: 13px; overflow: hidden; flex-shrink: 0; display: grid; place-items: center; background: var(--c-bloco-2); }
+.cv-cat-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cv-cat-mini.sem { background: var(--c-superficie); box-shadow: inset 0 0 0 1px var(--c-fio-forte); color: var(--c-tinta-2); }
+.cv-cat-mini .cv-ic { width: 20px; height: 20px; }
+.cv-cat-foto { position: relative; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; display: grid; place-items: center; }
+.cv-cat-foto img { width: 100%; height: 100%; object-fit: cover; }
+.cv-cat-foto .moldura { position: absolute; top: 6%; bottom: 6%; aspect-ratio: 1 / 1; left: 50%; translate: -50% 0; border-radius: 22px; box-shadow: 0 0 0 1.5px rgba(255,255,255,.85), 0 0 0 999px rgba(0,0,0,.35); pointer-events: none; }
+.cv-cat-foto .legenda { position: absolute; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: var(--r-pilula); background: rgba(0,0,0,.6); color: #fff; font-size: 13px; font-weight: 600; }
+.cv-cat-foto .vazia { display: grid; justify-items: center; gap: 8px; color: var(--c-sobre-objeto-2); font-size: 14px; text-align: center; padding: 20px; }
+.cv-cat-foto .vazia .cv-ic { width: 32px; height: 32px; }
+.cv-cat-foto-acoes { margin-top: 10px; }
+.cv-cat-foto-acoes .cv-btn { width: 100%; cursor: pointer; }
+.cv-cat-foto-acoes label.cv-btn:focus-within { outline: 2.5px solid var(--c-tinta); outline-offset: 2px; }
+.cv-cat-prev { display: flex; align-items: center; gap: 12px; }
+.cv-cat-prev .t { flex: 1; min-width: 0; }
+.cv-cat-prev b { display: block; font-size: 17px; font-weight: 600; }
+.cv-cat-prev small { font-size: 14px; color: var(--c-apoio); }
+.cv-cat-prev .cv-cat-mini { width: 64px; height: 64px; border-radius: 16px; }
+.cv-cat-prev .marca { width: 28px; height: 28px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--c-fio-forte); flex-shrink: 0; }
+.cv-cat-arquivo { padding-top: 12px; }
+.cv-txt-perigo { color: var(--c-perigo) !important; }
+.cv-consumo .cv-consumo-linha { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 15px; }
+.cv-consumo .cv-consumo-linha .cv-entrada { width: 96px; flex-shrink: 0; }
+.cv-seg a { border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); min-height: 34px; }
+.cv-seg a[aria-pressed="true"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
