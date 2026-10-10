@@ -116,6 +116,7 @@
   <% if (horasLivresV && horasLivresV.livres > 0) { %> Há <b><%= horasLivresV.livres %> <%= plural(horasLivresV.livres, 'horário livre', 'horários livres') %></b> <%= horasLivresV.faixa %>.<% } %>
 </p>
 
+<% if (typeof primeirosPassos !== 'undefined' && primeirosPassos) { %><%- include('_primeiros-passos') %><% } %>
 <div class="cv-secao pc-g-hoje" style="margin-top:20px">
   <section class="cv-objeto cv-gravada" aria-label="Resumo de hoje">
     <div class="cv-painel">
@@ -202,6 +203,8 @@
   </section>
 <% } %>
 </div>
+
+<% if (typeof boasVindas !== 'undefined' && boasVindas) { %><%- include('_boas-vindas') %><% } %>
 
 <script>
   /* M2 (abertura do dia): anéis fecham e números contam só na PRIMEIRA vez que

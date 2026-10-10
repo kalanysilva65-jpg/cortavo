@@ -251,8 +251,30 @@ async function ver(req, res) {
     }
   }
 
+  // F9 (spec 11): Primeiros passos para quem cuida da barbearia, enquanto
+  // houver passo por fazer; e a boas-vindas na primeira entrada pelo link
+  // (o flash "Senha criada" vira a boas-vindas, não um aviso).
+  let primeirosPassos = null;
+  let boasVindas = false;
+  if (ehAdmin) {
+    try {
+      const bb = res.locals.barbeariaAtual;
+      primeirosPassos = await require('../services/primeirosPassos').montar({ barbeariaId: b, planoChave: bb && bb.planoCortavo });
+      if (primeirosPassos.completo) primeirosPassos = null;
+    } catch (e) {
+      primeirosPassos = null;
+    }
+    const fl = res.locals.flash;
+    if (fl && fl.tipo === 'sucesso' && /^Senha criada/.test(fl.texto || '')) {
+      boasVindas = true;
+      res.locals.flash = null;
+    }
+  }
+
   res.render('painel/dashboard', {
     home,
+    primeirosPassos,
+    boasVindas,
     // Redesign v3 (Início "Painel vivo"): previsto do dia (anel de faturamento
     // quando não há meta do mês), hora da leitura e a fila de hoje.
     previstoHoje,

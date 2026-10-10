@@ -1,0 +1,67 @@
+<%/* Boas-vindas do primeiro acesso (F9; Dani, acesso.html#boas-vindas).
+     Aparece uma vez, logo depois de criar a senha pelo link. Diálogo com foco
+     preso; Esc = Ver depois. Celular: tela cheia sobre a Início, que desce com
+     mola ao fechar; PC: cartão de 520 px sobre o painel esmaecido. */%>
+<%
+  var _nome = (typeof usuario !== 'undefined' && usuario && usuario.nome) ? String(usuario.nome).trim().split(/\s+/)[0] : '';
+  var _barb = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'sua barbearia';
+  var _total = (typeof primeirosPassos !== 'undefined' && primeirosPassos) ? primeirosPassos.total : 8;
+%>
+<% if (typeof primeirosPassos === 'undefined' || !primeirosPassos) { %><link rel="stylesheet" href="/css/cv-acesso.css?v=<%= typeof assetV !== 'undefined' ? assetV : '' %>" /><% } %>
+<section class="ac-tela ac-tela--bv" id="boas-vindas" role="dialog" aria-modal="true" aria-labelledby="bv-t" aria-describedby="bv-d">
+  <div class="ac-bv">
+    <div class="ac-bv-icone" data-icone-bv><svg viewBox="0 0 1024 1024" aria-hidden="true"><path fill="#fff" d="M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z"/></svg></div>
+    <h1 id="bv-t" tabindex="-1" data-cascata>Bem-vindo à Cortavo<%= _nome ? ', ' + _nome : '' %>.</h1>
+    <p id="bv-d" data-cascata>Vamos deixar a <b><%= _barb %></b> pronta para receber agendamentos. São poucos passos e você pode parar quando quiser.</p>
+    <ol class="ac-bv-passos" data-cascata>
+      <li><span class="n">1</span><span><b>Serviços e equipe</b>O que vocês fazem e quem atende.</span></li>
+      <li><span class="n">2</span><span><b>Horários</b>A agenda só oferece o que você abrir.</span></li>
+      <li><span class="n">3</span><span><b>Seu link</b>Os clientes marcam sozinhos.</span></li>
+    </ol>
+    <p class="ac-bv-mais" data-cascata><span class="cv-num cv-num--p"><%= _total %></span> passos no total. Eles ficam na Início.</p>
+    <div class="ac-bv-acoes" data-cascata>
+      <button class="cv-btn cv-btn--largo" type="button" id="bv-comecar">Começar</button>
+      <button class="cv-btn cv-btn--texto cv-btn--largo" type="button" id="bv-depois">Ver depois</button>
+    </div>
+  </div>
+</section>
+<script>
+  // Depois do parse (cv-movimento é defer). O diálogo vai para o body: dentro
+  // do .cv-palco (que tem transform) o position:fixed ficaria preso.
+  document.addEventListener('DOMContentLoaded', function () {
+    var tela = document.getElementById('boas-vindas'), doc = document;
+    doc.body.appendChild(tela);
+    var M = window.Mola, reduz = function () { return M ? M.reduzMovimento() : matchMedia('(prefers-reduced-motion: reduce)').matches; };
+    var antes = doc.activeElement;
+    doc.body.style.overflow = 'hidden';
+    setTimeout(function () { var h = doc.getElementById('bv-t'); if (h) h.focus({ preventScroll: true }); }, 60);
+    function fechar(comecar) {
+      var fim = function () {
+        tela.remove(); doc.body.style.overflow = '';
+        var card = doc.getElementById('primeiros-passos');
+        var alvo = comecar ? doc.querySelector('.ac-proximo .ac-pp-btn') : null;
+        if (card && comecar) { card.scrollIntoView({ block: 'start', behavior: reduz() ? 'auto' : 'smooth' }); setTimeout(function () { if (alvo) alvo.focus({ preventScroll: true }); }, 320); }
+        else if (antes && antes.focus) antes.focus();
+      };
+      if (reduz() || !tela.animate) { if (tela.animate) tela.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }).onfinish = fim; else fim(); return; }
+      if (innerWidth >= 900) { tela.querySelector('.ac-bv').animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.96)' }], { duration: 200, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'forwards' }).onfinish = fim; return; }
+      var m = M ? M.mola({ resposta: 0.32, amortecimento: 1 }) : { duracao: 420, easing: 'cubic-bezier(0.32,0.72,0,1)' };
+      tela.animate([{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: m.duracao, easing: m.easing, fill: 'forwards' }).onfinish = fim;
+      var palco = doc.querySelector('.cv-palco');
+      if (palco) palco.animate([{ transform: 'scale(.96)', opacity: .7 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(0.32,0.72,0,1)' });
+    }
+    doc.getElementById('bv-comecar').addEventListener('click', function () { fechar(true); });
+    doc.getElementById('bv-depois').addEventListener('click', function () { fechar(false); });
+    doc.addEventListener('keydown', function esc(e) { if (e.key === 'Escape' && doc.getElementById('boas-vindas')) { fechar(false); doc.removeEventListener('keydown', esc); } });
+    tela.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var f = tela.querySelectorAll('button'), a = f[0], z = f[f.length - 1];
+      if (e.shiftKey && doc.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && doc.activeElement === z) { e.preventDefault(); a.focus(); }
+    });
+    // O C do ícone se escreve (M8 curto) e o texto entra em cascata.
+    if (!reduz() && window.Cortavo && Cortavo.desenharLogo) {
+      var ic = tela.querySelector('[data-icone-bv]'); ic.innerHTML = Cortavo.logoSVG('#fff', true); Cortavo.desenharLogo(ic.querySelector('svg'), 900, 300);
+      Array.prototype.forEach.call(tela.querySelectorAll('[data-cascata]'), function (el, i) { el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: 420 + i * 55, easing: 'cubic-bezier(0.23,1,0.32,1)', fill: 'backwards' }); });
+    }
+  });
+</script>

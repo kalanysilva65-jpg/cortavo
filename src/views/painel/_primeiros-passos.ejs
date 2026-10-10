@@ -1,0 +1,34 @@
+<%/* Primeiros passos (F9; Dani, acesso.html#passos). Só para quem cuida da
+     barbearia e só enquanto falta algum passo. O passo atual tem o número em
+     disco preto e o botão de vidro preto; os outros, botão cinza. "Esconder"
+     guarda a escolha neste aparelho. */%>
+<% var PP = primeirosPassos; %>
+<link rel="stylesheet" href="/css/cv-acesso.css?v=<%= typeof assetV !== 'undefined' ? assetV : '' %>" />
+<section class="cv-secao" style="margin-top:16px" aria-labelledby="pp-t" id="primeiros-passos-secao" data-barbearia="<%= barbeariaAtual ? barbeariaAtual.id : '' %>">
+  <div class="cv-cartao ac-pp" id="primeiros-passos">
+    <div class="cv-cartao-cab"><h2 id="pp-t" tabindex="-1" style="margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em">Primeiros passos</h2><button class="cv-btn cv-btn--texto" type="button" id="pp-esconder" style="min-height:44px;padding:0 4px;font-size:14px;color:var(--c-apoio)">Esconder</button></div>
+    <div class="ac-pp-num"><span class="cv-num cv-num--m"><%= PP.feitos %><span class="de">de <%= PP.total %> feitos</span></span><span class="pct cv-num"><%= PP.pct %>%</span></div>
+    <div class="cv-progresso" role="progressbar" aria-valuenow="<%= PP.feitos %>" aria-valuemin="0" aria-valuemax="<%= PP.total %>" aria-valuetext="<%= PP.feitos %> de <%= PP.total %> feitos" aria-label="Primeiros passos"><b style="transform:scaleX(<%= (PP.feitos / PP.total).toFixed(3) %>)"></b></div>
+    <ol class="cv-passos">
+      <% PP.passos.forEach(function (p) { var atual = p.chave === PP.proximo; %>
+        <% if (atual) { %>
+          <li class="cv-passo ac-proximo"><span class="marca"><%= p.n %></span><div><div class="t"><%= p.t %></div><div class="s"><%= p.s %></div><a class="cv-btn cv-btn--p ac-pp-btn" href="<%= p.href %>"><%= p.acao %></a></div><span></span></li>
+        <% } else { %>
+          <li class="cv-passo<%= p.feito ? ' feito' : '' %>"><span class="marca"><% if (p.feito) { %><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg><span class="cv-oculto">Feito: </span><% } else { %><%= p.n %><% } %></span><div><div class="t"><%= p.t %></div><div class="s"><%= p.s %></div></div><% if (!p.feito) { %><a class="cv-btn cv-btn--2 cv-btn--p" href="<%= p.href %>"><%= p.acao %></a><% } else { %><span></span><% } %></li>
+        <% } %>
+      <% }) %>
+    </ol>
+    <a class="ac-pp-plano" href="/painel/meu-plano"><span><b>Meu plano</b>Veja o que seu plano inclui e quanto já usou no mês.</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+  </div>
+</section>
+<script>
+  (function () {
+    var sec = document.getElementById('primeiros-passos-secao'), k = 'cvPassosEscondido:' + sec.dataset.barbearia;
+    try { if (localStorage.getItem(k) === '1') sec.hidden = true; } catch (e) {}
+    document.getElementById('pp-esconder').addEventListener('click', function () {
+      try { localStorage.setItem(k, '1'); } catch (e) {}
+      sec.hidden = true;
+      if (window.Cortavo && Cortavo.aviso) Cortavo.aviso({ titulo: 'Primeiros passos escondidos' });
+    });
+  })();
+</script>
