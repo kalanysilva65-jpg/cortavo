@@ -1,91 +1,76 @@
-<%/* Aba Metas (design suave). Métrica e escopo configuráveis; progresso do mês.
-     Estilos em public/css/sv-metas.css. */%>
-<div class="sv-tela">
+<%/* Metas (redesign v3). Sem mockup próprio: o sistema aplicado com rigor.
+     O objeto preto é a primeira meta (a da Início usa a mesma), com o anel
+     fechando até o alvo; as demais em cartão com barra. "Nova meta" em folha.
+     Mesmas rotas e campos (/painel/metas). */%>
+<%
+  var fechar = include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' });
+  var dinheiro = function (c, tam) { return include('../partials/dinheiro', { cvC: c, cvTam: tam || 'p' }); };
+  function valor(it, v, tam) { return it.dinheiro ? dinheiro(v, tam) : '<span class="cv-num cv-num--' + (tam || 'p') + '">' + v + '</span>'; }
+  var prim = itens[0], resto = itens.slice(1);
+%>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup"><%= mesLabel %></p><h1>Metas</h1></div>
+  <div class="cv-cab-acoes"><button class="cv-btn" type="button" data-abrir-folha="mt-folha-nova"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--18' }) %>Nova</button></div>
+</header>
 
-  <div class="sv-mt-topo sv-reveal">
-    <div>
-      <div class="sv-titulo">Metas</div>
-      <div class="sv-mt-mes"><%= mesLabel %></div>
+<% if (!prim) { %>
+  <div class="cv-secao" style="margin-top:16px">
+    <div class="cv-cartao cv-vazio" role="status">
+      <div class="marca" aria-hidden="true"><svg class="cv-aneis" width="132" height="132" viewBox="0 0 132 132"><circle class="trilho" cx="66" cy="66" r="60" stroke-width="12"/></svg></div>
+      <h2>Nenhuma meta ainda</h2><p>Defina quanto quer faturar no mês (ou quantos atendimentos). A Início mostra quanto falta.</p>
+      <div class="acoes"><button class="cv-btn" type="button" data-abrir-folha="mt-folha-nova">Criar a primeira meta</button></div>
     </div>
-    <a href="/painel" class="sv-mt-fechar" title="Início" aria-label="Voltar ao início">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </a>
   </div>
-
-  <% if (itens.length === 0) { %>
-    <div class="sv-cartao sv-mt-vazio sv-reveal">Nenhuma meta ainda. Crie a primeira abaixo.</div>
-  <% } else { %>
-    <% itens.forEach(function (it, i) { %>
-      <div class="sv-cartao sv-mt-card sv-reveal" style="animation-delay:<%= (i * 0.05).toFixed(2) %>s">
-        <div class="sv-mt-card-topo">
-          <div class="sv-mt-card-id">
-            <div class="sv-mt-card-tit"><%= it.label %></div>
-            <div class="sv-mt-card-escopo"><%= it.escopo %></div>
-          </div>
-          <form method="POST" action="/painel/metas/<%= it.id %>/remover" class="inline" onsubmit="return confirm('Remover esta meta?')">
-            <button type="submit" class="sv-mt-x" aria-label="Remover meta">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-            </button>
-          </form>
-        </div>
-        <div class="sv-mt-barra"><div class="sv-mt-fill <%= it.batida ? 'sv-mt-fill--ok' : '' %>" style="width:<%= it.pct %>%"></div></div>
-        <div class="sv-mt-nums">
-          <span class="sv-mt-atual"><%= it.dinheiro ? fmtBRL(it.atual) : it.atual %></span>
-          <span class="sv-mt-alvo">de <%= it.dinheiro ? fmtBRL(it.alvo) : it.alvo %> · <%= it.pct %>%<%= it.batida ? ' · batida ✓' : '' %></span>
-        </div>
+<% } else { %>
+  <div class="cv-secao" style="margin-top:16px">
+    <section class="cv-objeto cv-gravada cv-mt-obj" aria-label="<%= prim.label %>, <%= prim.pct %>%">
+      <svg class="cv-aneis" width="108" height="108" viewBox="0 0 108 108" aria-hidden="true"><circle class="trilho" cx="54" cy="54" r="47" stroke-width="12"/><circle class="arco" cx="54" cy="54" r="47" stroke-width="12" pathLength="100" style="stroke:#fff;stroke-dasharray:100 100;stroke-dashoffset:<%= 100 - Math.min(100, prim.pct) %>"/></svg>
+      <div class="corpo">
+        <span class="rot"><%= prim.label %> · <%= prim.escopo %></span>
+        <div><%- valor(prim, prim.atual, 'm') %></div>
+        <span class="rot rot--n">de <%= prim.dinheiro ? fmtBRL(prim.alvo) : prim.alvo %> · <%= prim.pct %>%<%= prim.batida ? ' · batida' : '' %></span>
       </div>
-    <% }) %>
+      <form method="POST" action="/painel/metas/<%= prim.id %>/remover" data-confirmar="Remover esta meta?"><button type="submit" class="cv-redondo cv-mt-x" aria-label="Remover a meta <%= prim.label %>"><%- fechar %></button></form>
+    </section>
+  </div>
+  <% if (resto.length) { %>
+    <section class="cv-secao" aria-labelledby="mt-outras"><div class="cv-secao-cab"><h2 id="mt-outras">Outras metas</h2></div>
+      <div class="cv-pl-lista">
+        <% resto.forEach(function (it) { %>
+          <div class="cv-cartao cv-mt-card">
+            <div class="topo"><span><b><%= it.label %></b><small><%= it.escopo %></small></span>
+              <form method="POST" action="/painel/metas/<%= it.id %>/remover" data-confirmar="Remover esta meta?"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Remover a meta <%= it.label %>"><%- fechar %></button></form></div>
+            <div class="cv-progresso" role="progressbar" aria-valuenow="<%= it.pct %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= it.label %>"><b style="transform:scaleX(<%= (Math.min(100, it.pct) / 100).toFixed(3) %>)"></b></div>
+            <div class="nums"><%- valor(it, it.atual) %><span>de <%= it.dinheiro ? fmtBRL(it.alvo) : it.alvo %> · <%= it.pct %>%<%= it.batida ? ' · batida' : '' %></span></div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
   <% } %>
+<% } %>
 
-  <form method="POST" action="/painel/metas" class="sv-cartao sv-mt-nova sv-reveal">
-    <div class="sv-mt-nova-tit">Nova meta</div>
-
-    <label class="sv-mt-campo">
-      <span>Métrica</span>
-      <select name="metrica" id="mt-metrica">
-        <% Object.keys(metricas).forEach(function (k) { %>
-          <option value="<%= k %>" data-dinheiro="<%= metricas[k].dinheiro ? 1 : 0 %>" data-porbarbeiro="<%= metricas[k].porBarbeiro ? 1 : 0 %>"><%= metricas[k].label %></option>
-        <% }) %>
-      </select>
-    </label>
-
-    <label class="sv-mt-campo">
-      <span>Quem</span>
-      <select name="usuarioId" id="mt-escopo">
-        <option value="">Barbearia toda</option>
-        <% barbeiros.forEach(function (b) { %>
-          <option value="<%= b.id %>"><%= b.nome %></option>
-        <% }) %>
-      </select>
-    </label>
-
-    <label class="sv-mt-campo">
-      <span>Alvo <span id="mt-alvo-hint" class="sv-mt-hint">(R$)</span></span>
-      <input name="alvo" id="mt-alvo" inputmode="decimal" placeholder="0" autocomplete="off" required />
-    </label>
-
-    <button type="submit" class="sv-mt-add">Criar meta</button>
-  </form>
-
-</div>
+<section class="cv-folha" id="mt-folha-nova" data-folha role="dialog" aria-modal="true" aria-labelledby="mt-nova-t">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="mt-nova-t" tabindex="-1" data-foco>Nova meta</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
+    <form method="POST" action="/painel/metas">
+      <div class="cv-campo"><label for="mt-metrica">Métrica</label><select class="cv-entrada" name="metrica" id="mt-metrica"><% Object.keys(metricas).forEach(function (k) { %><option value="<%= k %>" data-dinheiro="<%= metricas[k].dinheiro ? 1 : 0 %>" data-porbarbeiro="<%= metricas[k].porBarbeiro ? 1 : 0 %>"><%= metricas[k].label %></option><% }) %></select></div>
+      <div class="cv-campo"><label for="mt-escopo">Quem</label><select class="cv-entrada" name="usuarioId" id="mt-escopo"><option value="">Barbearia toda</option><% barbeiros.forEach(function (b) { %><option value="<%= b.id %>"><%= b.nome %></option><% }) %></select></div>
+      <div class="cv-campo"><label for="mt-alvo">Alvo <span id="mt-alvo-hint" style="font-weight:400;color:var(--c-apoio)">em reais</span></label><input class="cv-entrada cv-entrada--num" name="alvo" id="mt-alvo" inputmode="decimal" placeholder="0" autocomplete="off" required /></div>
+      <button type="submit" class="cv-btn cv-btn--largo">Criar meta</button>
+    </form>
+  </div>
+</section>
 
 <script>
-  // "Novos clientes" é só da barbearia (cliente novo não é de um barbeiro), e o
-  // rótulo do alvo alterna entre R$ e quantidade conforme a métrica.
+  // "Novos clientes" é só da barbearia; o rótulo do alvo alterna entre reais e quantidade.
   (function () {
-    var met = document.getElementById('mt-metrica');
-    var esc = document.getElementById('mt-escopo');
-    var hint = document.getElementById('mt-alvo-hint');
+    var met = document.getElementById('mt-metrica'), esc = document.getElementById('mt-escopo'), hint = document.getElementById('mt-alvo-hint');
     if (!met) return;
     function sync() {
-      var opt = met.options[met.selectedIndex];
-      var dinheiro = opt.getAttribute('data-dinheiro') === '1';
-      var porBarb = opt.getAttribute('data-porbarbeiro') === '1';
-      hint.textContent = dinheiro ? '(R$)' : '(quantidade)';
-      esc.disabled = !porBarb;
-      if (!porBarb) esc.value = '';
+      var o = met.options[met.selectedIndex], din = o.getAttribute('data-dinheiro') === '1', pb = o.getAttribute('data-porbarbeiro') === '1';
+      hint.textContent = din ? 'em reais' : 'em quantidade';
+      esc.disabled = !pb; if (!pb) esc.value = '';
     }
-    met.addEventListener('change', sync);
-    sync();
+    met.addEventListener('change', sync); sync();
   })();
 </script>

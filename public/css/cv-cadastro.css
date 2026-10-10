@@ -178,3 +178,20 @@ div.cv-pl-card { cursor: default; }
 .cv-folha .cv-chips { flex-wrap: wrap; overflow: visible; }
 .cv-pl-card .dias em { white-space: nowrap; }
 .cv-folha .cv-dupla + .cv-campo { margin-top: 14px; }
+
+/* ---- Metas --------------------------------------------------------------- */
+.cv-mt-obj { position: relative; display: flex; align-items: center; gap: 20px; }
+.cv-mt-obj .cv-aneis { flex-shrink: 0; }
+.cv-mt-obj .corpo { min-width: 0; }
+.cv-mt-obj .rot { display: block; font-size: 14px; font-weight: 600; color: var(--c-sobre-objeto-2); }
+.cv-mt-obj .rot--n { font-weight: 400; margin-top: 4px; }
+.cv-mt-obj .cv-num { color: #fff; }
+.cv-mt-obj .cv-num .moeda, .cv-mt-obj .cv-num .cent { color: var(--c-sobre-objeto-2); }
+.cv-mt-obj form { position: absolute; top: 10px; right: 10px; }
+.cv-mt-x { width: 44px; height: 44px; background: rgba(255,255,255,.1); color: #fff; box-shadow: none; }
+.cv-mt-card .topo { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+.cv-mt-card .topo b { display: block; font-size: 16px; font-weight: 600; }
+.cv-mt-card .topo small { font-size: 13px; color: var(--c-apoio); }
+.cv-mt-card .nums { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.cv-mt-card .nums span:last-child { font-size: 13px; color: var(--c-apoio); }
+.cv-mt-obj .corpo { padding-right: 40px; }

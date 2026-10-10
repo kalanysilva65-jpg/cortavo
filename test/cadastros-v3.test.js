@@ -105,3 +105,15 @@ test('Planos v3: objeto com a receita (admin) ou o volume (barbeiro, sem R$), ch
   assert.doesNotMatch(barb, /Receita|R\$ 297,00/);
   assert.doesNotMatch(barb, /data-abrir-folha="pl-folha/);
 });
+
+test('Metas v3: a primeira no objeto com anel, as outras com barra, nova em folha e mesmas rotas', async () => {
+  v3('/painel/metas');
+  const html = await render('painel/metas.ejs', { ...comuns, mesLabel: 'Outubro', barbeiros: [], metricas: { faturamento: { label: 'Faturamento', dinheiro: true, porBarbeiro: true } },
+    itens: [{ id: 1, label: 'Faturamento', escopo: 'Barbearia', dinheiro: true, atual: 1980000, alvo: 3000000, pct: 66 }, { id: 2, label: 'Atendimentos', escopo: 'Diego', dinheiro: false, atual: 61, alvo: 80, pct: 76 }] });
+  assert.doesNotMatch(html, SEM_ANTIGO);
+  assert.equal((html.match(/class="cv-objeto/g) || []).length, 1);
+  assert.match(html, /stroke-dashoffset:34/);
+  assert.match(html, /role="progressbar" aria-valuenow="76"/);
+  assert.match(html, /<form method="POST" action="\/painel\/metas">/);
+  assert.match(html, /action="\/painel\/metas\/2\/remover" data-confirmar/);
+});
