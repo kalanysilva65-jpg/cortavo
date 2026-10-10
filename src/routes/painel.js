@@ -27,6 +27,7 @@ const metaController = require('../controllers/metaController');
 const permissoes = require('../services/permissoes');
 const iaController = require('../controllers/iaController');
 const secretariaController = require('../controllers/secretariaController');
+const linkController = require('../controllers/linkController');
 const logoController = require('../controllers/logoController');
 const meuPlanoController = require('../controllers/meuPlanoController');
 const conversasController = require('../controllers/conversasController');
@@ -128,6 +129,8 @@ router.use(async (req, res, next) => {
   res.locals.ehDono = u.papel === 'dono';
   const barbearia = await prisma.barbearia.findUnique({ where: { id: req.barbeariaId } });
   res.locals.barbeariaAtual = barbearia || null;
+  // Endereço do link de agendamento (subdomínio): atalho da Início e tela do link.
+  res.locals.linkAgendamento = require('../services/linkAgendamento').linkAgendamento(barbearia);
   const usuarioDb = await prisma.usuario.findUnique({ where: { id: u.id } });
   res.locals.usuarioFotoUrl = usuarioDb ? usuarioDb.fotoUrl : null;
   res.locals.usuarioPrimeiroNome = (u.nome || '').split(' ')[0];
@@ -199,6 +202,10 @@ router.post('/api/gestao/comissoes/baixa/:id/desfazer', exigeAdmin, exigeFuncaoP
 
 // Foto do próprio usuário logado (hero do painel).
 router.get('/logo', exigeAdmin, logoController.ver);
+// Link de agendamento (redesign v3, telas da Dani): copiar, compartilhar, QR e cartaz.
+router.get('/link', exigeAdmin, linkController.ver);
+router.get('/link/cartaz', exigeAdmin, linkController.cartaz);
+router.get('/link/qr.svg', exigeAdmin, linkController.qrSvg);
 router.post('/logo', exigeAdmin, uploadLogo, logoController.salvar);
 router.post('/logo/remover', exigeAdmin, logoController.remover);
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);

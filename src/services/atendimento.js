@@ -510,7 +510,7 @@ async function responderConversa(barbeariaId, conversaId) {
     // ficar repetindo o "vou chamar a equipe" com base no histórico antigo.
     retomadoDeHumano: msgs.some((m) => m.autor === 'humano'),
     regrasExtras: await lerConfig(barbeariaId, 'secretaria_regras', null),
-    config: { linkAgendamento: (await lerConfig(barbeariaId, 'secretaria_link', null)) || (b && b.slug ? `https://agenda.exemplo.com/${b.slug}` : null) },
+    config: { linkAgendamento: (await lerConfig(barbeariaId, 'secretaria_link', null)) || (b && b.slug ? require('./linkAgendamento').linkAgendamento(b).url : null) },
   };
 
   // Auto-recuperação: na 2ª repetição, manda só a última mensagem do cliente (sem

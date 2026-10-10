@@ -1,6 +1,7 @@
 // Secretária Cortavo — CONFIGURAÇÃO (o dono ajusta modo, link, regras e tetos) e
 // o CHAT DE TESTE (etapa 3.1, calibrar as respostas antes de ligar o WhatsApp).
 // Tudo só admin.
+const { linkAgendamento } = require('../services/linkAgendamento');
 const secretaria = require('../services/secretaria');
 const onboard = require('../services/whatsappOnboard');
 const numeroCortavo = require('../services/waNumeroCortavo');
@@ -32,7 +33,7 @@ function contextoDe(req, res, modo) {
     permitirAgendar: false,
     // No modo terceiros, o link de agendamento do outro app viria da config da
     // barbearia. Aqui, no teste, um link de exemplo.
-    config: { linkAgendamento: b && b.slug ? `https://agenda.exemplo.com/${b.slug}` : null },
+    config: { linkAgendamento: b && b.slug ? linkAgendamento(b).url : null },
   };
 }
 

@@ -158,6 +158,17 @@
   <% } %>
 </div>
 
+<%/* Atalho do link de agendamento (Dani, link.html#inicio): discreto, só
+     para quem cuida da barbearia. Tocar no texto abre a tela do link. */%>
+<% if (admin && typeof linkAgendamento !== 'undefined' && linkAgendamento) { %>
+<div class="cv-secao" style="margin-top:12px">
+  <div class="cv-cartao lk-atalho">
+    <%- include('../partials/icone', { cvIc: 'link', cvCls: 'cv-ic--20' }) %>
+    <a class="t" href="/painel/link"><b>Seu link</b><small><span style="color:var(--c-tinta-2);font-weight:600"><%= linkAgendamento.slug %></span>.<%= linkAgendamento.dominio %></small></a>
+    <button class="cv-btn cv-btn--2 cv-btn--p lk-atalho-btn" type="button" data-copiar-url="<%= linkAgendamento.url %>" aria-label="Copiar o link <%= linkAgendamento.curto %>"><span class="rot-b">Copiar</span></button>
+  </div>
+</div>
+<% } %>
 <div class="pc-g-duo">
 <% if (horasLivresV && horasLivresV.ocup && horasLivresV.ocup.length) { %>
   <% var hl = horasLivresV, n = hl.ocup.length; %>

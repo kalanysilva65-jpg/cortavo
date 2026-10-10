@@ -44,8 +44,12 @@
     { t: 'Barbearia', itens: lista([
       { href: '/painel/equipe', t: 'Equipe e permissões', s: 'Quem atende e o que cada um vê', ic: 'equipe', admin: true },
       { href: '/painel/horarios', t: 'Horários e bloqueios', s: 'Jornada da equipe, folgas e janela de agendamento', ic: 'relogio' },
-      { href: '/painel/logo', t: 'Link de agendamento', s: 'Logo e aparência do seu link', ic: 'link', admin: true },
       { href: '/painel/meu-plano', t: 'Meu plano', s: 'O que inclui e quanto já usou', ic: 'plano', admin: true },
+    ]) },
+    // Agendamento online (telas da Dani): o link e a aparência dele.
+    { t: 'Agendamento online', itens: lista([
+      { href: '/painel/link', t: 'Link de agendamento', s: 'Copiar, compartilhar, QR code e cartaz', ic: 'link', admin: true },
+      { href: '/painel/logo', t: 'Logo e aparência', s: 'Adicionar, trocar, posição e tamanho', ic: 'imagem', admin: true },
     ]) },
     { t: 'Atendimento', itens: lista([
       { href: '/painel/secretaria', t: 'Secretária de IA', s: 'Responde e agenda no WhatsApp', ic: 'secretaria', admin: true, cadeado: tetos.secretaria === 0 ? 'Barbearia + IA' : null },

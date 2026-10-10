@@ -1,0 +1,78 @@
+<%/* Link de agendamento (Mais › Agendamento online). Telas da Dani,
+     redesign/v3/acesso/mockups/link.html. O endereço é o subdomínio
+     (slug.cortavo.com.br, decisão da Kalany), de services/linkAgendamento. O
+     QR vem pronto do servidor (services/qr.js). Comportamento: cv-link.js. */%>
+<%
+  var L = link;
+  var logo = (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) ? marcaLogoUrl : null;
+%>
+<div class="lk-tela" id="link">
+  <header class="lk-cab"><a class="lk-voltar" href="/painel/mais"><%- include('../partials/icone', { cvIc: 'esquerda' }) %><span>Mais</span></a><h1 id="lk-t" tabindex="-1">Link de agendamento</h1></header>
+
+  <% if (!L) { %>
+    <div class="lk-grade"><div class="cv-cartao cv-vazio" role="status"><h2>Sem endereço ainda</h2><p>A barbearia ainda não tem um endereço de agendamento. Fale com a Cortavo.</p></div></div>
+  <% } else { %>
+  <div class="lk-grade" data-link="<%= L.url %>" data-curto="<%= L.curto %>" data-slug="<%= L.slug %>" data-texto-padrao="<%= textoPadrao %>">
+    <div class="lk-col">
+      <% if (novo) { %>
+        <div class="cv-cartao lk-dica" id="lk-dica">
+          <p class="rot">Primeiros passos · passo 4</p>
+          <p>Seu link já está no ar. Mande para os seus clientes e coloque na bio do Instagram. Eles escolhem serviço, barbeiro e horário sozinhos.</p>
+          <a class="cv-btn cv-btn--2 cv-btn--p" href="/painel/link">Entendi</a>
+        </div>
+      <% } %>
+
+      <section class="cv-objeto cv-gravada lk-obj" aria-labelledby="lk-obj-t">
+        <div class="lk-obj-cab"><h2 id="lk-obj-t" class="rot">Seu link de agendamento</h2><span class="lk-estado"><svg class="cv-ic cv-ic--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>No ar</span></div>
+        <p class="lk-end"><span class="slug"<% if (L.slug.length > 14) { %> data-longo<% } %>><%= L.slug %></span><span class="dom">.<%= L.dominio %></span></p>
+        <p class="lk-obj-sub">Seus clientes escolhem serviço, barbeiro e horário por aqui. A confirmação chega no WhatsApp deles.</p>
+        <div class="lk-obj-acoes">
+          <button class="lk-btn-branco" type="button" data-copiar-url="<%= L.url %>"><span class="i"><svg class="cv-ic cv-ic--20 c" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="cv-ic cv-ic--20 k" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" pathLength="1"/></svg></span><span class="rot-b">Copiar link</span></button>
+          <a class="lk-btn-vidro" href="<%= L.url %>" target="_blank" rel="noopener"><svg class="cv-ic cv-ic--20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Abrir</a>
+        </div>
+      </section>
+
+      <section class="cv-cartao lk-msg" aria-labelledby="lk-msg-t">
+        <div class="cv-cartao-cab"><h3 id="lk-msg-t">Mensagem pronta</h3><button class="cv-btn cv-btn--texto lk-mini" type="button" id="lk-restaurar">Restaurar</button></div>
+        <label class="cv-oculto" for="lk-texto">Texto para mandar no WhatsApp</label>
+        <textarea class="cv-entrada lk-texto" id="lk-texto" rows="5" spellcheck="true"><%= textoPadrao %></textarea>
+        <p class="cv-ajuda">Mude o que quiser. O link vai junto no fim, se você apagar.</p>
+        <button class="cv-btn cv-btn--largo" type="button" id="lk-compartilhar"><svg class="cv-ic cv-ic--20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M8 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2"/></svg><span class="rot-b">Compartilhar</span></button>
+        <button class="cv-btn cv-btn--texto cv-btn--largo" type="button" data-copiar="texto">Copiar texto</button>
+      </section>
+
+      <section class="cv-cartao lk-qr" aria-labelledby="lk-qr-t">
+        <div class="cv-cartao-cab"><h3 id="lk-qr-t">QR code para o balcão</h3></div>
+        <div class="lk-qr-linha">
+          <div class="lk-qr-img"><%- qrSvg %></div>
+          <p>Imprima e deixe no balcão ou no espelho. O cliente aponta a câmera do celular e cai no seu link.</p>
+        </div>
+        <div class="lk-qr-acoes"><a class="cv-btn cv-btn--2 cv-btn--p" href="/painel/link/cartaz"><%- include('../partials/icone', { cvIc: 'exportar', cvCls: 'cv-ic--18' }) %>Cartaz A5</a><button class="cv-btn cv-btn--2 cv-btn--p" type="button" id="lk-png"><%- include('../partials/icone', { cvIc: 'baixo', cvCls: 'cv-ic--18' }) %>Baixar PNG</button></div>
+      </section>
+    </div>
+
+    <div class="lk-col lk-col--2">
+      <section class="cv-cartao lk-previa" aria-labelledby="lk-pv-t">
+        <div class="cv-cartao-cab"><h3 id="lk-pv-t">Como o cliente vê</h3><a class="lado" href="<%= L.url %>" target="_blank" rel="noopener">Abrir<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></div>
+        <%/* Prévia desenhada aqui (não é iframe): o link mora no subdomínio, e
+             o anti-clickjacking do app (helmet, SAMEORIGIN) não deixa outra
+             origem aparecer em moldura. O "Abrir" leva ao link de verdade. */%>
+        <div class="lk-tel" aria-hidden="true"><div class="lk-tel-tela">
+          <div class="mk"><span class="lk-logo"><% if (logo) { %><img src="<%= logo %>" alt="" /><% } else { %><%= inicial %><% } %></span><b><%= nomeBarbearia %></b></div>
+          <div class="tr"><i class="on"></i><i></i><i></i><i></i></div>
+          <p class="h">O que vamos fazer?</p>
+          <span class="sv"></span><span class="sv"></span><span class="sv"></span>
+          <span class="br">Continuar</span>
+        </div></div>
+      </section>
+
+      <h3 class="lk-sec">Aparência</h3>
+      <a class="cv-lista lk-linha" href="/painel/logo">
+        <span class="lk-logo"><% if (logo) { %><img src="<%= logo %>" alt="" /><% } else { %><span aria-hidden="true"><%= inicial %></span><% } %></span>
+        <span class="t"><b>Logo e aparência</b><small><%= logo ? 'Logo, posição e tamanho' : 'Sem logo. O cliente vê a inicial e o nome' %></small></span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+    </div>
+  </div>
+  <% } %>
+</div>

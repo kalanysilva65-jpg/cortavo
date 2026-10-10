@@ -1,0 +1,28 @@
+<%/* Cartaz A5 para o balcão (Dani, link.html#cartaz). Na impressão só o
+     cartaz sai, no tamanho A5 (@page em cv-link.css). Logo quadrado, nunca
+     cortado; sem logo, a inicial. Endereço com o subdomínio em negrito. */%>
+<%
+  var L = link;
+  var logo = (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) ? marcaLogoUrl : null;
+  var longo = L && (L.slug.length > 20 || String(nomeBarbearia).length > 40);
+%>
+<div class="lk-tela lk-tela--cartaz" id="cartaz">
+  <header class="lk-cab"><a class="lk-voltar" href="/painel/link"><%- include('../partials/icone', { cvIc: 'esquerda' }) %><span>Link</span></a><h1 tabindex="-1">Cartaz A5</h1></header>
+  <p class="lk-cz-ajuda">Folha A5 (meia A4), em pé. Imprime bem em preto e branco.</p>
+  <% if (L) { %>
+  <div class="lk-cz-palco">
+    <article class="lk-cartaz" id="lk-cartaz" aria-label="Prévia do cartaz"<% if (longo) { %> data-longo<% } %> data-link="<%= L.url %>" data-curto="<%= L.curto %>" data-slug="<%= L.slug %>" data-nome="<%= nomeBarbearia %>" data-inicial="<%= inicial %>"<% if (logo) { %> data-logo="<%= logo %>"<% } %>>
+      <header><span class="lk-logo lk-logo--g"><% if (logo) { %><img src="<%= logo %>" alt="" /><% } else { %><%= inicial %><% } %></span><b><%= nomeBarbearia %></b></header>
+      <h2>Agende seu horário pelo celular</h2>
+      <div class="qr"><%- qrSvg %></div>
+      <p class="aponte">Aponte a câmera para o código</p>
+      <p class="url"><b><%= L.slug %></b><span>.<%= L.dominio %></span></p>
+      <footer><span class="listra" aria-hidden="true"></span><span class="feito"><svg viewBox="150 240 770 545" aria-hidden="true"><path fill="currentColor" d="M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z"/></svg>feito com Cortavo</span></footer>
+    </article>
+  </div>
+  <div class="lk-cz-acoes">
+    <button class="cv-btn cv-btn--largo" type="button" id="lk-imprimir" onclick="window.print()"><%- include('../partials/icone', { cvIc: 'exportar', cvCls: 'cv-ic--20' }) %>Imprimir</button>
+    <button class="cv-btn cv-btn--2 cv-btn--largo" type="button" id="lk-cartaz-png">Baixar cartaz em PNG</button>
+  </div>
+  <% } %>
+</div>

@@ -1,0 +1,174 @@
+/* =========================================================================
+   Cortavo v3 · Link de agendamento (Dani Design, 2026-10-09). No app:
+   public/css/cv-link.css, carregado em /painel/link e /painel/link/cartaz,
+   e o atalho .lk-atalho na Início. Sem o que era só do protótipo.
+   ========================================================================= */
+
+/* Cabeçalho das telas internas: voltar + large title */
+.lk-cab { padding: calc(var(--sat) + 4px) var(--margem) 0; }
+.lk-voltar { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; margin-left: -8px; padding-right: 10px; font-size: 17px; font-weight: 600; color: var(--c-tinta); }
+.lk-cab h1 { margin: 2px 0 0; font-size: var(--t-titulo); line-height: var(--a-titulo); letter-spacing: var(--k-titulo); font-weight: 800; outline: none; }
+.lk-grade { padding: 16px var(--margem) 0; }
+.lk-col > * + * { margin-top: var(--entre-blocos); }
+.lk-col--2 { margin-top: var(--entre-blocos); }
+.lk-sec { margin: 24px 2px 10px; font-size: var(--t-titulo-2); letter-spacing: var(--k-titulo-2); font-weight: 800; }
+
+/* Dica contextual do primeiro acesso (spec 11) */
+.lk-dica .rot { margin: 0 0 6px; font-size: var(--t-legenda); font-weight: 600; color: var(--c-apoio); }
+.lk-dica p:not(.rot) { margin: 0 0 14px; font-size: 15px; line-height: 1.5; color: var(--c-tinta-2); }
+
+/* ---- O objeto preto: o endereço é o herói ------------------------------- */
+.lk-obj { display: flex; flex-direction: column; gap: 14px; }
+.lk-obj-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lk-obj-cab .rot { margin: 0; font-size: var(--t-legenda); font-weight: 600; color: var(--c-sobre-objeto-2); }
+.lk-estado { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px 4px 8px; border-radius: var(--r-pilula); background: rgba(255,255,255,.1); font-size: var(--t-legenda); font-weight: 600; color: #fff; white-space: nowrap; }
+.lk-estado .cv-ic { stroke-width: 2.4; }
+.lk-end { margin: 6px 0 0; display: flex; flex-direction: column; line-height: 1.04; }
+.lk-end .dom { font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: var(--c-sobre-objeto-2); }
+.lk-end .slug { font-size: var(--t-num-g); font-weight: 800; letter-spacing: var(--k-num-g); color: #fff; overflow-wrap: anywhere; }
+.lk-end .slug[data-longo] { font-size: var(--t-num-m); letter-spacing: var(--k-num-m); line-height: 1.1; }
+.lk-obj-sub { margin: 0; font-size: 14px; line-height: 1.45; color: var(--c-sobre-objeto-2); max-width: 36ch; }
+.lk-obj-acoes { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 4px; }
+/* sobre o objeto preto, a ação principal é a pílula branca (o vidro preto sumiria) */
+.lk-btn-branco, .lk-btn-vidro { min-height: 52px; border-radius: var(--r-pilula); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 20px; font-size: 16px; font-weight: 600; transition: transform var(--d-press-out) var(--ease-out); }
+.lk-btn-branco { background: #fff; color: var(--c-tinta); }
+.lk-btn-vidro { color: #fff; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.18); }
+.lk-btn-branco:active, .lk-btn-vidro:active { transform: scale(var(--press)); transition-duration: var(--d-press-in); }
+/* copiado: o ícone de copiar vira o check que se desenha */
+.lk-btn-branco .i, .lk-atalho-btn .i { position: relative; width: 20px; height: 20px; display: inline-grid; }
+.lk-btn-branco .i svg { position: absolute; inset: 0; transition: opacity var(--d-curta) var(--ease-out), transform var(--d-curta) var(--ease-out); }
+.lk-btn-branco .k { opacity: 0; stroke-width: 2.4; }
+.lk-btn-branco .k path { stroke-dasharray: 1 1; stroke-dashoffset: 1; transition: stroke-dashoffset 260ms var(--ease-out) 80ms; }
+[data-copiado] .c { opacity: 0; transform: scale(.8); }
+[data-copiado] .k { opacity: 1; }
+[data-copiado] .k path { stroke-dashoffset: 0; }
+
+/* ---- Mensagem pronta ---------------------------------------------------- */
+.lk-mini { min-height: 44px; padding: 0 2px; font-size: 14px; color: var(--c-apoio); }
+.lk-texto { min-height: 136px; padding: 14px 16px; line-height: 1.5; resize: vertical; display: block; }
+.lk-msg .cv-ajuda { margin: 8px 2px 0; }
+.lk-msg .cv-btn:not(.cv-btn--texto) { margin-top: 16px; }
+.lk-msg .cv-btn--texto { margin-top: 4px; }
+
+/* ---- QR ------------------------------------------------------------------ */
+.lk-qr-linha { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; align-items: center; }
+.lk-qr-img { width: 120px; height: 120px; border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 1px var(--c-fio-forte); padding: 6px; }
+.lk-qr-img svg { width: 100%; height: 100%; display: block; }
+.lk-qr-linha p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--c-tinta-2); }
+.lk-qr-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.lk-qr-acoes .cv-btn { gap: 6px; }
+
+/* ---- Prévia (o próprio link num celular pequeno) ------------------------ */
+.lk-tel { position: relative; width: 210px; height: 400px; margin: 4px auto 0; border-radius: 34px; padding: 7px; background: #1b1b1b; box-shadow: inset 0 0 0 1.5px #3a3a3a, 0 20px 40px -18px rgba(0,0,0,.4); }
+.lk-tel iframe { width: 390px; height: 724px; border: 0; border-radius: 52px; transform: scale(.5026); transform-origin: 0 0; background: var(--c-pagina); pointer-events: none; }
+.lk-tel::after { content: ""; position: absolute; top: 14px; left: 50%; translate: -50% 0; width: 56px; height: 15px; border-radius: 10px; background: #000; }
+.lk-previa .lado { min-height: 44px; }
+
+/* ---- Logo (miniatura) ---------------------------------------------------- */
+.lk-logo { width: 44px; height: 44px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; background: var(--c-objeto); color: #fff; flex-shrink: 0; font-weight: 800; letter-spacing: -.03em; font-size: 19px; }
+.lk-logo svg { width: 100%; height: 100%; display: block; }
+.lk-linha { display: flex; align-items: center; gap: 14px; min-height: 68px; padding: 12px var(--e-5); }
+.lk-linha .t { flex: 1; min-width: 0; }
+.lk-linha .t b, .lk-linha2 .t b { display: block; font-size: var(--t-destaque); font-weight: 600; letter-spacing: var(--k-destaque); }
+.lk-linha .t small, .lk-linha2 .t small { display: block; font-size: var(--t-apoio); color: var(--c-apoio); margin-top: 1px; }
+.lk-linha .chev, .lk-linha2 .chev { width: 16px; height: 16px; stroke: var(--c-decor); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.lk-linha2 { position: relative; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 12px var(--e-5); }
+.lk-linha2 .t { flex: 1; min-width: 0; }
+.lk-linha2 + .lk-linha2::before { content: ""; position: absolute; top: 0; right: 0; left: 58px; border-top: .5px solid var(--c-fio-forte); }
+
+/* ---- Cartaz A5 (148 x 210 mm) ------------------------------------------- */
+.lk-cz-ajuda { margin: 6px var(--margem) 0; font-size: 14px; color: var(--c-apoio); }
+.lk-cz-palco { padding: 18px var(--margem) 0; display: grid; place-items: center; }
+.lk-cartaz { --u: min(1px, calc((100vw - 40px) / 350)); width: calc(350 * var(--u)); aspect-ratio: 148 / 210; background: #fff; border-radius: 6px; box-shadow: 0 1px 2px rgba(17,17,17,.1), 0 24px 48px -20px rgba(17,17,17,.35); display: flex; flex-direction: column; align-items: center; padding: calc(30 * var(--u)) calc(28 * var(--u)) 0; overflow: hidden; color: var(--c-tinta); text-align: center; }
+.lk-cartaz header { display: flex; flex-direction: column; align-items: center; gap: calc(10 * var(--u)); }
+.lk-logo--g { width: calc(64 * var(--u)); height: calc(64 * var(--u)); border-radius: 50%; font-size: calc(28 * var(--u)); }
+.lk-cartaz header b { font-size: calc(15 * var(--u)); font-weight: 800; letter-spacing: -.015em; line-height: 1.25; max-width: 26ch; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.lk-cartaz h2 { margin: calc(16 * var(--u)) 0 0; font-size: calc(30 * var(--u)); line-height: 1.02; letter-spacing: -.045em; font-weight: 800; max-width: 10ch; text-wrap: balance; }
+.lk-cartaz .qr { width: calc(156 * var(--u)); margin-top: calc(16 * var(--u)); }
+.lk-cartaz .qr svg { width: 100%; height: auto; display: block; }
+.lk-cartaz .aponte { margin: calc(2 * var(--u)) 0 0; font-size: calc(10.5 * var(--u)); font-weight: 600; color: var(--c-tinta-2); }
+.lk-cartaz .url { margin: calc(8 * var(--u)) 0 0; font-size: calc(13 * var(--u)); color: var(--c-tinta-2); overflow-wrap: anywhere; max-width: 100%; }
+.lk-cartaz .url b { color: var(--c-tinta); font-weight: 800; }
+.lk-cartaz footer { margin-top: auto; align-self: stretch; margin-left: calc(-28 * var(--u)); margin-right: calc(-28 * var(--u)); }
+.lk-cartaz .listra { display: block; height: calc(10 * var(--u)); background: repeating-linear-gradient(-45deg, #111 0 calc(5 * var(--u)), #fff calc(5 * var(--u)) calc(10 * var(--u)), #9A9A9A calc(10 * var(--u)) calc(15 * var(--u)), #fff calc(15 * var(--u)) calc(20 * var(--u))); }
+.lk-cartaz .feito { display: flex; align-items: center; justify-content: center; gap: calc(4 * var(--u)); padding: calc(8 * var(--u)) 0 calc(10 * var(--u)); font-size: calc(8.5 * var(--u)); font-weight: 600; color: #666; }
+.lk-cartaz .feito svg { width: calc(12 * var(--u)); height: auto; }
+.lk-cz-acoes { padding: 20px var(--margem) 0; display: grid; gap: 8px; max-width: 420px; margin: 0 auto; }
+
+/* ---- Início: atalho discreto -------------------------------------------- */
+.lk-frase { margin: 0 2px 16px; font-size: 17px; line-height: 1.45; color: var(--c-tinta-2); }
+.lk-frase b { color: var(--c-tinta); font-weight: 600; }
+.lk-painel .rot { margin: 0 0 8px; }
+.lk-painel .cv-num { margin: 0; }
+.lk-atalho { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px 10px 16px; border-radius: 18px; }
+.lk-atalho .t { min-width: 0; min-height: 44px; display: flex; flex-direction: column; justify-content: center; }
+.lk-atalho .t b { font-size: 15px; font-weight: 600; }
+.lk-atalho .t small { font-size: 13px; color: var(--c-apoio); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lk-atalho .t small [data-d] { color: var(--c-tinta-2); font-weight: 600; }
+[data-copiado].lk-atalho-btn { background: var(--c-tinta); color: #fff; }
+
+/* ---- Impressão: só o cartaz, no tamanho A5 ------------------------------- */
+@page { size: A5 portrait; margin: 0; }
+@media print {
+  body.pg-cv { background: #fff; padding: 0 !important; }
+  body.pg-cv .cv-navbar, body.pg-cv .pc-menu, body.pg-cv .cv-avisos, #cartaz > :not(.lk-cz-palco) { display: none !important; }
+  body.pg-cv .cv-palco, body.pg-cv .cv-tela { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  .lk-cz-palco { padding: 0; display: block; }
+  .lk-cartaz { --u: calc(148mm / 350); width: 148mm; height: 210mm; border-radius: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-btn-branco:active, .lk-btn-vidro:active { transform: none; opacity: .7; }
+  .lk-btn-branco .i svg, .lk-btn-branco .k path { transition: none; }
+}
+@media (prefers-contrast: more) { .lk-btn-vidro { background: #000; box-shadow: inset 0 0 0 1.5px #fff; } }
+@media (prefers-reduced-transparency: reduce) { .lk-btn-vidro { background: #2A2A2A; } }
+
+/* ajustes da revisão dos prints */
+.lk-logo--g { border-radius: 22%; }
+.lk-painel + .lk-atalho { margin-top: var(--entre-blocos); }
+.lk-atalho + .cv-cartao { margin-top: var(--entre-blocos); }
+/* break-ui (320 px, nomes e endereço longos) */
+.lk-tel { overflow: hidden; }
+
+.lk-btn-branco, .lk-btn-vidro, .lk-msg .cv-btn { white-space: nowrap; }
+@media (max-width: 360px) { .lk-obj-acoes { grid-template-columns: 1fr; } .lk-qr-linha { grid-template-columns: 96px minmax(0, 1fr); } .lk-qr-img { width: 96px; height: 96px; } .lk-msg .cv-btn { font-size: 15px; padding: 0 16px; } }
+.lk-cartaz[data-longo] h2 { font-size: calc(24 * var(--u)); margin-top: calc(10 * var(--u)); }
+.lk-cartaz[data-longo] .qr { width: calc(136 * var(--u)); margin-top: calc(10 * var(--u)); }
+.lk-cartaz[data-longo] header b { font-size: calc(13 * var(--u)); }
+.lk-cartaz[data-longo] .url { font-size: calc(11 * var(--u)); }
+.lk-cartaz .url { margin-bottom: calc(10 * var(--u)); }
+@media (max-width: 360px) { .lk-qr-acoes { grid-template-columns: 1fr; } }
+.lk-painel .cv-num--heroi { font-size: clamp(40px, 15vw, 64px); }
+/* subdomínio: o nome da barbearia vem primeiro, grande; o domínio embaixo, pequeno */
+.lk-end .slug { order: 0; } .lk-end .dom { order: 1; margin-top: 4px; }
+.lk-cartaz .url b { font-weight: 800; }
+
+/* ==== App ==== */
+.lk-tela { padding-bottom: 8px; --sat: env(safe-area-inset-top, 0px); }
+.lk-cab { padding-top: 4px; }
+.lk-voltar { text-decoration: none; }
+.lk-btn-branco, .lk-btn-vidro { border: 0; font-family: inherit; cursor: pointer; text-decoration: none; }
+.lk-qr-acoes a.cv-btn, .lk-previa .lado { text-decoration: none; }
+.lk-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.lk-linha { color: inherit; text-decoration: none; }
+.lk-atalho .t { color: inherit; text-decoration: none; }
+@media (min-width: 1024px) {
+  .lk-voltar { display: none; }
+  .lk-cab h1 { font-size: 40px; }
+  .lk-grade { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .lk-col--2 { margin-top: 0; position: sticky; top: 20px; }
+  .lk-end .slug { font-size: 56px; }
+  .lk-tel { width: 230px; height: 440px; } .lk-tel iframe { transform: scale(.5538); height: 768px; }
+  .lk-cartaz { --u: 1.2px; }
+}
+/* Prévia desenhada do link (no lugar do iframe do mockup) */
+.lk-tel-tela { position: absolute; inset: 7px; border-radius: 27px; overflow: hidden; background: var(--c-pagina); padding: 34px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.lk-tel-tela .mk { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lk-tel-tela .mk .lk-logo { width: 28px; height: 28px; border-radius: 9px; font-size: 13px; }
+.lk-tel-tela .mk b { font-size: 11px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lk-tel-tela .tr { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.lk-tel-tela .tr i { height: 3px; border-radius: 2px; background: var(--c-bloco-2); } .lk-tel-tela .tr i.on { background: var(--c-tinta); }
+.lk-tel-tela .h { margin: 4px 0 2px; font-size: 16px; font-weight: 800; letter-spacing: -.03em; }
+.lk-tel-tela .sv { height: 40px; border-radius: 12px; background: var(--c-superficie); box-shadow: var(--s-cartao); }
+.lk-tel-tela .br { margin-top: auto; height: 34px; border-radius: 17px; background: var(--c-tinta); color: #fff; font-size: 11px; font-weight: 600; display: grid; place-items: center; }

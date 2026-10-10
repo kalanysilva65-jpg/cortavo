@@ -160,8 +160,31 @@
     });
   }
 
+  // Copiar o link de agendamento (tela do link e atalho da Início). Fora de
+  // contexto seguro (http), o recuo com execCommand.
+  function copiarVelho(t) { var a = doc.createElement('textarea'); a.value = t; a.setAttribute('readonly', ''); a.style.cssText = 'position:fixed;opacity:0'; doc.body.appendChild(a); a.select(); try { doc.execCommand('copy'); } catch (e) {} a.remove(); }
+  g.cvCopiar = function (t) {
+    if (navigator.clipboard && g.isSecureContext) return navigator.clipboard.writeText(t).catch(function () { copiarVelho(t); });
+    copiarVelho(t); return Promise.resolve();
+  };
+  function copiarLink() {
+    doc.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('[data-copiar-url]') : null;
+      if (!b) return;
+      g.cvCopiar(b.getAttribute('data-copiar-url')).then(function () {
+        var r = b.querySelector('.rot-b'), antes = r && (r.dataset.antes || r.textContent);
+        if (r) { r.dataset.antes = antes; r.textContent = 'Copiado'; }
+        b.setAttribute('data-copiado', '');
+        clearTimeout(b._t); b._t = setTimeout(function () { b.removeAttribute('data-copiado'); if (r) r.textContent = antes; }, 2200);
+        if (C && C.aviso) C.aviso({ titulo: 'Link copiado', sub: 'Cole no WhatsApp, no Instagram ou onde quiser.' });
+        try { navigator.vibrate && navigator.vibrate(8); } catch (e2) {}
+      });
+    });
+  }
+
   function iniciar() {
     navbar();
+    copiarLink();
     novoPC();
     seletorPeriodo();
     folhaNovo();
