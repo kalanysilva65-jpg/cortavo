@@ -35,9 +35,6 @@
       //
       // A fonte é local (@font-face no suave.css) — sem Google Fonts.
       var CSS_POR_TELA = {
-        '/painel': 'sv-home',
-        '/painel/agenda': 'sv-agenda',
-        '/painel/caixa': 'sv-caixa',
         '/painel/relatorios': 'sv-relatorios',
         '/painel/clientes': 'sv-clientes-equipe',
         '/painel/equipe': 'sv-clientes-equipe',
@@ -50,7 +47,6 @@
         '/painel/meu-plano': 'sv-planos-perfil',
         '/painel/metas': 'sv-metas',
         '/painel/ia': 'sv-ia',
-        '/painel/secretaria': 'sv-secretaria',
         '/painel/secretaria/teste': 'sv-ia',
         '/painel/conversas': 'sv-conversas',
       };
@@ -135,7 +131,6 @@
     var semNav = ['/painel/ia', '/painel/conversas', '/painel/logo'].indexOf(currentPath) !== -1;
   %>
   <body class="app-painel <%= ehV3 ? 'pg-cv' : ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %><%= semNav ? ' sem-nav' : '' %>">
-    <%- include('../partials/splash') %>
     <% if (ehV3) { %>
     <%/* .cv-palco recua quando uma folha abre (M4); o aviso do servidor vira
          o aviso em vidro preto acima da navbar. */%>

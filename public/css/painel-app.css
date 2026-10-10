@@ -18,7 +18,7 @@
   --sucesso: #4ade80;
   --erro: #f87171;
   --aviso: #fbbf24;
-  --agendado: #7f92cf;
+  --agendado: #6B6B6B; /* era azul; v3 sem azul (F11) */
   --sombra: none;
   /* Fonte do sistema (decisão do dono, 2026-07-20): nada de webfont no painel.
      Sobrescreve também o --fonte do tema-minimal (Plus Jakarta), que vários

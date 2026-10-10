@@ -291,7 +291,7 @@
 
   background: var(--sv-bg);
   color: var(--sv-ink);
-  font-family: 'Overused Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   /* O .conteudo desta rota ainda tem o respiro do tema antigo — o -16px faz a
      página encostar nas bordas como nas telas já convertidas. */
   margin: -16px;
