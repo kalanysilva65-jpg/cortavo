@@ -166,3 +166,13 @@ test('Conversas v3: lista com busca e atualização, conversa com os ids do chat
   assert.doesNotMatch(css, /#(00a884|d9fdd3|efeae2|53bdeb|16a34a|027eb5)/i);
   assert.doesNotMatch(fs.readFileSync(path.join(RAIZ, 'public/js/chat-whatsapp.js'), 'utf8'), /📷|🎥|🎤|📄|📍|👤/u);
 });
+
+test('Assistente v3: cabeçalho v3, sugestões sem emoji, mesmos ids e rotas da IA', async () => {
+  v3('/painel/ia');
+  const html = await render('painel/ia.ejs', { ...comuns, iaAtiva: true, primeiroNome: 'Rafael', conversaKey: 'k', jsonSeguro: (o) => JSON.stringify(o) });
+  assert.doesNotMatch(html, /class="sv-/);
+  assert.doesNotMatch(html, /👋|📈|🗓|⭐|🕒|👍|✅/u);
+  for (const id of ['ia-chat', 'ia-form', 'ia-input', 'ia-enviar', 'ia-mic', 'ia-limpar']) assert.match(html, new RegExp('id="' + id + '"'));
+  assert.match(html, /\/painel\/ia\/mensagem/);
+  assert.match(html, /\/painel\/ia\/acao/);
+});

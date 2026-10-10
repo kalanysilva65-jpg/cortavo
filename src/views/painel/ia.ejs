@@ -1,55 +1,45 @@
-<%/* Assistente Cortavo (IA de consulta). Estilos em public/css/sv-ia.css.
+<%/* Assistente Cortavo (IA de consulta), redesign v3: estilos em public/css/cv-ia.css.
      Conversa stateless: o histórico vive no cliente e vai junto em cada POST. */%>
-<div class="sv-tela sv-ia">
-
-  <div class="sv-ia-topo sv-reveal">
-    <div>
-      <div class="sv-titulo">Assistente</div>
-      <div class="sv-ia-sub">Pergunte sobre seus números</div>
-    </div>
-    <div class="sv-ia-acoes">
-      <%/* Limpa a conversa salva no aparelho. Nasce escondido; o JS mostra
-           quando existe histórico guardado. */%>
-      <button type="button" class="sv-ia-fechar" id="ia-limpar" title="Limpar conversa" aria-label="Limpar conversa" hidden>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6.5 7l1 12.5h9l1-12.5"/></svg>
-      </button>
-      <a href="/painel" class="sv-ia-fechar" title="Início" aria-label="Voltar ao início">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </a>
-    </div>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup">Pergunte sobre seus números</p><h1>Assistente</h1></div>
+  <div class="cv-cab-acoes">
+    <%/* Limpa a conversa salva no aparelho; o JS mostra quando há histórico. */%>
+    <button type="button" class="cv-redondo cv-redondo--leve" id="ia-limpar" aria-label="Limpar conversa" hidden><%- include('../partials/icone', { cvIc: 'lixo', cvCls: 'cv-ic--18' }) %></button>
+    <a href="/painel" class="cv-redondo cv-redondo--leve" aria-label="Voltar ao início"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></a>
   </div>
-
+</header>
+<div class="cv-ia">
   <% if (!iaAtiva) { %>
-    <div class="sv-cartao sv-ia-config sv-reveal">
-      <div class="sv-ia-config-ic" aria-hidden="true">
+    <div class="cv-cartao cv-ia-config">
+      <div class="cv-ia-config-ic" aria-hidden="true">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2.4l1.95 5.15L20.1 9.5l-5.15 1.95L13 16.6l-1.95-5.15L5.9 9.5l5.15-1.95z"/><path d="M18.4 13.8l.95 2.55 2.55.95-2.55.95-.95 2.55-.95-2.55-2.55-.95 2.55-.95z"/></svg>
       </div>
-      <div class="sv-ia-config-tit">Assistente ainda não configurado</div>
-      <div class="sv-ia-config-txt">Falta ligar a chave da IA no servidor. Assim que estiver ativa, você poderá perguntar aqui sobre faturamento, agenda e clientes.</div>
+      <div class="cv-ia-config-tit">Assistente ainda não configurado</div>
+      <div class="cv-ia-config-txt">Falta ligar a chave da IA no servidor. Assim que estiver ativa, você poderá perguntar aqui sobre faturamento, agenda e clientes.</div>
     </div>
   <% } else { %>
 
-    <div class="sv-ia-chat" id="ia-chat">
-      <div class="sv-ia-intro sv-reveal" id="ia-intro">
-        <div class="sv-ia-intro-oi">Oi, <%= primeiroNome %> 👋</div>
-        <p class="sv-ia-intro-txt">Posso te ajudar a entender o movimento da barbearia. Pergunte algo ou comece por aqui:</p>
-        <div class="sv-ia-sugs">
-          <button type="button" class="sv-ia-sug" data-q="Como está o faturamento deste mês?">📈 Faturamento do mês</button>
-          <button type="button" class="sv-ia-sug" data-q="Como está a agenda de amanhã?">🗓️ Agenda de amanhã</button>
-          <button type="button" class="sv-ia-sug" data-q="Quais são meus melhores clientes?">⭐ Melhores clientes</button>
-          <button type="button" class="sv-ia-sug" data-q="Quais horários do dia são mais fracos?">🕒 Horários fracos</button>
+    <div class="cv-ia-chat" id="ia-chat">
+      <div class="cv-ia-intro" id="ia-intro">
+        <div class="cv-ia-intro-oi">Oi, <%= primeiroNome %></div>
+        <p class="cv-ia-intro-txt">Posso te ajudar a entender o movimento da barbearia. Pergunte algo ou comece por aqui:</p>
+        <div class="cv-ia-sugs">
+          <button type="button" class="cv-ia-sug" data-q="Como está o faturamento deste mês?">Faturamento do mês</button>
+          <button type="button" class="cv-ia-sug" data-q="Como está a agenda de amanhã?">Agenda de amanhã</button>
+          <button type="button" class="cv-ia-sug" data-q="Quais são meus melhores clientes?">Melhores clientes</button>
+          <button type="button" class="cv-ia-sug" data-q="Quais horários do dia são mais fracos?">Horários fracos</button>
         </div>
       </div>
     </div>
 
-    <form class="sv-ia-composer" id="ia-form" autocomplete="off">
-      <input id="ia-input" class="sv-ia-input" type="text" name="mensagem" placeholder="Pergunte alguma coisa…" maxlength="1000" aria-label="Sua pergunta" />
+    <form class="cv-ia-composer" id="ia-form" autocomplete="off">
+      <input id="ia-input" class="cv-entrada cv-ia-input" type="text" name="mensagem" placeholder="Pergunte alguma coisa…" maxlength="1000" aria-label="Sua pergunta" />
       <%/* Microfone (voz→texto no aparelho, sem custo). Nasce escondido; o JS só
            mostra se o navegador tiver a Web Speech API. */%>
-      <button type="button" class="sv-ia-mic" id="ia-mic" aria-label="Falar" hidden>
+      <button type="button" class="cv-ia-mic" id="ia-mic" aria-label="Falar" hidden>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
       </button>
-      <button type="submit" class="sv-ia-enviar" id="ia-enviar" aria-label="Enviar">
+      <button type="submit" class="cv-ia-enviar" id="ia-enviar" aria-label="Enviar">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
       </button>
     </form>
@@ -89,7 +79,7 @@
     // não há risco de injeção. white-space:pre-wrap preserva quebras e bullets.
     function bolha(papel, texto) {
       var el = document.createElement('div');
-      el.className = 'sv-ia-msg sv-ia-msg--' + papel;
+      el.className = 'cv-ia-msg cv-ia-msg--' + papel;
       el.textContent = texto;
       chat.appendChild(el);
       return el;
@@ -101,19 +91,19 @@
     // innerHTML) — o resumo pode conter nome de cliente.
     function cartaoProposta(prop) {
       var card = document.createElement('div');
-      card.className = 'sv-ia-prop';
+      card.className = 'cv-ia-prop';
       var txt = document.createElement('div');
-      txt.className = 'sv-ia-prop-txt';
+      txt.className = 'cv-ia-prop-txt';
       txt.textContent = prop.resumo || 'Confirmar esta ação?';
       var acoes = document.createElement('div');
-      acoes.className = 'sv-ia-prop-acoes';
+      acoes.className = 'cv-ia-prop-acoes';
       var bCancel = document.createElement('button');
       bCancel.type = 'button';
-      bCancel.className = 'sv-ia-prop-cancelar';
+      bCancel.className = 'cv-ia-prop-cancelar';
       bCancel.textContent = 'Cancelar';
       var bOk = document.createElement('button');
       bOk.type = 'button';
-      bOk.className = 'sv-ia-prop-ok';
+      bOk.className = 'cv-ia-prop-ok';
       bOk.textContent = 'Confirmar';
       acoes.appendChild(bCancel);
       acoes.appendChild(bOk);
@@ -124,7 +114,7 @@
 
       bCancel.addEventListener('click', function () {
         card.remove();
-        var n = bolha('assistant', 'Ok, não fiz nada. 👍');
+        var n = bolha('assistant', 'Ok, não fiz nada.');
         historico.push({ papel: 'assistant', texto: 'Ok, não fiz nada.' });
         salvar();
         rolar();
@@ -143,18 +133,18 @@
           var d = await r.json().catch(function () { return {}; });
           card.remove();
           if (r.ok && d.ok) {
-            bolha('assistant', d.mensagem || '✅ Feito.');
+            bolha('assistant', d.mensagem || 'Feito.');
             historico.push({ papel: 'assistant', texto: d.mensagem || 'Feito.' });
           } else {
             var m = bolha('assistant', d.erro || 'Não consegui concluir a ação.');
-            m.classList.add('sv-ia-erro');
+            m.classList.add('cv-ia-erro');
           }
           salvar();
           rolar();
         } catch (e) {
           card.remove();
           var m2 = bolha('assistant', 'Falha de conexão ao confirmar. Tente de novo.');
-          m2.classList.add('sv-ia-erro');
+          m2.classList.add('cv-ia-erro');
           rolar();
         }
       });
@@ -162,7 +152,7 @@
 
     function digitando() {
       var el = document.createElement('div');
-      el.className = 'sv-ia-msg sv-ia-msg--assistant sv-ia-digitando';
+      el.className = 'cv-ia-msg cv-ia-msg--assistant cv-ia-digitando';
       el.innerHTML = '<span></span><span></span><span></span>';
       chat.appendChild(el);
       return el;
@@ -201,12 +191,12 @@
           salvar(); // persiste a conversa a cada resposta concluída
         } else {
           var msg = bolha('assistant', dados.erro || 'Não consegui responder agora.');
-          msg.classList.add('sv-ia-erro');
+          msg.classList.add('cv-ia-erro');
         }
       } catch (e) {
         pts.remove();
         var m = bolha('assistant', 'Falha de conexão. Tente de novo.');
-        m.classList.add('sv-ia-erro');
+        m.classList.add('cv-ia-erro');
       } finally {
         ocupado = false;
         enviar.disabled = false;
@@ -220,7 +210,7 @@
       enviarPergunta(input.value);
     });
 
-    document.querySelectorAll('.sv-ia-sug').forEach(function (b) {
+    document.querySelectorAll('.cv-ia-sug').forEach(function (b) {
       b.addEventListener('click', function () { enviarPergunta(b.getAttribute('data-q')); });
     });
 
@@ -245,7 +235,7 @@
       limpar.addEventListener('click', function () {
         historico = [];
         try { localStorage.removeItem(CHAVE); } catch (e) {}
-        chat.querySelectorAll('.sv-ia-msg').forEach(function (el) { el.remove(); });
+        chat.querySelectorAll('.cv-ia-msg').forEach(function (el) { el.remove(); });
         if (intro) intro.style.display = '';
         limpar.hidden = true;
         input.focus();

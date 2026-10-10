@@ -1,0 +1,40 @@
+/* Cortavo v3 · Assistente (IA de consulta). Balão da pessoa em preto, o do
+   assistente em cartão branco; sugestões em chips; compositor em vidro (é a
+   barra do rodapé). Classes cv-ia-* geradas pelo script da própria view. */
+.pg-cv:has(.cv-ia) .cv-tela { padding-bottom: 0; }
+.cv-ia { min-height: calc(100dvh - 92px - env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; }
+.cv-ia-chat { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 14px var(--margem) 16px; }
+.cv-ia-intro { margin-top: 6px; }
+.cv-ia-intro-oi { font-size: var(--t-titulo-2, 22px); font-weight: 800; letter-spacing: -.02em; }
+.cv-ia-intro-txt { margin: 6px 0 14px; font-size: 15px; line-height: 1.45; color: var(--c-tinta-2); }
+.cv-ia-sugs { display: grid; gap: 8px; }
+.cv-ia-sug { text-align: left; min-height: 52px; padding: 0 16px; border-radius: 16px; border: 0; background: var(--c-superficie); box-shadow: var(--s-cartao); font: inherit; font-size: 15px; font-weight: 600; color: var(--c-tinta); cursor: pointer; transition: transform var(--d-press-out) var(--ease-out); }
+.cv-ia-sug:active { transform: scale(var(--press)); transition-duration: var(--d-press-in); }
+.cv-ia-msg { max-width: 86%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cv-ia-msg--user { align-self: flex-end; background: var(--c-objeto); color: #fff; border-bottom-right-radius: 6px; }
+.cv-ia-msg--assistant { align-self: flex-start; background: var(--c-superficie); color: var(--c-tinta); box-shadow: var(--s-cartao); border-bottom-left-radius: 6px; }
+.cv-ia-erro { background: var(--c-perigo-fundo); color: var(--c-perigo); box-shadow: none; }
+.cv-ia-digitando { display: inline-flex; gap: 4px; }
+.cv-ia-digitando span { width: 7px; height: 7px; border-radius: 50%; background: var(--c-apoio); animation: cvIaPonto 1s var(--ease-in-out) infinite; }
+.cv-ia-digitando span:nth-child(2) { animation-delay: .15s; } .cv-ia-digitando span:nth-child(3) { animation-delay: .3s; }
+@keyframes cvIaPonto { 0%, 100% { opacity: .3; transform: none; } 50% { opacity: 1; transform: translateY(-2px); } }
+.cv-ia-prop { align-self: stretch; padding: 16px; border-radius: var(--r-cartao); background: var(--c-superficie); box-shadow: var(--s-cartao), inset 0 0 0 1px var(--c-tinta); }
+.cv-ia-prop-txt { font-size: 15px; line-height: 1.45; white-space: pre-wrap; }
+.cv-ia-prop-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.cv-ia-prop-acoes button { min-height: 48px; border-radius: var(--r-pilula); border: 0; font: inherit; font-weight: 600; cursor: pointer; }
+.cv-ia-prop-cancelar { background: var(--c-bloco-2); color: var(--c-tinta); }
+.cv-ia-prop-ok { background: var(--c-tinta); color: #fff; }
+.cv-ia-composer { position: sticky; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--vidro); -webkit-backdrop-filter: var(--vidro-blur); backdrop-filter: var(--vidro-blur); box-shadow: inset 0 .5px 0 var(--c-fio-forte); }
+.cv-ia-input { flex: 1; min-width: 0; min-height: 46px; border-radius: var(--r-pilula); background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-ia-mic, .cv-ia-enviar { width: 46px; height: 46px; border-radius: 50%; border: 0; display: grid; place-items: center; flex-shrink: 0; cursor: pointer; }
+.cv-ia-mic { background: var(--c-bloco-2); color: var(--c-tinta); }
+.cv-ia-mic[hidden] { display: none; }
+.cv-ia-enviar { background: var(--c-tinta); color: #fff; }
+.cv-ia-enviar:disabled { opacity: .4; }
+.cv-ia-config { margin: 16px var(--margem) 0; }
+.cv-ia-config-tit { font-size: 17px; font-weight: 800; }
+.cv-ia-config-txt { margin-top: 6px; font-size: 15px; line-height: 1.45; color: var(--c-tinta-2); }
+@media (prefers-reduced-motion: reduce) { .cv-ia-digitando span { animation: none; } .cv-ia-sug { transition: none; } }
+@media (prefers-reduced-transparency: reduce) { .cv-ia-composer { background: var(--c-superficie); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (min-width: 1024px) { .cv-ia-msg { max-width: 64%; } .cv-ia-sugs { grid-template-columns: 1fr 1fr; } }
+.cv-ia-mic.gravando { background: var(--c-tinta); color: #fff; }
