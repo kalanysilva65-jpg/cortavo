@@ -457,3 +457,8 @@ input[type="date"].cv-entrada, input[type="time"].cv-entrada { min-width: 0; max
 .cv-folha:has(.cv-folha-corpo) { padding-bottom: 0; }
 .cv-folha .cv-folha-corpo { padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
 .cv-folha::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 120px; background: var(--vidro-solido); pointer-events: none; }
+
+/* M3 · poste no topo da tela (espera > 300 ms) e grupo de esqueleto. */
+.cv-poste--topo { position: fixed; z-index: calc(var(--z-folha) + 5); top: env(safe-area-inset-top, 0px); left: 0; right: 0; border-radius: 0; background: transparent; pointer-events: none; }
+.cv-poste--topo[hidden] { display: none; }
+.cv-esq-grupo { width: 100%; }

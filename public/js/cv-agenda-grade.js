@@ -123,9 +123,11 @@
   function carregar(vista) {
     var url = '/painel/agenda/' + (vista === 'semana' ? 'semana' : 'dia') + '.json?data=' + encodeURIComponent(data) + '&barbeiro=' + encodeURIComponent(barbeiro);
     raiz.setAttribute('aria-busy', 'true');
+    // M3: esqueleto no formato da grade se a espera passar de 300 ms.
+    var fimEsq = (g.CortavoVida && !cache[url]) ? g.CortavoVida.esqueleto(raiz, { linhas: 6, altura: 56 }) : function () {};
     var p = cache[url] || (cache[url] = fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }));
-    p.then(function (j) { if (vista === 'semana') desenharSemana(j); else desenharDia(j); })
-      .catch(function () { delete cache[url]; raiz.innerHTML = '<p class="cv-texto-apoio">Não deu para carregar a grade. Use a lista ou tente de novo.</p>'; })
+    p.then(function (j) { var esperou = !!raiz.querySelector('.cv-esq-grupo'); fimEsq(); if (vista === 'semana') desenharSemana(j); else desenharDia(j); if (esperou && g.CortavoVida) g.CortavoVida.chegou(raiz.firstElementChild); })
+      .catch(function () { fimEsq(); delete cache[url]; raiz.innerHTML = '<p class="cv-texto-apoio">Não deu para carregar a grade. Use a lista ou tente de novo.</p>'; })
       .then(function () { raiz.removeAttribute('aria-busy'); });
   }
 

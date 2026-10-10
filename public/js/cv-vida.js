@@ -84,7 +84,56 @@
     if (horizontais.length) C.barras(horizontais, horizontais.map(function (b) { var m = /scaleX\(([\d.]+)\)/.exec(b.getAttribute('style')); return m ? +m[1] : 0; }), { inicial: true, eixo: 'X' });
   }
 
+  /* ---- #5 Carregando de verdade (M3) --------------------------------------
+     Espera de mais de 300 ms mostra a barra listrada (poste, 4 px) no topo:
+     buscas por fetch do próprio painel e a troca de página (link ou
+     formulário). Antes de 300 ms, nada pisca. Conteúdo que vai ser trocado
+     ganha esqueleto no formato dele (CortavoVida.esqueleto). Reduzir
+     movimento: a listra e o esqueleto ficam parados (já no CSS). */
+  var ESPERA = 300, pendentes = 0, timer = null, poste = null;
+  function mostrarPoste() {
+    if (!poste) { poste = doc.createElement('div'); poste.className = 'cv-poste cv-poste--topo'; poste.setAttribute('role', 'progressbar'); poste.setAttribute('aria-label', 'Carregando'); doc.body.appendChild(poste); }
+    poste.hidden = false;
+  }
+  function esconderPoste() { clearTimeout(timer); timer = null; if (poste) poste.hidden = true; }
+  function comecou() { pendentes++; if (!timer) timer = setTimeout(mostrarPoste, ESPERA); }
+  function acabou() { pendentes = Math.max(0, pendentes - 1); if (!pendentes) esconderPoste(); }
+  // Buscas de fundo (conversa aberta, notificações) não acendem o poste.
+  var FUNDO = /\/novas\?|\/notificacoes\//;
+  if (g.fetch) {
+    var fetchOriginal = g.fetch;
+    g.fetch = function (url) {
+      var u = String(url && url.url ? url.url : url || '');
+      var conta = !FUNDO.test(u) && (u.charAt(0) === '/' || u.indexOf(g.location.origin) === 0);
+      if (conta) comecou();
+      var pr = fetchOriginal.apply(this, arguments);
+      if (conta) pr.then(acabou, acabou);
+      return pr;
+    };
+  }
+  // Troca de página: o documento antigo fica na tela (view transition) e o
+  // poste avisa que a próxima está vindo. Volta pelo histórico apaga.
+  doc.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]'); if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || a.target === '_blank' || a.hasAttribute('download')) return;
+    var h = a.getAttribute('href'); if (!h || h.charAt(0) === '#' || /^(mailto|tel|https?):/i.test(h) && a.origin !== g.location.origin) return;
+    if (a.pathname === g.location.pathname && a.search === g.location.search && a.hash) return;
+    timer = timer || setTimeout(mostrarPoste, ESPERA);
+  });
+  doc.addEventListener('submit', function (e) { if (!e.defaultPrevented) timer = timer || setTimeout(mostrarPoste, ESPERA); });
+  g.addEventListener('pageshow', esconderPoste);
+  function esqueleto(el, opc) {
+    opc = opc || {}; var linhas = opc.linhas || 3, alt = opc.altura || 44, feito = false;
+    var t = setTimeout(function () {
+      if (feito) return;
+      var h = ''; for (var i = 0; i < linhas; i++) h += '<div class="cv-esq" style="height:' + alt + 'px;margin-top:' + (i ? 8 : 0) + 'px' + (opc.coluna ? ';grid-column:1/-1' : '') + '"></div>';
+      el.innerHTML = '<div class="cv-esq-grupo" role="progressbar" aria-label="Carregando"' + (opc.coluna ? ' style="grid-column:1/-1"' : '') + '>' + h + '</div>';
+    }, ESPERA);
+    return function fim() { feito = true; clearTimeout(t); };
+  }
+  // Conteúdo que chega depois da espera entra com 240 ms (esmaece).
+  function chegou(el) { if (el && el.animate) guardar(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: reduz() ? 150 : 240, easing: EASE_OUT })); }
+
   function iniciar() { cascata(); numeros(); }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', iniciar); else iniciar();
-  g.CortavoVida = { terminarTudo: terminarTudo, reduz: reduz };
+  g.CortavoVida = { terminarTudo: terminarTudo, reduz: reduz, esqueleto: esqueleto, chegou: chegou };
 })(window);

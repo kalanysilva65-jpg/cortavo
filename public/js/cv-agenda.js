@@ -96,11 +96,13 @@
     function buscarHorarios() {
       horaIn.value = horaLivre.value || '';
       if (!barbIn || !barbIn.value) { grade.innerHTML = '<p class="cv-ajuda" style="grid-column:1/-1">Escolha o barbeiro para ver os horários.</p>'; return; }
-      grade.innerHTML = '<div class="cv-poste" style="grid-column:1/-1" role="progressbar" aria-label="Carregando horários"></div>';
+      // M3: esqueleto dos horários só se a espera passar de 300 ms.
+      var fimEsq = g.CortavoVida ? g.CortavoVida.esqueleto(grade, { linhas: 2, altura: 44, coluna: true }) : function () {};
       var qs = new URLSearchParams({ barbeiroId: barbIn.value, data: dataIn.value || '', servicoIds: servicosIn.value || '' });
       fetch('/painel/agenda/horarios?' + qs, { credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
         .then(function (j) {
+          fimEsq();
           var hs = j.horarios || [];
           if (!hs.length) { grade.innerHTML = '<p class="cv-ajuda" style="grid-column:1/-1">Sem horários nesse dia. Use o horário exato para um encaixe.</p>'; return; }
           grade.innerHTML = hs.map(function (h) {
@@ -109,7 +111,7 @@
               : '<button type="button" class="cv-hora" disabled aria-label="' + h.hora + ', ocupado">' + h.hora + '</button>';
           }).join('');
         })
-        .catch(function () { grade.innerHTML = '<p class="cv-ajuda" style="grid-column:1/-1">Não foi possível carregar os horários.</p>'; });
+        .catch(function () { fimEsq(); grade.innerHTML = '<p class="cv-ajuda" style="grid-column:1/-1">Não foi possível carregar os horários.</p>'; });
     }
     grade.addEventListener('click', function (e) {
       var b = e.target.closest('.cv-hora'); if (!b || b.disabled) return;

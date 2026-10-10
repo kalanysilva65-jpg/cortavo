@@ -36,3 +36,17 @@ test('#3 M2 em Gestão, Caixa, Comissões e Metas: conta, fecha anéis e cresce 
   assert.match(js, /setAttribute\('aria-label'/); // leitor de tela ouve o valor final
   assert.match(ler('src', 'views', 'layouts', 'painel.ejs'), /data-tela="<%= currentPath %>"/);
 });
+
+test('#5 carregando (M3): poste depois de 300 ms em fetch e troca de página; esqueleto na grade e nos horários', () => {
+  const js = ler('public', 'js', 'cv-vida.js');
+  assert.match(js, /var ESPERA = 300/);
+  assert.match(js, /g\.fetch = function/);
+  assert.match(js, /FUNDO = \/\\/novas\\?\|\\/notificacoes\\/\//);
+  assert.match(js, /addEventListener\('pageshow', esconderPoste\)/);
+  assert.match(js, /function esqueleto\(el, opc\)/);
+  assert.match(ler('public', 'js', 'cv-agenda-grade.js'), /CortavoVida\.esqueleto\(raiz/);
+  assert.match(ler('public', 'js', 'cv-agenda.js'), /CortavoVida\.esqueleto\(grade/);
+  const css = ler('public', 'css', 'cv.css');
+  assert.match(css, /\.cv-poste--topo \{ position: fixed/);
+  assert.match(css, /prefers-reduced-motion[\s\S]*\.cv-poste::before, \.cv-esq::after \{ animation: none; \}/);
+});
