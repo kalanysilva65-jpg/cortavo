@@ -67,3 +67,29 @@ test('Vera: conta de antes do link mostra "Senha de antes do link", não "Senha 
   const nova = tk.estadoDoAcesso({ criadoEm: quando, senhaDefinidaEm: new Date('2026-10-02T12:00:00Z') }, null);
   assert.equal(nova.texto, 'Senha criada em 02/10');
 });
+
+// ---------- Sergio M3 ----------
+async function passarSessao(usuarioDb, sessao) {
+  const prisma = prismaFalso({ usuario: { findUnique: async () => (usuarioDb ? { ...usuarioDb } : null) } });
+  const { sessaoValida } = carregar('src/middlewares/sessaoValida.js', { prisma });
+  const req = reqFalso({ session: sessao });
+  const res = resFalso();
+  let seguiu = false;
+  await sessaoValida(req, res, () => { seguiu = true; });
+  return { seguiu, req, res };
+}
+
+test('Sergio M3: admin rebaixado a barbeiro perde a sessão de admin na hora', async () => {
+  const v = new Date('2026-10-01T12:00:00Z');
+  const db = { ativo: true, senhaDefinidaEm: v, papel: 'funcionario', barbeariaId: 7 };
+  const r = await passarSessao(db, { usuario: { id: 2, papel: 'admin', barbeariaId: 7 }, senhaVersao: v.getTime() });
+  assert.equal(r.seguiu, false);
+  assert.equal(r.req.session.destruida, true);
+  assert.equal(r.res.redirecionou, '/login');
+  const ok = await passarSessao({ ...db, papel: 'admin' }, { usuario: { id: 2, papel: 'admin', barbeariaId: 7 }, senhaVersao: v.getTime() });
+  assert.equal(ok.seguiu, true, 'mesmo papel segue');
+  const outra = await passarSessao({ ...db, papel: 'admin', barbeariaId: 8 }, { usuario: { id: 2, papel: 'admin', barbeariaId: 7 }, senhaVersao: v.getTime() });
+  assert.equal(outra.seguiu, false, 'barbearia trocada também derruba');
+  const dono = await passarSessao({ ativo: true, senhaDefinidaEm: v, papel: 'dono', barbeariaId: null }, { usuario: { id: 1, papel: 'dono', barbeariaId: null }, senhaVersao: v.getTime(), barbeariaAtivaId: 7 });
+  assert.equal(dono.seguiu, true, 'dono operando uma barbearia (impersonação) não cai');
+});

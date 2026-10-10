@@ -22,11 +22,21 @@ async function sessaoValida(req, res, next) {
   if (!s || !s.usuario || !s.usuario.id) return next();
   let u;
   try {
-    u = await prisma.usuario.findUnique({ where: { id: s.usuario.id }, select: { ativo: true, senhaDefinidaEm: true } });
+    u = await prisma.usuario.findUnique({ where: { id: s.usuario.id }, select: { ativo: true, senhaDefinidaEm: true, papel: true, barbeariaId: true } });
   } catch (e) {
     // Banco indisponível: não derruba ninguém por isso (o pedido segue e falha
     // onde falharia de qualquer jeito).
     return next();
+  }
+  // Achado M3 do Sergio: o papel e a barbearia ficam na sessão (req.ehAdmin,
+  // exigeAdmin). Se mudaram no banco (admin rebaixado a barbeiro, pessoa
+  // movida), a sessão antiga cai: a pessoa entra de novo já com o papel novo.
+  const mudouPapel = u && ((u.papel !== undefined && s.usuario.papel !== undefined && u.papel !== s.usuario.papel) || (u.barbeariaId !== undefined && s.usuario.barbeariaId !== undefined && (u.barbeariaId || null) !== (s.usuario.barbeariaId || null)));
+  if (mudouPapel) {
+    return s.destroy(() => {
+      res.locals.usuario = null;
+      res.redirect('/login');
+    });
   }
   if (s.senhaVersao === undefined && u && u.ativo !== false) {
     s.senhaVersao = versao(u);
