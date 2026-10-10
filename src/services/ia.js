@@ -44,6 +44,17 @@ function dataLocal(s) {
 function primeiroNome(nome) {
   return (nome || '').trim().split(/\s+/)[0] || nome || '';
 }
+// Nome do cliente para a resposta (achado M1/M4 do Sergio): cliente salvo só
+// pelo telefone tem o número no lugar do nome; sem a chave `clientes_contato`
+// ele sai mascarado (só o final), como no resto do painel.
+function nomeCliente(ctx, nome, completo) {
+  const n = String(nome || '').trim();
+  if (ctx && ctx.veContato === false && /^[\d\s()+.-]{8,}$/.test(n)) {
+    const d = n.replace(/\D/g, '');
+    return d ? '•••• ' + d.slice(-4) : '';
+  }
+  return completo ? n : primeiroNome(n);
+}
 // Date -> "AAAA-MM-DD" no fuso local (o inverso de dataLocal).
 function isoLocal(d) {
   const x = new Date(d);
@@ -246,7 +257,7 @@ async function execFerramenta(nome, args, ctx) {
         total: ags.length,
         agendamentos: ags.map((a) => ({
           hora: a.horaInicio,
-          cliente: primeiroNome(a.clienteNome),
+          cliente: nomeCliente(ctx, a.clienteNome),
           barbeiro: primeiroNome(a.usuario?.nome),
           status: a.status,
           valor: fmtBRL(a.valorTotal),
@@ -266,7 +277,7 @@ async function execFerramenta(nome, args, ctx) {
       const mapa = new Map(); // chave por telefone (ou nome) -> agregado
       ags.forEach((a) => {
         const chave = a.clienteTelefone || a.clienteNome || '?';
-        const g = mapa.get(chave) || { nome: primeiroNome(a.clienteNome), visitas: 0, total: 0 };
+        const g = mapa.get(chave) || { nome: nomeCliente(ctx, a.clienteNome), visitas: 0, total: 0 };
         g.visitas += 1;
         g.total += a.valorTotal;
         mapa.set(chave, g);
@@ -340,7 +351,7 @@ async function execFerramenta(nome, args, ctx) {
       return {
         total: ags.length,
         agendamentos: ags.slice(0, 20).map((a) => ({
-          id: a.id, data: isoLocal(a.data), hora: a.horaInicio, cliente: a.clienteNome, barbeiro: primeiroNome(a.usuario?.nome), status: a.status,
+          id: a.id, data: isoLocal(a.data), hora: a.horaInicio, cliente: nomeCliente(ctx, a.clienteNome, true), barbeiro: primeiroNome(a.usuario?.nome), status: a.status,
         })),
       };
     }
@@ -371,7 +382,7 @@ async function execFerramenta(nome, args, ctx) {
       const dur = duracaoComEncaixe(ag.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })), { efetiva: true });
       const livres = await horariosDisponiveis(ag.usuarioId, args.novaData, dur);
       if (!livres.includes(args.novaHora)) return { erro: 'Esse horário não está livre. Consulte horarios_livres e ofereça um dos livres.' };
-      const resumo = `Reagendar ${primeiroNome(ag.clienteNome)} (${brData(isoLocal(ag.data))} ${ag.horaInicio}) para ${brData(args.novaData)} às ${args.novaHora}.`;
+      const resumo = `Reagendar ${nomeCliente(ctx, ag.clienteNome)} (${brData(isoLocal(ag.data))} ${ag.horaInicio}) para ${brData(args.novaData)} às ${args.novaHora}.`;
       return { _proposta: { tipo: 'reagendar', resumo, dados: { agendamentoId: ag.id, novaData: args.novaData, novaHora: args.novaHora } } };
     }
     case 'propor_cancelamento': {
@@ -381,7 +392,7 @@ async function execFerramenta(nome, args, ctx) {
       if (!ag) return { erro: 'Agendamento não encontrado (ou não é seu). Use buscar_agendamentos.' };
       if (ag.status === 'concluido') return { erro: 'Esse atendimento já foi concluído; não dá pra cancelar por aqui.' };
       if (ag.status === 'cancelado') return { erro: 'Esse agendamento já está cancelado.' };
-      const resumo = `Cancelar o agendamento de ${primeiroNome(ag.clienteNome)} em ${brData(isoLocal(ag.data))} às ${ag.horaInicio}.`;
+      const resumo = `Cancelar o agendamento de ${nomeCliente(ctx, ag.clienteNome)} em ${brData(isoLocal(ag.data))} às ${ag.horaInicio}.`;
       return { _proposta: { tipo: 'cancelar', resumo, dados: { agendamentoId: ag.id } } };
     }
     default:

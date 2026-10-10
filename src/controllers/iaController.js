@@ -22,6 +22,9 @@ function contextoDe(req) {
   return {
     barbeariaId: req.barbeariaId,
     usuarioId: req.ehAdmin ? null : req.session.usuario.id,
+    // Spec 12: o Assistente segue as mesmas chaves de permissão do painel.
+    veContato: !req.permissoes || req.permissoes.pode('clientes_contato'),
+    pode: (chave) => !req.permissoes || req.permissoes.pode(chave),
   };
 }
 

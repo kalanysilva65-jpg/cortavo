@@ -9,6 +9,23 @@ const atendimento = require('../services/atendimento');
 const waMidia = require('../services/waMidia');
 const secretaria = require('../services/secretaria');
 const { formatarTelefone } = require('../utils/telefone');
+const permissoes = require('../services/permissoes');
+
+// Spec 12 (B2), achado M1 do Sergio: sem a chave `clientes_contato`, o
+// telefone do cliente aparece só com o final, também nas Conversas (lista,
+// cabeçalho do chat e nome quando a conversa não tem nome).
+function veContato(req) {
+  return !req || !req.permissoes || req.permissoes.pode('clientes_contato');
+}
+function telefoneVisivel(req, tel) {
+  return veContato(req) ? formatarTelefone(tel) : permissoes.mascararTelefone(tel);
+}
+// Nome que é, na verdade, um número (cliente salvo só pelo telefone).
+function nomeVisivel(req, nome, tel) {
+  if (!nome) return telefoneVisivel(req, tel);
+  if (!veContato(req) && /^[\d\s()+.-]{8,}$/.test(String(nome))) return permissoes.mascararTelefone(nome);
+  return nome;
+}
 
 function horaCurta(d) {
   return new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -33,11 +50,11 @@ function rotuloDia(d) {
 }
 
 // Mapeia a lista de conversas da barbearia (usado na página e no fragmento).
-async function listaMapeada(barbeariaId, abertaId) {
+async function listaMapeada(barbeariaId, abertaId, req) {
   const conversas = await atendimento.listarConversas(barbeariaId);
   return conversas.map((c) => ({
     id: c.id,
-    nome: c.clienteNome || formatarTelefone(c.clienteTelefone),
+    nome: nomeVisivel(req, c.clienteNome, c.clienteTelefone),
     previa: c.ultimaPrevia || '',
     hora: horaCurta(c.ultimaMensagemEm),
     naoLidas: c.naoLidas,
@@ -86,7 +103,7 @@ async function ver(req, res) {
   const abertaId = aberta ? aberta.conversa.id : null;
 
   const [conversas, teto] = await Promise.all([
-    listaMapeada(req.barbeariaId, abertaId),
+    listaMapeada(req.barbeariaId, abertaId, req),
     atendimento.estadoTeto(req.barbeariaId),
   ]);
 
@@ -100,8 +117,8 @@ async function ver(req, res) {
       ? {
           conversa: {
             id: aberta.conversa.id,
-            nome: aberta.conversa.clienteNome || formatarTelefone(aberta.conversa.clienteTelefone),
-            telefone: formatarTelefone(aberta.conversa.clienteTelefone),
+            nome: nomeVisivel(req, aberta.conversa.clienteNome, aberta.conversa.clienteTelefone),
+            telefone: telefoneVisivel(req, aberta.conversa.clienteTelefone),
             iaAtiva: aberta.conversa.iaAtiva,
             janelaAberta: janelaAberta(aberta.conversa),
           },
@@ -113,7 +130,7 @@ async function ver(req, res) {
 
 // GET /painel/conversas/fragmento — só a lista (para a auto-atualização trocar sem recarregar).
 async function fragmento(req, res) {
-  const conversas = await listaMapeada(req.barbeariaId, null);
+  const conversas = await listaMapeada(req.barbeariaId, null, req);
   res.render('painel/_conversas-lista', { layout: false, conversas, polling: true });
 }
 
