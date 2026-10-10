@@ -446,3 +446,14 @@ html, body { overflow-x: clip; }
    grade ou linha, encolhe até caber (sem rolagem lateral em 320 px). */
 input[type="date"].cv-entrada, input[type="time"].cv-entrada { min-width: 0; max-width: 100%; }
 .cv-campo { min-width: 0; }
+
+/* Folhas (bug ao vivo, 2026-10-10): sobrava uma faixa embaixo do botão de
+   salvar. O respiro inferior (20 px + safe-area do iPhone) ficava FORA da
+   área que rola: o corpo cortava o botão e a faixa vazia aparecia por baixo.
+   Agora o respiro mora dentro do corpo (o conteúdo rola até a borda da tela)
+   e a folha fica colada no fim da tela com a cor dela por baixo do botão.
+   O ::after estende a folha abaixo da tela para a mola de abertura (M4) não
+   mostrar o fundo no repique. */
+.cv-folha:has(.cv-folha-corpo) { padding-bottom: 0; }
+.cv-folha .cv-folha-corpo { padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+.cv-folha::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 120px; background: var(--vidro-solido); pointer-events: none; }

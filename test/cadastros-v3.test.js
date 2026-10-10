@@ -315,3 +315,14 @@ test('Mais: Caixa só para admin ou funcionário com caixa_ver', async () => {
   assert.match(await ver({ pode: (k) => k === 'caixa_ver' }), /\/painel\/caixa/);
   assert.match(await ver({ ehAdmin: true, usuario: { id: 1, nome: 'R', papel: 'admin' }, pode: () => false }), /\/painel\/caixa/);
 });
+
+test('Folhas: sem faixa embaixo do botão; respiro com safe-area dentro do corpo que rola', () => {
+  const fs = require('fs'); const path = require('path');
+  const cv = fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'cv.css'), 'utf8');
+  assert.match(cv, /\.cv-folha:has\(\.cv-folha-corpo\) \{ padding-bottom: 0; \}/);
+  assert.match(cv, /\.cv-folha \.cv-folha-corpo \{ padding-bottom: calc\(20px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(cv, /\.cv-folha::after \{[^}]*top: 100%/);
+  for (const f of fs.readdirSync(path.join(__dirname, '..', 'public', 'css'))) {
+    assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'public', 'css', f), 'utf8'), /\.cv-folha-corpo \{ padding-bottom: \d+px; \}/, f);
+  }
+});

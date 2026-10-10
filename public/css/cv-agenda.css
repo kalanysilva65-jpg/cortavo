@@ -37,7 +37,7 @@
 .cv-redondo--leve { width: var(--toque-min); height: var(--toque-min); background: rgba(17,17,17,.06); box-shadow: none; flex-shrink: 0; }
 .cv-ag-folha .cv-folha-cab h2:focus { outline: none; }
 .cv-ag-zona-fim { display: flex; justify-content: flex-end; margin: -6px 0 -6px; }
-.cv-ag-folha .cv-folha-corpo { padding-bottom: 8px; }
+/* (padding inferior da folha: regra geral em cv.css, com a safe-area) */
 .cv-ag-duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 16px; }
 .cv-ag-duas .cv-campo + .cv-campo { margin-top: 0; }
 
