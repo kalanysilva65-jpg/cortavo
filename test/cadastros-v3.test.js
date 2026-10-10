@@ -73,3 +73,19 @@ test('Serviços e produtos v3: uma peça, segmento, foto opcional com miniatura,
   assert.equal((pr.match(/class="cv-objeto cv-gravada" aria-label="Vendido no mês"/g) || []).length, 1);
   assert.doesNotMatch(pr, /data-foto-mini/);
 });
+
+test('Estoque v3: objeto do gasto, "para repor" listrado, lista, folhas e o formulário avulso também no v3', async () => {
+  v3('/painel/estoque');
+  const i = { id: 2, nome: 'Lâmina', quantidade: 3, quantidadeMinima: 10, valorGasto: 4500, categoriaId: null, categoria: null };
+  const html = await render('painel/estoque.ejs', { ...comuns, itens: [i], categorias: [{ id: 1, nome: 'Descartáveis' }], baixoEstoque: [i], resumo: { valorGasto: 84790, unidades: 3, itens: 1 } });
+  assert.doesNotMatch(html, SEM_ANTIGO);
+  assert.equal((html.match(/class="cv-objeto/g) || []).length, 1);
+  assert.match(html, /1 para repor/);
+  assert.match(html, /cv-etq--listra">repor/);
+  assert.match(html, /action="\/painel\/estoque\/2"/);
+  assert.match(html, /action="\/painel\/estoque\/2\/remover" class="cv-folha-acoes" data-confirmar/);
+  const f = await render('painel/estoque-form.ejs', { item: i, categorias: [] });
+  assert.doesNotMatch(f, SEM_ANTIGO);
+  assert.match(f, /action="\/painel\/estoque\/2"/);
+  assert.match(layout, /AVULSOS_V3 = /);
+});

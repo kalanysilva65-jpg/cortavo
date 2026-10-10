@@ -148,3 +148,11 @@ fieldset.cv-campo legend { padding: 0; margin-bottom: 4px; }
 .cv-consumo .cv-consumo-linha .cv-entrada { width: 96px; flex-shrink: 0; }
 .cv-seg a { border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); min-height: 34px; }
 .cv-seg a[aria-pressed="true"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
+
+/* ---- Estoque ------------------------------------------------------------ */
+.cv-es-repor { display: flex; align-items: center; gap: 14px; }
+.cv-es-repor .faixa { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; background: var(--listra-bloqueado); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-es-repor .corpo { min-width: 0; }
+.cv-es-repor b { display: block; font-size: 16px; font-weight: 800; }
+.cv-es-repor small { display: block; font-size: 14px; color: var(--c-apoio); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-linha .fim b.cv-es-qtd { font-size: 22px; line-height: 1; letter-spacing: -.03em; }
