@@ -221,3 +221,25 @@ test('F13 agenda no PC: vistas Lista/Colunas/Semana ligadas aos JSONs do Beto', 
   assert.match(js, /min-width: 1024px/);
   assert.doesNotMatch(js, /telefone|email/i);
 });
+
+test('Revisão Dani P1: ícone, formulários de página, jornada, Faltou e semana', () => {
+  const fs = require('fs'); const path = require('path');
+  const ler = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
+  // 1. ícone oficial: C branco sobre preto mesmo sem cv-telas.css; fora do app do cliente
+  assert.match(ler('src', 'views', 'partials', 'logo-c.ejs'), /background:#000/);
+  assert.doesNotMatch(ler('src', 'views', 'app', 'home.ejs'), /logo-c/);
+  assert.doesNotMatch(ler('src', 'views', 'app', 'agendamentos.ejs'), /logo-c/);
+  // 3. jornada: campo de hora largo e tabular
+  assert.match(ler('public', 'css', 'cv-cadastro.css'), /\.cv-hr-jornada \.cv-entrada \{[^}]*min-width: 108px[^}]*tabular-nums/);
+  // 4. formulários de página sem navbar e botão final fixo
+  assert.match(ler('src', 'views', 'layouts', 'painel.ejs'), /var semNav = AVULSOS_V3\.test\(currentPath\)/);
+  for (const f of ['plano-form', 'servico-form', 'estoque-form', 'agenda-novo']) assert.match(ler('src', 'views', 'painel', f + '.ejs'), /cv-acao-fixa/, f);
+  // 5. novo agendamento leva à folha; erro no padrão do acesso; placeholder curto
+  const an = ler('src', 'views', 'painel', 'agenda-novo.ejs');
+  assert.match(an, /abrir=agendamento/); assert.match(an, /cv-erro-linha" role="alert"/); assert.match(an, /placeholder="Nome do cliente"/);
+  // 6 e 7. Faltou sem listra; semana agrupa sobreposição
+  const css = ler('public', 'css', 'cv-agenda.css');
+  assert.doesNotMatch(css, /\.cv-gr-bloco\.faltou \{[^}]*listra/);
+  assert.match(css, /\.cv-gr-bloco\.faltou b \{[^}]*line-through/);
+  assert.match(ler('public', 'js', 'cv-agenda-grade.js'), / atendimentos<\/span>/);
+});

@@ -55,7 +55,9 @@
     // Telas de tela cheia, sem a barra de navegação (pedido do dono, 2026-09-30).
     // v3: a navbar é fixa em todas as seções (spec 12); só as telas cheias de
     // conversa (campo de texto no rodapé) e a de logo ficam sem ela.
-    var semNav = currentPath === '/painel/ia' || currentPath === '/painel/secretaria/teste' || (currentPath === '/painel/conversas' && typeof aberta !== 'undefined' && !!aberta);
+    // Formulários de página inteira (AVULSOS_V3) também saem sem navbar: o
+    // botão final fica fixo no pé (revisão Dani, P1 #4).
+    var semNav = AVULSOS_V3.test(currentPath) || currentPath === '/painel/ia' || currentPath === '/painel/secretaria/teste' || (currentPath === '/painel/conversas' && typeof aberta !== 'undefined' && !!aberta);
   %>
   <body class="app-painel pg-cv<%= semNav ? ' sem-nav' : '' %>">
     <%/* .cv-palco recua quando uma folha abre (M4); o aviso do servidor vira

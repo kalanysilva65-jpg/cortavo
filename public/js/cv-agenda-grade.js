@@ -24,7 +24,7 @@
   function ler() { try { return g.localStorage.getItem(CHAVE); } catch (e) { return null; } }
   function guardar(v) { try { g.localStorage.setItem(CHAVE, v); } catch (e) {} }
 
-  var ESTADO = { concluido: 'Concluído', faltou: 'Faltou', pendente: '', confirmado: '' };
+  var ICONE_FALTOU = '<svg class="cv-ic cv-ic--14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6"/></svg>';
 
   function faixaDe(j) {
     var f = j.faixa || {}, ini = min(f.inicio || '08:00'), fim = min(f.fim || '20:00');
@@ -48,27 +48,43 @@
       var a = min(bl.inicio || bl.horaInicio), b = min(bl.fim || bl.horaFim);
       h += '<div class="cv-gr-bloq" style="top:' + ((a - fx.ini) * PX_MIN) + 'px;height:' + Math.max(18, (b - a) * PX_MIN) + 'px"><span>' + esc(bl.motivo || 'Bloqueado') + '</span></div>';
     });
-    // Blocos que se sobrepõem (na semana, vários barbeiros no mesmo trilho)
-    // dividem a largura em faixas lado a lado.
+    // Sobreposição. Nas colunas (um barbeiro), dividem a largura. Na semana
+    // (vários barbeiros no mesmo dia), viram um bloco só "N atendimentos",
+    // com os nomes no title; o toque leva ao dia (revisão Dani, P1 #7).
     var bks = (col.blocos || []).slice().sort(function (x, y) { return x.inicioMin - y.inicioMin; });
-    var fins = [], grupo = [], fimGrupo = -1;
-    function fecharGrupo() { grupo.forEach(function (b) { b._n = fins.length; }); grupo = []; fins = []; }
+    var grupos = [], fins = [], grupo = null, fimGrupo = -1;
     bks.forEach(function (bk) {
       var a = typeof bk.inicioMin === 'number' ? bk.inicioMin : min(bk.inicio), f = a + (bk.duracaoMin || 30);
-      if (a >= fimGrupo) fecharGrupo();
-      var k = 0; while (fins[k] > a) k++; fins[k] = f; bk._k = k; grupo.push(bk); fimGrupo = Math.max(fimGrupo, f);
+      if (a >= fimGrupo) { grupo = []; grupos.push(grupo); fins = []; }
+      var k = 0; while (fins[k] > a) k++; fins[k] = f; bk._k = k; grupo.push(bk); grupo.n = fins.length; fimGrupo = Math.max(fimGrupo, f);
     });
-    fecharGrupo();
-    bks.forEach(function (bk) {
-      var a = typeof bk.inicioMin === 'number' ? bk.inicioMin : min(bk.inicio), d = bk.duracaoMin || 30;
-      var lado = bk._n > 1 ? 'left:calc(4px + ' + (bk._k * 100 / bk._n) + '% - ' + (bk._k * 8 / bk._n) + 'px);width:calc(' + (100 / bk._n) + '% - ' + (8 / bk._n + 2) + 'px);right:auto;' : '';
-      var est = ESTADO[bk.status] || '';
-      var serv = (bk.servicos || []).map(function (s) { return s.nome || s; }).join(', ');
-      var rot = bk.inicio + ', ' + (bk.cliente || 'Cliente') + (serv ? ', ' + serv : '') + (est ? ', ' + est : '');
-      var cls = 'cv-gr-bloco' + (bk.status === 'concluido' ? ' feito' : '') + (bk.ocupa === false ? ' faltou' : '') + (d * PX_MIN < 44 ? ' curto' : '');
-      var attrs = opc.semana ? ' href="/painel/agenda?data=' + esc(opc.data) + '&barbeiro=' + esc(barbeiro) + '#ag-' + bk.id + '"' : ' href="#ag-' + bk.id + '" data-ag="' + bk.id + '"';
-      h += '<a class="' + cls + '"' + attrs + ' aria-label="' + esc(rot) + '" style="' + lado + 'top:' + ((a - fx.ini) * PX_MIN) + 'px;height:' + Math.max(22, d * PX_MIN - 2) + 'px">' +
-        '<b>' + esc(bk.cliente || 'Cliente') + '</b><span>' + esc(bk.inicio) + (est ? ' · ' + est : '') + (serv ? ' · ' + esc(serv) : '') + '</span></a>';
+    var linkDia = ' href="/painel/agenda?data=' + esc(opc.data) + '&barbeiro=' + esc(barbeiro) + '"';
+    grupos.forEach(function (gr) {
+      if (opc.semana && gr.length > 1) {
+        var a = gr[0].inicioMin, f = 0;
+        gr.forEach(function (b) { f = Math.max(f, b.inicioMin + (b.duracaoMin || 30)); });
+        var nomes = gr.map(function (b) { return b.inicio + ' ' + (b.cliente || 'Cliente'); }).join(', ');
+        h += '<a class="cv-gr-bloco cv-gr-grupo"' + linkDia + ' title="' + esc(nomes) + '" aria-label="' + esc(gr.length + ' atendimentos: ' + nomes) + '" style="top:' + ((a - fx.ini) * PX_MIN) + 'px;height:' + Math.max(22, (f - a) * PX_MIN - 2) + 'px">' +
+          '<b>' + esc(gr[0].inicio) + '</b><span class="cv-gr-n">' + gr.length + ' atendimentos</span></a>';
+        return;
+      }
+      gr.forEach(function (bk) {
+        var a = typeof bk.inicioMin === 'number' ? bk.inicioMin : min(bk.inicio), d = bk.duracaoMin || 30, n = gr.n;
+        var lado = n > 1 ? 'left:calc(4px + ' + (bk._k * 100 / n) + '% - ' + (bk._k * 8 / n) + 'px);width:calc(' + (100 / n) + '% - ' + (8 / n + 2) + 'px);right:auto;' : '';
+        var falta = bk.status === 'faltou' || bk.ocupa === false, feito = bk.status === 'concluido';
+        var serv = (bk.servicos || []).map(function (x) { return x.nome || x; }).join(', ');
+        var cli = bk.cliente || 'Cliente';
+        var rot = bk.inicio + ', ' + cli + (serv ? ', ' + serv : '') + (falta ? ', Faltou' : feito ? ', Concluído' : '');
+        var cls = 'cv-gr-bloco' + (feito ? ' feito' : '') + (falta ? ' faltou' : '') + (d * PX_MIN < 66 ? ' curto' : '');
+        var attrs = opc.semana ? linkDia : ' href="#ag-' + bk.id + '" data-ag="' + bk.id + '"';
+        // Estado escrito, nunca só cor nem listra: "Faltou" é o nome riscado
+        // e o estado com ícone, como no celular (P1 #6).
+        var estado = falta ? '<em class="cv-gr-est">' + ICONE_FALTOU + 'Faltou</em>' : feito ? '<em class="cv-gr-est">Concluído</em>' : '';
+        var alto = d * PX_MIN >= 66;
+        var linha2 = alto ? esc(bk.inicio) + (serv ? ' · ' + esc(serv) : '') : esc(bk.inicio);
+        h += '<a class="' + cls + '"' + attrs + ' title="' + esc(cli) + '" aria-label="' + esc(rot) + '" style="' + lado + 'top:' + ((a - fx.ini) * PX_MIN) + 'px;height:' + Math.max(22, d * PX_MIN - 2) + 'px">' +
+          '<b>' + esc(cli) + '</b>' + (alto ? '<span>' + linha2 + '</span>' + estado : '<span>' + linha2 + (estado ? ' · ' : '') + '</span>' + estado) + '</a>';
+      });
     });
     return '<div class="cv-gr-trilho" style="height:' + alt + 'px">' + h + '</div>';
   }

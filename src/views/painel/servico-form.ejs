@@ -29,7 +29,7 @@
       <% if (servico && servico.fotoUrl) { %><button type="submit" class="cv-perigo-link" formaction="/painel/servicos/<%= servico.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
     </div>
     <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: insumosMap || {} }) %>
-    <button class="cv-btn cv-btn--largo" type="submit" style="margin-top:18px"><%= servico ? 'Salvar alterações' : 'Criar serviço' %></button>
+    <button class="cv-btn cv-btn--largo cv-acao-fixa" type="submit"><%= servico ? 'Salvar alterações' : 'Criar serviço' %></button>
   </form>
   <% if (servico) { %>
     <div class="cv-dupla" style="margin-top:12px">

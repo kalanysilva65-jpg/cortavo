@@ -1,8 +1,10 @@
-<%/* Agendamento manual em página inteira (/painel/agenda/novo), no v3. A
-     Agenda usa a folha "Novo"; esta página fica para o envio sem JS e para os
-     erros de validação. Mesmos campos e rota. */%>
+<%/* Agendamento manual em página inteira (/painel/agenda/novo). O desenho
+     aprovado é a folha "Novo" da Agenda (mockup 04b): com JS e sem erro, esta
+     página leva direto à folha. Fica só para o envio sem JS e para os erros
+     de validação. Mesmos campos e rota. */%>
+<% if (!erro) { %><script>location.replace('/painel/agenda?abrir=agendamento');</script><% } %>
 <header class="cv-cab"><div class="cv-cab-txt"><p class="cv-cab-sup"><a href="/painel/agenda" style="color:inherit">Agenda</a></p><h1>Novo agendamento</h1></div></header>
-<% if (erro) { %><div class="cv-secao" style="margin-top:14px"><div class="cv-cartao cv-erro-caixa" role="alert"><%= erro %></div></div><% } %>
+<% if (erro) { %><div class="cv-secao" style="margin-top:14px"><p class="cv-erro-linha" role="alert"><%- include('../partials/icone', { cvIc: 'alerta', cvCls: 'cv-ic--20' }) %><span><%= erro %></span></p></div><% } %>
 <div class="cv-secao" style="margin-top:16px">
   <form method="POST" action="/painel/agenda/novo" class="cv-cartao cv-pl-form">
     <% if (ehAdmin) { %>
@@ -11,14 +13,14 @@
       <p class="cv-texto-apoio" style="margin:0 0 4px">Agendamento para você (<%= usuario.nome %>).</p>
     <% } %>
     <div class="cv-campo"><label for="servicoId">Serviço</label><select class="cv-entrada" id="servicoId" name="servicoId" required><option value="">Selecione…</option><% servicos.forEach(function (s) { %><option value="<%= s.id %>"<%= valores && String(valores.servicoId) === String(s.id) ? ' selected' : '' %>><%= s.nome %> · <%= fmtBRL(s.valor) %><%= s.duracaoMin > 0 ? ' · ' + s.duracaoMin + ' min' : '' %></option><% }) %></select></div>
-    <div class="cv-dupla" style="margin-top:14px">
+    <div class="cv-dupla cv-dupla--alinhada" style="margin-top:14px">
       <div class="cv-campo"><label for="data">Data</label><input class="cv-entrada" id="data" type="date" name="data" required value="<%= valores && valores.data ? valores.data : hojeIso %>" /></div>
       <div class="cv-campo"><label for="hora">Horário</label><input class="cv-entrada" id="hora" type="time" name="hora" required value="<%= valores && valores.hora ? valores.hora : '' %>" /></div>
     </div>
-    <div class="cv-campo cv-autocomp"><label for="cliente_nome">Cliente</label><input class="cv-entrada" id="cliente_nome" name="cliente_nome" autocomplete="off" placeholder="Digite o nome (sugere os cadastrados)" required value="<%= valores && valores.cliente_nome ? valores.cliente_nome : '' %>" /><div id="sugestoes-cliente" class="cv-sugestoes"></div></div>
+    <div class="cv-campo cv-autocomp"><label for="cliente_nome">Cliente</label><input class="cv-entrada" id="cliente_nome" name="cliente_nome" autocomplete="off" placeholder="Nome do cliente" required value="<%= valores && valores.cliente_nome ? valores.cliente_nome : '' %>" /><div id="sugestoes-cliente" class="cv-sugestoes"></div></div>
     <div class="cv-campo"><label for="cliente_telefone">Telefone</label><input class="cv-entrada" id="cliente_telefone" name="cliente_telefone" type="tel" inputmode="tel" placeholder="(51) 99999-9999" required value="<%= valores && valores.cliente_telefone ? valores.cliente_telefone : '' %>" /></div>
     <div class="cv-campo"><label for="cliente_email">E-mail <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><input class="cv-entrada" id="cliente_email" type="email" name="cliente_email" value="<%= valores && valores.cliente_email ? valores.cliente_email : '' %>" /></div>
-    <button class="cv-btn cv-btn--largo" type="submit" style="margin-top:18px">Criar agendamento</button>
+    <button class="cv-btn cv-btn--largo cv-acao-fixa" type="submit">Criar agendamento</button>
   </form>
 </div>
 

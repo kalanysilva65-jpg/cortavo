@@ -1,6 +1,6 @@
 <% var lista = aba === 'passados' ? passados : proximos; %>
 <%/* App do cliente: agendamentos (v3). */%>
-<header class="cv-cab"><div class="cv-cab-txt"><h1>Agendamentos</h1></div><div class="cv-cab-acoes"><%- include('../partials/logo-c', { cvTam: 40 }) %></div></header>
+<header class="cv-cab"><div class="cv-cab-txt"><h1>Agendamentos</h1></div></header>
 <div class="cv-secao" style="margin-top:16px">
   <nav class="cv-seg cc-seg" aria-label="Agendamentos"><a href="/conta/agendamentos" aria-pressed="<%= aba !== 'passados' %>"<% if (aba !== 'passados') { %> aria-current="page"<% } %>>Próximos</a><a href="/conta/agendamentos?aba=passados" aria-pressed="<%= aba === 'passados' %>"<% if (aba === 'passados') { %> aria-current="page"<% } %>>Anteriores</a></nav>
 </div>

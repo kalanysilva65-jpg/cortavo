@@ -17,7 +17,7 @@
       <div class="cv-campo"><label for="validadeDias">Validade, em dias</label><input class="cv-entrada cv-entrada--num" id="validadeDias" name="validadeDias" type="number" min="1" value="<%= plano ? plano.validadeDias : 30 %>" /></div>
     </div>
     <div class="cv-campo"><label for="valor">Preço, em reais</label><input class="cv-entrada cv-entrada--num" id="valor" name="valor" type="number" step="0.01" min="0" inputmode="decimal" value="<%= plano ? (plano.valor / 100).toFixed(2) : '' %>" /><span class="cv-ajuda">Entra como entrada no caixa quando o cliente adquire o plano.</span></div>
-    <button class="cv-btn cv-btn--largo" type="submit" style="margin-top:18px"><%= plano ? 'Salvar' : 'Criar plano' %></button>
+    <button class="cv-btn cv-btn--largo cv-acao-fixa" type="submit"><%= plano ? 'Salvar' : 'Criar plano' %></button>
   </form>
 </div>
 <script>
