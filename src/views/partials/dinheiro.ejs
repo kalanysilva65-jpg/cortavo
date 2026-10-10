@@ -1,0 +1,5 @@
+<%/* Valor em reais no padrão v3: "R$" e centavos pequenos, inteiro grande.
+     Uso: include('../partials/dinheiro', { cvC: 123450, cvTam: 'm' }).
+     cvTam: g, m ou p (cv-num--*); cvSemCent: true esconde os centavos. */-%>
+<% var _c = Math.round(Number(typeof cvC !== 'undefined' ? cvC : 0) || 0), _neg = _c < 0, _a = Math.abs(_c), _i = Math.floor(_a / 100), _ce = String(_a % 100).padStart(2, '0'); -%>
+<span class="cv-num cv-num--<%= typeof cvTam !== 'undefined' && cvTam ? cvTam : 'p' %>" aria-label="<%= (_neg ? 'menos ' : '') + 'R$ ' + _i.toLocaleString('pt-BR') + ',' + _ce %>"><span aria-hidden="true"><%= _neg ? '−' : '' %></span><span class="moeda" aria-hidden="true">R$</span><span class="int" aria-hidden="true"><%= _i.toLocaleString('pt-BR') %></span><% if (!(typeof cvSemCent !== 'undefined' && cvSemCent)) { %><span class="cent" aria-hidden="true">,<%= _ce %></span><% } %></span>

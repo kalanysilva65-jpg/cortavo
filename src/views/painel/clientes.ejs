@@ -1,257 +1,158 @@
-<%/* Clientes no design SUAVE (pedido do dono, 2026-07-31): sai a composição
-     editorial do Turno 6 (faixas separadas por fio, número gigante no topo) e
-     entra o desenho da referência — cabeçalho FIXO com título, busca em
-     pílula e filtros roláveis; abaixo, o resumo em três ladrilhos e a carteira
-     em cartões arredondados com avatar.
-     O pop-up deste design é FOLHA INFERIOR: tanto o "Novo cliente" (que era
-     diálogo centrado) quanto o detalhe (que era folha de página inteira)
-     agora sobem de baixo. Estilos em public/css/sv-clientes-equipe.css. */%>
-<div class="sv-tela sv-cl-tela">
+<%/* Clientes (redesign v3). Sem mockup próprio: aplica o sistema da Dani
+     (assinatura.md, componentes) com o mesmo rigor das telas prontas.
+     - Celular: busca + filtros, o objeto preto com os 3 números da carteira e
+       a lista em cartão. Ficha do cliente e "Novo cliente" sobem em folha.
+     - PC (>= 1024): a lista vira tabela; a ficha é a mesma folha.
+     Rotas, campos e regras de sempre (clienteController). */%>
+<% var dinheiro = function (c, tam) { return include('../partials/dinheiro', { cvC: c, cvTam: tam || 'p' }); }; %>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup"><%= resumo.total %> <%= resumo.total === 1 ? 'cliente' : 'clientes' %></p><h1>Clientes</h1></div>
+  <div class="cv-cab-acoes"><button class="cv-btn" type="button" data-abrir-folha="cl-folha-novo"><%- include('../partials/icone', { cvIc: 'clienteMais', cvCls: 'cv-ic--18' }) %>Novo</button></div>
+</header>
 
-  <div class="sv-cl-topo sv-reveal">
-    <div class="sv-cl-topo-linha">
-      <div class="sv-titulo">Clientes</div>
-      <button type="button" class="sv-btn sv-cl-novo" onclick="clAbrirFolha('novo')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        <span>Novo</span>
-      </button>
+<div class="cv-secao" style="margin-top:16px">
+  <section class="cv-objeto cv-gravada" aria-label="Resumo da carteira">
+    <div class="cv-tres">
+      <div><span class="cv-num"><%= resumo.total %></span><span class="rot">na base</span></div>
+      <div><span class="cv-num"><%= resumo.sumidos %></span><span class="rot">sumidos há 30 dias</span></div>
+      <div><span class="cv-num"><%= resumo.aniversariantes %></span><span class="rot">aniversário no mês</span></div>
     </div>
-
-    <div class="sv-cl-busca">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input type="search" class="sv-cl-busca-input" id="cl-busca-input" placeholder="Buscar cliente" oninput="clFiltrar()" />
-    </div>
-
-    <div class="sv-cl-filtros sv-rolagem" id="cl-filtros">
-      <button type="button" class="sv-cl-filtro sel" data-filtro="todos" onclick="clSelecionarFiltro(this)">Todos</button>
-      <button type="button" class="sv-cl-filtro" data-filtro="sumidos" onclick="clSelecionarFiltro(this)">Sumidos</button>
-      <button type="button" class="sv-cl-filtro" data-filtro="aniversariantes" onclick="clSelecionarFiltro(this)">Aniversariantes</button>
-    </div>
-  </div>
-
-  <div class="sv-cl-corpo sv-rolagem">
-    <%/* Os três ladrilhos espelham exatamente os três filtros do topo. */%>
-    <div class="sv-cl-tiles sv-reveal">
-      <div class="sv-cl-tile">
-        <div class="sv-cl-tile-num"><%= resumo.total %></div>
-        <div class="sv-cl-tile-rot">na base</div>
-      </div>
-      <div class="sv-cl-tile">
-        <div class="sv-cl-tile-num"><%= resumo.sumidos %></div>
-        <div class="sv-cl-tile-rot">sumidos +30d</div>
-      </div>
-      <div class="sv-cl-tile">
-        <div class="sv-cl-tile-num"><%= resumo.aniversariantes %></div>
-        <div class="sv-cl-tile-rot">aniversário</div>
-      </div>
-    </div>
-
-    <% if (clientes.length === 0) { %>
-      <div class="sv-vazio">Nenhum cliente cadastrado ainda.</div>
-    <% } else { %>
-      <div class="sv-cl-lista" id="cl-lista">
-        <% clientes.forEach(function (c) { %>
-          <button type="button" class="sv-cl-item" onclick="clAbrirFolha(<%= c.id %>)"
-                  data-nome="<%= c.nome.toLowerCase() %>"
-                  data-tel="<%= c.telefone %>"
-                  data-sumido="<%= c.stats.sumido ? '1' : '0' %>"
-                  data-aniv="<%= c.aniversarianteMes ? '1' : '0' %>">
-            <span class="sv-cl-av"><%= c.iniciais %></span>
-            <span class="sv-cl-item-corpo">
-              <span class="sv-cl-nome-linha">
-                <span class="sv-cl-nome"><%= c.nome %></span>
-                <% if (c.stats.sumido) { %><span class="sv-cl-selo">sumido</span><% } %>
-                <% if (c.aniversarianteMes) { %><span class="sv-cl-selo sv-cl-selo--aniv">aniver.</span><% } %>
-              </span>
-              <span class="sv-cl-sub"><%= c.stats.servicoFavorito || 'sem histórico' %> · <%= c.stats.ultimaVisitaLabel %></span>
-            </span>
-            <span class="sv-cl-lado">
-              <span class="sv-cl-gasto"><%= fmtT6(c.stats.totalGasto) %></span>
-              <span class="sv-cl-selos"><%= c.selosFidelidade %> selos</span>
-            </span>
-          </button>
-        <% }) %>
-      </div>
-      <div class="sv-vazio" id="cl-sem-resultado" hidden>Nenhum cliente com esse filtro.</div>
-    <% } %>
-  </div>
+  </section>
 </div>
 
-<%/* Novo cliente — folha inferior. */%>
-<div class="sv-folha-fundo" id="cl-folha-novo" hidden>
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-folha-titulo">Novo cliente</div>
+<label class="cv-busca"><span class="cv-oculto">Buscar cliente</span><%- include('../partials/icone', { cvIc: 'busca' }) %><input class="cv-entrada" type="search" data-busca="cl" placeholder="Buscar por nome ou telefone" autocomplete="off" /></label>
+<div class="cv-filtros" role="group" aria-label="Filtro" data-filtros-de="cl">
+  <button type="button" class="cv-chip" data-filtro="todos" aria-pressed="true"><span>Todos</span></button>
+  <button type="button" class="cv-chip" data-filtro="sumido" aria-pressed="false"><span>Sumidos</span></button>
+  <button type="button" class="cv-chip" data-filtro="aniversario" aria-pressed="false"><span>Aniversariantes</span></button>
+</div>
+
+<section class="cv-secao" style="margin-top:14px" aria-label="Lista de clientes">
+  <% if (clientes.length === 0) { %>
+    <div class="cv-cartao cv-vazio" role="status">
+      <h2>Nenhum cliente ainda</h2>
+      <p>Quem marca pelo link entra aqui sozinho. Você também pode cadastrar alguém do balcão.</p>
+      <div class="acoes"><button class="cv-btn" type="button" data-abrir-folha="cl-folha-novo"><%- include('../partials/icone', { cvIc: 'clienteMais', cvCls: 'cv-ic--20' }) %>Cadastrar cliente</button></div>
+    </div>
+  <% } else { %>
+    <ul class="cv-lista cv-so-cel" id="cl-lista" data-lista="cl">
+      <% clientes.forEach(function (c) { var filtros = (c.stats.sumido ? 'sumido ' : '') + (c.aniversarianteMes ? 'aniversario' : ''); %>
+        <li data-item data-texto="<%= (c.nome + ' ' + c.telefone).toLowerCase() %>" data-filtros="<%= filtros %>">
+          <button type="button" class="cv-linha" data-abrir-folha="cl-folha-<%= c.id %>">
+            <span class="cv-avatar cv-avatar--claro" aria-hidden="true"><%= c.iniciais %></span>
+            <span class="corpo">
+              <span class="t"><%= c.nome %></span>
+              <span class="s"><%= c.stats.servicoFavorito || 'Sem histórico' %> · <%= c.stats.ultimaVisitaLabel %><% if (c.stats.sumido) { %> · sumido<% } %><% if (c.aniversarianteMes) { %> · aniversário<% } %></span>
+            </span>
+            <span class="fim"><b><%- dinheiro(c.stats.totalGasto) %></b><small><%= c.selosFidelidade %> <%= c.selosFidelidade === 1 ? 'selo' : 'selos' %></small></span>
+          </button>
+        </li>
+      <% }) %>
+    </ul>
+    <%/* PC: a mesma carteira em tabela (Dani, painel-pc "Clientes"). */%>
+    <div class="cv-tabela" data-lista="cl">
+      <table>
+        <thead><tr><th>Cliente</th><th>Telefone</th><th>Última visita</th><th>Favorito</th><th class="dir">Visitas</th><th class="dir">Total gasto</th><th class="dir">Selos</th></tr></thead>
+        <tbody>
+          <% clientes.forEach(function (c) { var filtros = (c.stats.sumido ? 'sumido ' : '') + (c.aniversarianteMes ? 'aniversario' : ''); %>
+            <tr data-item data-texto="<%= (c.nome + ' ' + c.telefone).toLowerCase() %>" data-filtros="<%= filtros %>" data-abrir-folha="cl-folha-<%= c.id %>">
+              <td><button type="button" class="pessoa" data-abrir-folha="cl-folha-<%= c.id %>"><span class="cv-avatar cv-avatar--p cv-avatar--claro" aria-hidden="true"><%= c.iniciais %></span><span><b><%= c.nome %></b><% if (c.stats.sumido || c.aniversarianteMes) { %><small><%= c.stats.sumido ? 'Sumido' : '' %><%= c.stats.sumido && c.aniversarianteMes ? ' · ' : '' %><%= c.aniversarianteMes ? 'Aniversário no mês' : '' %></small><% } %></span></button></td>
+              <td><%= fmtTelefone(c.telefone) %></td>
+              <td><%= c.stats.ultimaVisitaLabel %></td>
+              <td><%= c.stats.servicoFavorito || '—' %></td>
+              <td class="dir"><%= c.stats.visitas %></td>
+              <td class="dir"><b><%- dinheiro(c.stats.totalGasto) %></b></td>
+              <td class="dir"><%= c.selosFidelidade %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <p class="cv-texto-apoio" data-sem-resultado="cl" hidden style="padding:16px 4px">Nenhum cliente com essa busca ou filtro.</p>
+  <% } %>
+</section>
+
+<%/* Novo cliente */%>
+<section class="cv-folha" id="cl-folha-novo" data-folha role="dialog" aria-modal="true" aria-labelledby="cl-novo-t">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="cl-novo-t" tabindex="-1" data-foco>Novo cliente</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button></div></div>
+  <div class="cv-folha-corpo">
     <form method="POST" action="/painel/clientes">
-      <div class="sv-campo">
-        <label class="sv-campo-rot" for="cl-novo-nome">Nome</label>
-        <input class="sv-campo-input" id="cl-novo-nome" name="nome" placeholder="Nome completo" required />
-      </div>
-      <div class="sv-campo">
-        <label class="sv-campo-rot" for="cl-novo-tel">Telefone</label>
-        <input class="sv-campo-input" id="cl-novo-tel" name="telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
-      </div>
-      <div class="sv-campo">
-        <label class="sv-campo-rot" for="cl-novo-nascimento">Data de nascimento</label>
-        <input class="sv-campo-input" id="cl-novo-nascimento" name="dataNascimento" type="date" />
-      </div>
-      <button type="submit" class="sv-btn sv-cl-btn-bloco">Cadastrar</button>
+      <div class="cv-campo"><label for="cl-novo-nome">Nome</label><input class="cv-entrada" id="cl-novo-nome" name="nome" placeholder="Nome completo" autocomplete="off" required /></div>
+      <div class="cv-campo"><label for="cl-novo-tel">Telefone</label><input class="cv-entrada" id="cl-novo-tel" name="telefone" type="tel" inputmode="tel" placeholder="(51) 99999-9999" required /></div>
+      <div class="cv-campo"><label for="cl-novo-nascimento">Data de nascimento, opcional</label><input class="cv-entrada" id="cl-novo-nascimento" name="dataNascimento" type="date" /></div>
+      <button type="submit" class="cv-btn cv-btn--largo">Cadastrar</button>
     </form>
   </div>
-</div>
+</section>
 
-<%/* Detalhe do cliente — uma folha por cliente. A referência resolve isso com
-     três campos e os números no rodapé; aqui cabe também histórico, planos e
-     exclusão, então os números sobem para logo abaixo do nome (é o que se olha
-     primeiro) e o resto desce em seções. */%>
+<%/* Ficha do cliente: uma folha por cliente. */%>
 <% clientes.forEach(function (c) { %>
-  <div class="sv-folha-fundo" id="cl-folha-<%= c.id %>" hidden>
-    <div class="sv-folha">
-      <div class="sv-folha-puxador"></div>
-      <div class="sv-folha-titulo"><%= c.nome %></div>
-      <div class="sv-cl-folha-sub"><%= fmtTelefone(c.telefone) %> · última visita <%= c.stats.ultimaVisitaLabel %></div>
-
-      <div class="sv-cl-tres">
-        <div class="sv-cl-tres-cel">
-          <div class="sv-cl-tres-num"><%= fmtT6(c.stats.totalGasto) %></div>
-          <div class="sv-cl-tres-rot">total gasto</div>
-        </div>
-        <div class="sv-cl-tres-cel">
-          <div class="sv-cl-tres-num"><%= c.stats.visitas %></div>
-          <div class="sv-cl-tres-rot">visitas</div>
-        </div>
-        <div class="sv-cl-tres-cel">
-          <div class="sv-cl-tres-num"><%= c.stats.frequenciaDias !== null ? c.stats.frequenciaDias + 'd' : '—' %></div>
-          <div class="sv-cl-tres-rot">frequência</div>
-        </div>
+<section class="cv-folha" id="cl-folha-<%= c.id %>" data-folha role="dialog" aria-modal="true" aria-labelledby="cl-t-<%= c.id %>">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="cl-t-<%= c.id %>" tabindex="-1" data-foco><%= c.nome %></h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button></div></div>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= fmtTelefone(c.telefone) %> · última visita <%= c.stats.ultimaVisitaLabel %></p>
+    <section class="cv-objeto cv-gravada" aria-label="Números do cliente" style="margin-bottom:18px">
+      <div class="cv-tres">
+        <div><%- dinheiro(c.stats.totalGasto, 'm') %><span class="rot">total gasto</span></div>
+        <div><span class="cv-num"><%= c.stats.visitas %></span><span class="rot">visitas</span></div>
+        <div><span class="cv-num"><%= c.stats.frequenciaDias !== null ? c.stats.frequenciaDias + ' d' : '—' %></span><span class="rot">frequência</span></div>
       </div>
+    </section>
+    <form method="POST" action="/painel/clientes/<%= c.id %>">
+      <div class="cv-campo"><label for="cl-tel-<%= c.id %>">Telefone</label><input class="cv-entrada" id="cl-tel-<%= c.id %>" name="telefone" type="tel" inputmode="tel" value="<%= fmtTelefone(c.telefone) %>" required /></div>
+      <div class="cv-campo"><label for="cl-nasc-<%= c.id %>">Data de nascimento</label><input class="cv-entrada" id="cl-nasc-<%= c.id %>" name="dataNascimento" type="date" value="<%= c.nascimentoIso %>" /></div>
+      <div class="cv-campo"><label for="cl-obs-<%= c.id %>">Observações</label><input class="cv-entrada" id="cl-obs-<%= c.id %>" name="observacoes" placeholder="Adicionar observação" value="<%= c.observacoes || '' %>" /></div>
+      <div class="cv-campo"><span class="cv-rotulo">Serviço e barbeiro preferidos</span><p style="margin:4px 0 0;font-size:15px"><%= c.stats.servicoFavorito || '—' %> · <%= c.stats.barbeiroFavorito || '—' %></p></div>
+      <button type="submit" class="cv-btn cv-btn--largo">Salvar</button>
+    </form>
 
-      <form method="POST" action="/painel/clientes/<%= c.id %>">
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="cl-tel-<%= c.id %>">Telefone</label>
-          <input class="sv-campo-input" id="cl-tel-<%= c.id %>" name="telefone" inputmode="tel" value="<%= fmtTelefone(c.telefone) %>" required />
-        </div>
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="cl-nasc-<%= c.id %>">Data de nascimento</label>
-          <input class="sv-campo-input" id="cl-nasc-<%= c.id %>" name="dataNascimento" type="date" value="<%= c.nascimentoIso %>" />
-        </div>
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="cl-obs-<%= c.id %>">Observações</label>
-          <input class="sv-campo-input" id="cl-obs-<%= c.id %>" name="observacoes" placeholder="Adicionar observação" value="<%= c.observacoes || '' %>" />
-        </div>
-        <%/* Serviço e barbeiro preferidos saem do histórico, não são cadastro:
-             mesma caixa dos campos, mas sem input. */%>
-        <div class="sv-campo">
-          <div class="sv-campo-rot">Serviço preferido · barbeiro</div>
-          <div class="sv-cl-campo-val"><%= c.stats.servicoFavorito || '—' %> · <%= c.stats.barbeiroFavorito || '—' %></div>
-        </div>
-        <button type="submit" class="sv-btn sv-cl-btn-bloco">Salvar</button>
-      </form>
-
-      <% if (c.agendamentos.length > 0) { %>
-        <div class="sv-cl-secao">
-          <div class="sv-cl-secao-rot">Histórico</div>
+    <% if (c.agendamentos.length > 0) { %>
+      <div class="cv-folha-sec"><h3>Histórico</h3>
+        <ul class="cv-linhas">
           <% c.agendamentos.slice(0, 8).forEach(function (ag) { %>
-            <div class="sv-cl-hist-linha">
-              <span><%= fmtData(ag.data) %> · <%= ag.itens.length ? ag.itens.map(function (it) { return it.servico.nome; }).join(', ') : '—' %></span>
-              <span class="sv-cl-hist-valor"><%= fmtT6(ag.valorTotal) %></span>
-            </div>
+            <li><span><%= fmtData(ag.data) %> · <%= ag.itens.length ? ag.itens.map(function (it) { return it.servico.nome; }).join(', ') : '—' %></span><b><%- dinheiro(ag.valorTotal) %></b></li>
           <% }) %>
-        </div>
+        </ul>
+      </div>
+    <% } %>
+
+    <div class="cv-folha-sec"><h3>Plano</h3>
+      <% if (c.assinaturas.length) { %>
+        <ul class="cv-linhas">
+          <% c.assinaturas.forEach(function (a) { %>
+            <li>
+              <span><b style="font-weight:600;color:var(--c-tinta)"><%= a.plano.nome %></b> <span class="cv-etq<%= a.vigente ? ' cv-etq--preta' : '' %>"><%= a.vigente ? 'ativo' : 'inativo' %></span><br><%= a.usosLabel %> · até <%= a.validadeLabel %><% if (a.diasLabel) { %> · <%= a.diasLabel %><% } %></span>
+              <form method="POST" action="/painel/clientes/planos/<%= a.id %>/remover" data-confirmar="Remover este plano do cliente?"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Remover o plano <%= a.plano.nome %>"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button></form>
+            </li>
+          <% }) %>
+        </ul>
+      <% } else if (planosDisponiveis.length === 0) { %>
+        <p class="cv-texto-apoio">Nenhum plano.</p>
       <% } %>
-
-      <div class="sv-cl-secao">
-        <div class="sv-cl-secao-rot">Plano</div>
-        <% c.assinaturas.forEach(function (a) { %>
-          <div class="sv-cl-plano-linha">
-            <span>
-              <strong><%= a.plano.nome %></strong>
-              <span class="sv-cl-plano-estado <%= a.vigente ? 'vig' : '' %>"><%= a.vigente ? 'ativo' : 'inativo' %></span>
-              <span class="sv-cl-plano-det">
-                <%= a.usosLabel %> · até <%= a.validadeLabel %><% if (a.diasLabel) { %> · <%= a.diasLabel %><% } %>
-              </span>
-            </span>
-            <form method="POST" action="/painel/clientes/planos/<%= a.id %>/remover" onsubmit="return confirm('Remover este plano do cliente?')">
-              <button type="submit" class="sv-cl-plano-x" title="Remover" aria-label="Remover plano">×</button>
-            </form>
-          </div>
-        <% }) %>
-        <% if (c.assinaturas.length === 0 && planosDisponiveis.length === 0) { %>
-          <div class="sv-cl-hist-linha"><span>Nenhum plano.</span></div>
-        <% } %>
-        <% if (planosDisponiveis.length > 0) { %>
-          <form method="POST" action="/painel/clientes/<%= c.id %>/planos" class="sv-cl-add-plano">
-            <select class="sv-cl-select" name="planoId" required>
-              <option value="">Adicionar plano…</option>
-              <% planosDisponiveis.forEach(function (p) { %>
-                <option value="<%= p.id %>"><%= p.nome %> — <%= fmtBRL(p.valor) %></option>
-              <% }) %>
-            </select>
-            <input type="hidden" name="dataInicio" value="<%= hojeIso %>" />
-            <button type="submit" class="sv-btn sv-cl-add-btn">Adicionar</button>
-          </form>
-        <% } %>
-      </div>
-
-      <div class="sv-cl-acoes">
-        <form method="POST" action="/painel/clientes/<%= c.id %>/remover" onsubmit="return confirm('Excluir este cliente?')">
-          <button type="submit" class="sv-cl-excluir">Excluir cliente</button>
+      <% if (planosDisponiveis.length > 0) { %>
+        <form method="POST" action="/painel/clientes/<%= c.id %>/planos" class="cv-linha-form" style="margin-top:10px">
+          <label class="cv-oculto" for="cl-plano-<%= c.id %>">Adicionar plano</label>
+          <select class="cv-entrada" id="cl-plano-<%= c.id %>" name="planoId" required>
+            <option value="">Adicionar plano…</option>
+            <% planosDisponiveis.forEach(function (p) { %><option value="<%= p.id %>"><%= p.nome %> · <%= fmtBRL(p.valor) %></option><% }) %>
+          </select>
+          <input type="hidden" name="dataInicio" value="<%= hojeIso %>" />
+          <button type="submit" class="cv-btn cv-btn--2 cv-btn--p">Adicionar</button>
         </form>
-      </div>
+      <% } %>
+    </div>
+
+    <div class="cv-folha-acoes">
+      <form method="POST" action="/painel/clientes/<%= c.id %>/remover" data-confirmar="Excluir este cliente?"><button type="submit" class="cv-perigo-link">Excluir cliente</button></form>
     </div>
   </div>
+</section>
 <% }) %>
 
 <script>
-  // Folha inferior: `hidden` liga/desliga. Tirar o `hidden` recria o elemento
-  // na tela, e é isso que faz a animação de subida rodar de novo a cada
-  // abertura (uma folha só escondida por opacidade não reanimaria).
+  // ?abrir=cliente (Novo da navbar) chama clAbrirFolha('novo'), via cv-casca.
   function clAbrirFolha(id) {
-    var f = document.getElementById('cl-folha-' + id);
-    if (f) f.hidden = false;
-  }
-  function clFecharFolhas() {
-    Array.prototype.forEach.call(document.querySelectorAll('.sv-folha-fundo'), function (f) { f.hidden = true; });
-  }
-  // Só o fundo fecha — clique DENTRO da folha não deve fechá-la.
-  Array.prototype.forEach.call(document.querySelectorAll('.sv-folha-fundo'), function (f) {
-    f.addEventListener('click', function (e) { if (e.target === f) f.hidden = true; });
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') clFecharFolhas();
-  });
-
-  // Busca e filtro trabalham JUNTOS sobre a mesma lista (os dois ficam
-  // visíveis no topo ao mesmo tempo), por isso um recalcula o outro em vez de
-  // cada um esconder os cartões por conta própria.
-  var clFiltro = 'todos';
-  function clSelecionarFiltro(btn) {
-    Array.prototype.forEach.call(document.querySelectorAll('#cl-filtros .sv-cl-filtro'), function (b) {
-      b.classList.toggle('sel', b === btn);
-    });
-    clFiltro = btn.getAttribute('data-filtro');
-    clFiltrar();
-  }
-  function clFiltrar() {
-    var lista = document.getElementById('cl-lista');
-    if (!lista) return;
-    var campo = document.getElementById('cl-busca-input');
-    var t = (campo ? campo.value : '').trim().toLowerCase();
-    var tDigitos = t.replace(/\D/g, '');
-    var visiveis = 0;
-    Array.prototype.forEach.call(lista.querySelectorAll('.sv-cl-item'), function (item) {
-      var casaBusca = !t
-        || item.dataset.nome.indexOf(t) !== -1
-        || (tDigitos && item.dataset.tel.indexOf(tDigitos) !== -1);
-      var casaFiltro = clFiltro === 'todos'
-        || (clFiltro === 'sumidos' && item.dataset.sumido === '1')
-        || (clFiltro === 'aniversariantes' && item.dataset.aniv === '1');
-      var mostra = casaBusca && casaFiltro;
-      item.style.display = mostra ? '' : 'none';
-      if (mostra) visiveis++;
-    });
-    var vazio = document.getElementById('cl-sem-resultado');
-    if (vazio) vazio.hidden = visiveis > 0;
-    lista.hidden = visiveis === 0;
+    var ir = function () { if (window.cvAbrirFolha) window.cvAbrirFolha('cl-folha-' + id); };
+    if (window.cvAbrirFolha) ir(); else document.addEventListener('DOMContentLoaded', ir);
   }
 </script>

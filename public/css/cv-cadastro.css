@@ -1,0 +1,100 @@
+/* Cortavo v3 · telas de cadastro e configuração (clientes, equipe, serviços,
+   produtos, estoque, planos, metas, horários, fidelidade, logo, relatórios,
+   conversas, IA). Peças que essas telas dividem, sobre tokens.css + cv.css:
+   busca, filtros, objeto-resumo, lista em cartão, folhas com formulário e a
+   tabela do PC. Um objeto preto por tela; vidro só no que já é vidro
+   (navbar, +, cabeçalho, folhas, avisos). Nada de cor fora de preto, branco
+   e cinza. */
+
+/* ---- Cabeçalho com ação ------------------------------------------------- */
+.cv-cab .cv-btn { min-height: 44px; padding: 0 18px; font-size: 15px; }
+.cv-cab .cv-btn .cv-ic { width: 18px; height: 18px; }
+
+/* ---- Busca --------------------------------------------------------------- */
+.cv-busca { position: relative; margin: 16px var(--margem) 0; }
+.cv-busca .cv-ic { position: absolute; left: 14px; top: 50%; translate: 0 -50%; width: 18px; height: 18px; color: var(--c-apoio); pointer-events: none; }
+.cv-busca input { width: 100%; min-height: 48px; padding-left: 42px; background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-filtros { margin: 10px 0 0; padding: 0 var(--margem); display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.cv-filtros::-webkit-scrollbar { display: none; }
+.cv-filtros .cv-chip { flex-shrink: 0; }
+
+/* ---- Objeto-resumo: três números no preto -------------------------------- */
+.cv-tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cv-tres > div { min-width: 0; }
+.cv-tres .rot { display: block; font-size: 13px; font-weight: 600; color: var(--c-sobre-objeto-2); margin-top: 2px; }
+.cv-cartao .cv-tres .rot { color: var(--c-apoio); }
+.cv-tres .cv-num { display: block; font-size: 28px; line-height: 1.1; overflow-wrap: anywhere; }
+.cv-tres .cv-num .moeda, .cv-tres .cv-num .cent { font-size: .5em; }
+.cv-objeto .cv-tres .cv-num { color: #fff; }
+.cv-objeto .cv-tres .cv-num .moeda, .cv-objeto .cv-tres .cv-num .cent { color: var(--c-sobre-objeto-2); }
+
+/* ---- Lista em cartão com avatar ----------------------------------------- */
+.cv-linha .cv-avatar { flex-shrink: 0; }
+.cv-linha .fim { flex-direction: column; align-items: flex-end; gap: 0; }
+.cv-linha .fim small { font-size: 12px; font-weight: 600; color: var(--c-apoio); }
+.cv-linha .marcas { display: inline-flex; gap: 6px; margin-left: 6px; vertical-align: 1px; }
+.cv-etq { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--r-pilula); background: var(--c-bloco); font-size: 12px; font-weight: 600; color: var(--c-tinta-2); white-space: nowrap; }
+.cv-etq--preta { background: var(--c-tinta); color: #fff; }
+.cv-etq--listra { background: var(--listra-bloqueado); color: var(--c-tinta); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+button.cv-linha, a.cv-linha { color: inherit; text-decoration: none; background: none; border: 0; font: inherit; cursor: pointer; }
+.cv-lista [hidden] { display: none !important; }
+.cv-linha .foto { width: 44px; height: 44px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: var(--c-bloco-2); }
+.cv-linha .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---- Folhas com formulário ---------------------------------------------- */
+.cv-folha form + form, .cv-folha form + .cv-folha-sec, .cv-folha .cv-folha-sec + .cv-folha-sec { margin-top: 20px; }
+.cv-folha .cv-campo + .cv-campo { margin-top: 14px; }
+.cv-folha form > .cv-btn, .cv-folha .cv-folha-acoes { margin-top: 18px; }
+.cv-folha .cv-entrada { background: var(--c-bloco-2); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-folha-sub { margin: -6px 0 16px; font-size: 14px; color: var(--c-apoio); overflow-wrap: anywhere; }
+.cv-folha-sec h3 { margin: 0 0 8px; font-size: 15px; font-weight: 800; letter-spacing: -.01em; }
+.cv-folha-sec .cv-lista { box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-linhas { margin: 0; padding: 0; list-style: none; }
+.cv-linhas li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; font-size: 14px; border-top: .5px solid var(--c-fio-forte); }
+.cv-linhas li:first-child { border-top: 0; }
+.cv-linhas li span { color: var(--c-tinta-2); min-width: 0; overflow-wrap: anywhere; }
+.cv-linhas li b { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cv-linha-form { display: flex; gap: 8px; align-items: center; }
+.cv-linha-form .cv-entrada { flex: 1; min-width: 0; }
+.cv-linha-form .cv-btn { flex-shrink: 0; }
+select.cv-entrada { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--c-apoio) 50%), linear-gradient(135deg, var(--c-apoio) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
+textarea.cv-entrada { min-height: 96px; padding-top: 12px; line-height: 1.45; resize: vertical; }
+.cv-perigo-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--c-perigo); font-weight: 600; font-size: 15px; background: none; border: 0; font-family: inherit; cursor: pointer; padding: 0; }
+.cv-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cv-dupla .cv-campo + .cv-campo { margin-top: 0; }
+.cv-chave { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
+.cv-chave input[type="checkbox"] { width: 46px; height: 28px; appearance: none; -webkit-appearance: none; border-radius: 14px; background: var(--c-bloco-2); position: relative; cursor: pointer; flex-shrink: 0; transition: background-color var(--d-curta) var(--ease-out); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-chave input[type="checkbox"]::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(17,17,17,.25); transition: transform var(--d-curta) var(--ease-out); }
+.cv-chave input[type="checkbox"]:checked { background: var(--c-tinta); }
+.cv-chave input[type="checkbox"]:checked::after { transform: translateX(18px); }
+.cv-chave input[type="checkbox"]:focus-visible { outline: 2.5px solid var(--c-tinta); outline-offset: 2px; }
+
+/* ---- Tabela do PC (Clientes, Caixa) ------------------------------------- */
+.cv-tabela { display: none; }
+@media (min-width: 1024px) {
+  .cv-so-cel { display: none !important; }
+  .cv-tabela { display: block; background: var(--c-superficie); border-radius: var(--r-cartao); box-shadow: var(--s-cartao); overflow: hidden; }
+  .cv-tabela table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .cv-tabela th { text-align: left; font-size: 12px; font-weight: 600; color: var(--c-apoio); padding: 12px 14px; border-bottom: .5px solid var(--c-fio-forte); white-space: nowrap; }
+  .cv-tabela td { padding: 0 14px; height: 56px; border-bottom: .5px solid var(--c-fio-forte); white-space: nowrap; }
+  .cv-tabela tr:last-child td { border-bottom: 0; }
+  .cv-tabela th:first-child, .cv-tabela td:first-child { padding-left: 20px; }
+  .cv-tabela .dir { text-align: right; }
+  .cv-tabela td b { font-weight: 800; letter-spacing: -.01em; }
+  .cv-tabela tbody tr { cursor: pointer; }
+  .cv-tabela tbody tr:hover td { background: var(--c-pagina); }
+  .cv-tabela .pessoa { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .cv-tabela .pessoa b { font-weight: 600; letter-spacing: 0; max-width: 260px; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .cv-tabela .pessoa small { display: block; color: var(--c-apoio); font-size: 12.5px; }
+  .cv-tabela button.pessoa { background: none; border: 0; font: inherit; color: inherit; padding: 0; cursor: pointer; text-align: left; }
+  .cv-tabela [hidden] { display: none !important; }
+  .cv-busca { max-width: 420px; margin-left: 0; margin-right: 0; }
+  .cv-filtros { padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .cv-chave input[type="checkbox"], .cv-chave input[type="checkbox"]::after { transition: none; } }
+@media (prefers-contrast: more) { .cv-busca input, .cv-folha .cv-entrada { box-shadow: inset 0 0 0 1px var(--c-tinta); } }
+/* ajustes dos prints */
+.cv-busca { display: block; }
+.cv-linha .fim .cv-num, .cv-tabela td .cv-num, .cv-linhas .cv-num { font-size: 17px; letter-spacing: -.02em; }
+.cv-linha .fim .cv-num .moeda, .cv-linha .fim .cv-num .cent, .cv-tabela td .cv-num .moeda, .cv-tabela td .cv-num .cent, .cv-linhas .cv-num .moeda, .cv-linhas .cv-num .cent { font-size: 11px; }
+.cv-folha-cab h2:focus { outline: none; }
