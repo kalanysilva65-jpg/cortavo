@@ -10,7 +10,7 @@
   var mensagens = [];
   try { mensagens = JSON.parse(dadosEl.textContent || '[]'); } catch (e) {}
 
-  var ROTULO = { imagem: '📷 Foto', video: '🎥 Vídeo', audio: '🎤 Áudio', documento: '📄 Documento', figurinha: '💟 Figurinha', localizacao: '📍 Localização', contato: '👤 Contato' };
+  var ROTULO = { imagem: 'Foto', video: 'Vídeo', audio: 'Áudio', documento: 'Documento', figurinha: 'Figurinha', localizacao: 'Localização', contato: 'Contato' }; // v3: sem emoji
 
   function el(tag, cls, txt) {
     var e = document.createElement(tag);
@@ -49,7 +49,7 @@
   function corpoMidia(m) {
     var box = el('div', 'cv-midia cv-midia--' + m.tipo);
     if (!m.midia && m.tipo !== 'localizacao' && m.tipo !== 'contato') {
-      box.appendChild(el('span', 'cv-midia-falta', (ROTULO[m.tipo] || '📎 Arquivo') + ' (indisponível)'));
+      box.appendChild(el('span', 'cv-midia-falta', (ROTULO[m.tipo] || 'Arquivo') + ' (indisponível)'));
       return box;
     }
     if (m.tipo === 'imagem' || m.tipo === 'figurinha') {
@@ -66,7 +66,7 @@
     } else if (m.tipo === 'documento') {
       var a = el('a', 'cv-doc');
       a.href = m.midia; a.target = '_blank'; a.rel = 'noopener';
-      a.appendChild(el('span', 'cv-doc-ic', '📄'));
+      a.appendChild(el('span', 'cv-doc-ic', 'PDF'));
       a.appendChild(el('span', 'cv-doc-nome', m.midiaNome || 'Documento'));
       box.appendChild(a);
     }
@@ -79,8 +79,8 @@
     b.setAttribute('data-id', m.id);
     b.setAttribute('data-dia', m.dia || '');
     if (m.tipo && m.tipo !== 'texto' && m.tipo !== 'localizacao' && m.tipo !== 'contato') b.appendChild(corpoMidia(m));
-    if (m.tipo === 'localizacao') b.appendChild(el('div', 'cv-rot-midia', '📍 Localização'));
-    if (m.tipo === 'contato') b.appendChild(el('div', 'cv-rot-midia', '👤 Contato'));
+    if (m.tipo === 'localizacao') b.appendChild(el('div', 'cv-rot-midia', 'Localização'));
+    if (m.tipo === 'contato') b.appendChild(el('div', 'cv-rot-midia', 'Contato'));
     // Áudio: o texto é a TRANSCRIÇÃO (mostra menor, em itálico).
     if (m.texto) {
       var t = el('span', 'cv-msg-txt' + (m.tipo === 'audio' ? ' cv-msg-transcricao' : ''));
@@ -208,7 +208,7 @@
     if (f.type.indexOf('image/') === 0) { var i = el('img'); i.src = url; prevCorpo.appendChild(i); }
     else if (f.type.indexOf('video/') === 0) { var v = el('video'); v.src = url; v.controls = true; prevCorpo.appendChild(v); }
     else if (f.type.indexOf('audio/') === 0) { var a = el('audio'); a.src = url; a.controls = true; prevCorpo.appendChild(a); }
-    else prevCorpo.appendChild(el('div', 'cv-prev-doc', '📄 ' + f.name));
+    else prevCorpo.appendChild(el('div', 'cv-prev-doc', 'Arquivo: ' + f.name));
     prevLeg.hidden = f.type.indexOf('audio/') === 0;
     prev.hidden = false;
   });

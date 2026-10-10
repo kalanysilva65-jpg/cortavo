@@ -151,3 +151,18 @@ test('Fidelidade v3: objeto com 3 números, cupons, ranking com selo e resgate, 
   assert.match(html, /action="\/painel\/fidelidade\/clientes\/9\/selo"/);
   assert.match(html, /action="\/painel\/fidelidade\/cupons"/);
 });
+
+test('Conversas v3: lista com busca e atualização, conversa com os ids do chat, sem cores do WhatsApp nem emoji', async () => {
+  v3('/painel/conversas');
+  const lista = await render('painel/conversas.ejs', { ...comuns, aberta: null, iaAtiva: true, tetoAtingido: false, conversas: [{ id: 1, nome: 'Lucas', hora: '14:02', previa: 'Oi', naoLidas: 2, iaAtiva: true }] });
+  assert.doesNotMatch(lista, SEM_ANTIGO);
+  assert.match(lista, /data-lista="cv"/);
+  assert.match(lista, /\/painel\/conversas\/fragmento/);
+  const chat = await render('painel/conversas.ejs', { ...comuns, conversas: [], iaAtiva: true, tetoAtingido: false, aberta: { conversa: { id: 5, nome: 'Lucas', telefone: '51', iaAtiva: false, janelaAberta: true }, mensagens: [{ id: 1, texto: '</script><b>' }] } });
+  for (const id of ['cv-thread', 'cv-dados', 'cv-form', 'cv-texto', 'cv-mic', 'cv-enviar', 'cv-arquivo', 'cv-janela', 'cv-gravando', 'cv-grav-ok', 'cv-grav-cancel', 'cv-grav-tempo', 'cv-previa', 'cv-prev-corpo', 'cv-prev-enviar', 'cv-prev-fechar', 'cv-prev-legenda', 'cv-prev-nome']) assert.match(chat, new RegExp('id="' + id + '"'), id);
+  assert.doesNotMatch(chat, /<\/script><b>/, 'o JSON não fecha a tag');
+  assert.match(chat, /Devolver à IA/);
+  const css = fs.readFileSync(path.join(RAIZ, 'public/css/cv-conversas.css'), 'utf8');
+  assert.doesNotMatch(css, /#(00a884|d9fdd3|efeae2|53bdeb|16a34a|027eb5)/i);
+  assert.doesNotMatch(fs.readFileSync(path.join(RAIZ, 'public/js/chat-whatsapp.js'), 'utf8'), /📷|🎥|🎤|📄|📍|👤/u);
+});

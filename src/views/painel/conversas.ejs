@@ -1,165 +1,102 @@
-<%/* Caixa de entrada. Lista (com busca + auto-atualização) OU conversa aberta
-     (com separadores de data + auto-atualização). Estilos em sv-conversas.css. */%>
+<%/* Conversas (redesign v3). Sem mockup próprio: o sistema aplicado com
+     rigor e sem as cores do WhatsApp (balões em branco e preto, tiques em
+     cinza e preto). Lista com busca e atualização a cada 8 s; conversa aberta
+     com o cabeçalho em vidro, os balões (public/js/chat-whatsapp.js, mesmos
+     ids) e o compositor. Mesmas rotas e campos. */%>
 <%
   function inic(nome) { var p = (nome || '?').trim().split(/\s+/); return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
 %>
-<div class="sv-tela sv-cv<%= aberta ? ' sv-cv--chat' : '' %>">
-
 <% if (!aberta) { %>
-  <%/* ---------------- LISTA ---------------- */%>
-  <div class="sv-cv-topo sv-reveal">
-    <div>
-      <div class="sv-titulo">Conversas</div>
-      <div class="sv-cv-sub">Caixa de entrada do WhatsApp</div>
-    </div>
-    <a href="/painel" class="sv-cv-fechar" title="Início" aria-label="Voltar ao início">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </a>
-  </div>
+  <header class="cv-cab">
+    <div class="cv-cab-txt"><p class="cv-cab-sup">WhatsApp da barbearia</p><h1>Conversas</h1></div>
+  </header>
 
   <% if (!iaAtiva) { %>
-    <div class="sv-cv-avisoia sv-reveal">Respostas automáticas <strong>desligadas</strong> (falta a chave da IA). Você ainda pode responder manualmente.</div>
+    <div class="cv-secao" style="margin-top:14px"><div class="cv-cartao cv-cv-aviso" role="status"><%- include('../partials/icone', { cvIc: 'assistente' }) %><p>Respostas automáticas <b>desligadas</b> (falta a chave da IA). Você ainda pode responder na mão.</p></div></div>
   <% } else if (tetoAtingido) { %>
-    <div class="sv-cv-avisoteto sv-reveal">⚠️ <strong>Teto de IA do mês atingido</strong> — respostas automáticas pausadas para conter custo. Vocês podem responder na mão; reinicia no próximo mês.</div>
+    <div class="cv-secao" style="margin-top:14px"><div class="cv-cartao cv-cv-aviso cv-cv-aviso--teto" role="status"><span class="faixa" aria-hidden="true"></span><p><b>Teto de IA do mês atingido.</b> As respostas automáticas pausaram para conter custo. Responda na mão; volta no próximo mês.</p></div></div>
   <% } %>
 
   <% if (conversas.length > 0) { %>
-    <div class="sv-cv-busca sv-reveal">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-      <input id="cv-busca" type="search" placeholder="Buscar conversa…" aria-label="Buscar conversa" autocomplete="off" />
-    </div>
+    <label class="cv-busca"><span class="cv-oculto">Buscar conversa</span><%- include('../partials/icone', { cvIc: 'busca' }) %><input class="cv-entrada" id="cv-busca" type="search" data-busca="cv" placeholder="Buscar conversa" autocomplete="off" /></label>
   <% } %>
-
-  <div id="cv-lista"><%- include('_conversas-lista', { conversas: conversas }) %></div>
-  <div class="sv-cv-vazio-busca" id="cv-vazio-busca" hidden>Nenhuma conversa encontrada.</div>
+  <section class="cv-secao" style="margin-top:14px" aria-label="Conversas">
+    <div id="cv-lista" data-lista="cv"><%- include('_conversas-lista', { conversas: conversas }) %></div>
+    <p class="cv-texto-apoio" data-sem-resultado="cv" hidden style="padding:16px 4px">Nenhuma conversa encontrada.</p>
+  </section>
 
   <% if (ehAdmin) { %>
-    <details class="sv-cv-simular sv-reveal">
-      <summary>Simular mensagem de cliente (teste)</summary>
-      <form method="POST" action="/painel/conversas/simular">
-        <input name="telefone" placeholder="Telefone (ex.: 11999998888)" required />
-        <input name="nome" placeholder="Nome do cliente (opcional)" />
-        <input name="texto" placeholder="Mensagem do cliente" required />
-        <button type="submit">Enviar como cliente</button>
-      </form>
-      <div class="sv-cv-simular-hint">Só para testar a caixa de entrada antes de ligar o WhatsApp. A IA responde se estiver configurada.</div>
-    </details>
+    <section class="cv-secao" aria-labelledby="cv-sim-t">
+      <details class="cv-cartao cv-cv-simular">
+        <summary id="cv-sim-t">Simular mensagem de cliente (teste)</summary>
+        <form method="POST" action="/painel/conversas/simular">
+          <div class="cv-campo"><label for="sim-tel">Telefone</label><input class="cv-entrada" id="sim-tel" name="telefone" type="tel" placeholder="11999998888" required /></div>
+          <div class="cv-campo"><label for="sim-nome">Nome do cliente <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><input class="cv-entrada" id="sim-nome" name="nome" /></div>
+          <div class="cv-campo"><label for="sim-txt">Mensagem do cliente</label><input class="cv-entrada" id="sim-txt" name="texto" required /></div>
+          <button class="cv-btn cv-btn--2 cv-btn--largo" type="submit" style="margin-top:14px">Enviar como cliente</button>
+          <span class="cv-ajuda">Só para testar a caixa de entrada antes de ligar o WhatsApp. A IA responde se estiver configurada.</span>
+        </form>
+      </details>
+    </section>
   <% } %>
 
   <script>
+    // Atualização da lista a cada 8 s: troca só o miolo e reaplica a busca.
     (function () {
-      // BUSCA (no cliente): filtra os itens pelo nome.
-      var busca = document.getElementById('cv-busca');
-      var vazioBusca = document.getElementById('cv-vazio-busca');
-      function filtrar() {
-        if (!busca) return;
-        var q = busca.value.trim().toLowerCase();
-        var itens = document.querySelectorAll('#cv-lista .sv-cv-item');
-        var visiveis = 0;
-        itens.forEach(function (it) {
-          var ok = !q || (it.getAttribute('data-nome') || '').indexOf(q) !== -1;
-          it.hidden = !ok;
-          if (ok) visiveis++;
-        });
-        if (vazioBusca) vazioBusca.hidden = !(q && visiveis === 0);
-      }
-      if (busca) busca.addEventListener('input', filtrar);
-
-      // AUTO-ATUALIZAÇÃO da lista: troca só o miolo quando muda, e re-aplica a busca.
-      var lista = document.getElementById('cv-lista');
-      var ultimoHtml = lista ? lista.innerHTML : '';
-      async function atualizarLista() {
+      var lista = document.getElementById('cv-lista'), busca = document.getElementById('cv-busca');
+      var ultimo = lista ? lista.innerHTML : '';
+      setInterval(async function () {
         if (!lista || document.hidden) return;
         try {
           var r = await fetch('/painel/conversas/fragmento', { headers: { 'X-Requested-With': 'fetch' } });
-          if (!r.ok || r.redirected) return; // sessão expirou -> não injeta o /login na lista
+          if (!r.ok || r.redirected) return; // sessão expirou: não injeta o login
           var html = await r.text();
-          if (html.trim() && html !== ultimoHtml) {
-            lista.innerHTML = html;
-            ultimoHtml = html;
-            filtrar();
-          }
+          if (html.trim() && html !== ultimo) { lista.innerHTML = html; ultimo = html; if (busca) busca.dispatchEvent(new Event('input')); }
         } catch (e) {}
-      }
-      setInterval(atualizarLista, 8000);
+      }, 8000);
     })();
   </script>
 
 <% } else { %>
-  <%/* ---------------- CONVERSA ABERTA ---------------- */%>
-  <div class="sv-cv-barra">
-  <div class="sv-cv-thtopo">
-    <a href="/painel/conversas" class="sv-cv-voltar" aria-label="Voltar">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-    </a>
-    <span class="sv-cv-thav"><%= inic(aberta.conversa.nome) %></span>
-    <div class="sv-cv-thid">
-      <div class="sv-cv-thnome"><%= aberta.conversa.nome %></div>
-      <div class="sv-cv-thtel"><%= aberta.conversa.telefone %></div>
+  <div class="cv-cv-chat">
+    <header class="cv-cv-topo">
+      <a href="/painel/conversas" class="cv-redondo cv-redondo--leve" aria-label="Voltar para as conversas"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--20' }) %></a>
+      <span class="cv-avatar cv-avatar--claro" aria-hidden="true"><%= inic(aberta.conversa.nome) %></span>
+      <span class="id"><b><%= aberta.conversa.nome %></b><small><%= aberta.conversa.telefone %></small></span>
+      <form method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/ia">
+        <input type="hidden" name="ativa" value="<%= aberta.conversa.iaAtiva ? '0' : '1' %>" />
+        <button type="submit" class="cv-btn cv-btn--p<%= aberta.conversa.iaAtiva ? ' cv-btn--2' : '' %>"><%= aberta.conversa.iaAtiva ? 'Assumir' : 'Devolver à IA' %></button>
+      </form>
+    </header>
+    <div class="cv-cv-status" role="status">
+      <span><%= aberta.conversa.iaAtiva ? 'A IA está respondendo esta conversa.' : 'Você assumiu: a IA está pausada nesta conversa.' %></span>
+      <form method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/excluir" data-confirmar="Excluir esta conversa e todas as mensagens? Isso apaga os dados do cliente e não dá para desfazer."><button type="submit" class="cv-perigo-link" style="min-height:36px;font-size:13px">Excluir</button></form>
     </div>
-    <form method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/ia" class="sv-cv-assumir">
-      <input type="hidden" name="ativa" value="<%= aberta.conversa.iaAtiva ? '0' : '1' %>" />
-      <button type="submit" class="<%= aberta.conversa.iaAtiva ? '' : 'devolver' %>">
-        <%= aberta.conversa.iaAtiva ? 'Assumir' : 'Devolver à IA' %>
-      </button>
+
+    <div class="cv-cv-thread" id="cv-thread" data-id="<%= aberta.conversa.id %>" aria-live="polite"></div>
+    <script type="application/json" id="cv-dados"><%- JSON.stringify(aberta.mensagens).split('<').join(String.fromCharCode(92) + 'u003c') %></script>
+
+    <%/* Fora da janela de 24 h da Meta, texto e mídia livres não são entregues. */%>
+    <div class="cv-cv-janela" id="cv-janela"<% if (aberta.conversa.janelaAberta) { %> hidden<% } %>><span class="faixa" aria-hidden="true"></span><p>Passaram 24 h desde a última mensagem do cliente. Pelas regras do WhatsApp, só dá para retomar com uma <b>mensagem modelo</b> ou esperar ele escrever.</p></div>
+
+    <form class="cv-cv-compor" id="cv-form" method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/responder" autocomplete="off">
+      <label class="cv-redondo cv-redondo--leve" title="Enviar foto, vídeo ou arquivo"><%- include('../partials/icone', { cvIc: 'imagem', cvCls: 'cv-ic--20' }) %><span class="cv-oculto">Anexar</span><input type="file" id="cv-arquivo" class="cv-oculto" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" /></label>
+      <input class="cv-entrada" id="cv-texto" name="texto" placeholder="Mensagem" maxlength="2000" aria-label="Sua resposta" />
+      <button type="button" class="cv-cv-enviar" id="cv-mic" aria-label="Gravar áudio"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></button>
+      <button type="submit" class="cv-cv-enviar" id="cv-enviar" aria-label="Enviar" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
     </form>
-  </div>
 
-  <div class="sv-cv-status <%= aberta.conversa.iaAtiva ? 'ia' : 'humano' %>">
-    <span><% if (aberta.conversa.iaAtiva) { %>🤖 IA respondendo automaticamente<% } else { %>✋ Você assumiu — IA pausada nesta conversa<% } %></span>
-    <form method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/excluir" class="sv-cv-excluir" onsubmit="return confirm('Excluir esta conversa e todas as mensagens? Isso apaga os dados do cliente e não dá para desfazer.')">
-      <button type="submit">Excluir</button>
-    </form>
-  </div>
-  </div>
-
-  <div class="sv-cv-thread" id="cv-thread" data-id="<%= aberta.conversa.id %>"></div>
-  <script type="application/json" id="cv-dados"><%- JSON.stringify(aberta.mensagens).split('<').join(String.fromCharCode(92) + 'u003c') %></script>
-
-  <%/* Fora da janela de 24h da Meta, texto/mídia livres NÃO são entregues. */%>
-  <div class="sv-cv-janela" id="cv-janela" <%= aberta.conversa.janelaAberta ? 'hidden' : '' %>>
-    ⏱️ Passaram 24h desde a última mensagem do cliente. Pelas regras do WhatsApp, só dá pra retomar com uma <strong>mensagem modelo</strong> — ou esperar ele escrever.
-  </div>
-
-  <form class="sv-cv-composer" id="cv-form" method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/responder" autocomplete="off">
-    <label class="sv-cv-anexo" title="Enviar foto, vídeo ou arquivo" aria-label="Anexar">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg>
-      <input type="file" id="cv-arquivo" hidden accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" />
-    </label>
-    <input class="sv-cv-input" id="cv-texto" name="texto" placeholder="Mensagem" maxlength="2000" aria-label="Sua resposta" />
-    <button type="button" class="sv-cv-enviar sv-cv-mic" id="cv-mic" aria-label="Gravar áudio">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>
-    </button>
-    <button type="submit" class="sv-cv-enviar" id="cv-enviar" aria-label="Enviar" hidden>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
-    </button>
-  </form>
-
-  <%/* Gravando áudio: barra por cima do composer. */%>
-  <div class="sv-cv-gravando" id="cv-gravando" hidden>
-    <button type="button" class="sv-cv-grav-cancel" id="cv-grav-cancel" aria-label="Cancelar">✕</button>
-    <span class="sv-cv-grav-ponto"></span><span id="cv-grav-tempo">0:00</span>
-    <button type="button" class="sv-cv-enviar" id="cv-grav-ok" aria-label="Enviar áudio">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
-    </button>
-  </div>
-
-  <%/* Prévia do anexo antes de enviar (com legenda), igual ao WhatsApp. */%>
-  <div class="sv-cv-previa-anexo" id="cv-previa" hidden>
-    <div class="sv-cv-prev-topo">
-      <button type="button" id="cv-prev-fechar" aria-label="Cancelar">✕</button>
-      <span id="cv-prev-nome"></span>
+    <div class="cv-cv-gravando" id="cv-gravando" hidden>
+      <button type="button" class="cv-redondo cv-redondo--leve" id="cv-grav-cancel" aria-label="Cancelar gravação"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button>
+      <span class="ponto" aria-hidden="true"></span><span id="cv-grav-tempo" class="cv-num">0:00</span>
+      <button type="button" class="cv-cv-enviar" id="cv-grav-ok" aria-label="Enviar áudio"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
     </div>
-    <div class="sv-cv-prev-corpo" id="cv-prev-corpo"></div>
-    <div class="sv-cv-prev-pe">
-      <input id="cv-prev-legenda" placeholder="Adicionar legenda…" maxlength="1000" />
-      <button type="button" class="sv-cv-enviar" id="cv-prev-enviar" aria-label="Enviar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
-      </button>
+
+    <div class="cv-cv-previa" id="cv-previa" hidden role="dialog" aria-modal="true" aria-labelledby="cv-prev-nome">
+      <div class="topo"><button type="button" class="cv-redondo" id="cv-prev-fechar" aria-label="Cancelar"><%- include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }) %></button><span id="cv-prev-nome"></span></div>
+      <div class="corpo" id="cv-prev-corpo"></div>
+      <div class="pe"><input class="cv-entrada" id="cv-prev-legenda" placeholder="Adicionar legenda" maxlength="1000" aria-label="Legenda" /><button type="button" class="cv-cv-enviar" id="cv-prev-enviar" aria-label="Enviar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button></div>
     </div>
   </div>
-
   <script src="/js/chat-whatsapp.js" defer></script>
 <% } %>
-
-</div>
