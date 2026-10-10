@@ -48,8 +48,35 @@ test('F1 navbar: a seção ativa segue a tela (aria-current)', async () => {
   for (const [caminho, secao] of Object.entries(casos)) {
     const html = await render('partials/nav-inferior.ejs', locais({ caminho }));
     assert.match(html, new RegExp('data-nav="' + secao + '" aria-current="page"'), caminho);
-    assert.equal((html.match(/aria-current="page"/g) || []).length, 1, caminho);
+    const nav = html.match(/<nav class="cv-navbar"[\s\S]*?<\/nav>/)[0];
+    assert.equal((nav.match(/aria-current="page"/g) || []).length, 1, caminho);
+    // F13: o menu lateral do PC marca no máximo um item.
+    const pc = html.match(/<aside class="pc-menu"[\s\S]*?<\/aside>/)[0];
+    assert.ok((pc.match(/aria-current="page"/g) || []).length <= 1, caminho);
   }
+});
+
+// ---------- F13: menu lateral do PC ----------
+const menuPC = (html) => html.match(/<aside class="pc-menu"[\s\S]*?<\/aside>/)[0];
+test('F13 menu PC: mesmas seções, Novo com as ações liberadas e os itens do Mais (dono)', async () => {
+  const pc = menuPC(await render('partials/nav-inferior.ejs', locais({ caminho: '/painel/caixa' })));
+  for (const h of ['/painel', '/painel/agenda', '/painel/gestao', '/painel/caixa', '/painel/comissoes', '/painel/equipe', '/painel/clientes', '/painel/meu-plano']) assert.match(pc, new RegExp('href="' + h + '"'), h);
+  assert.match(pc, /<a class="pc-item" href="\/painel\/caixa" aria-current="page">Caixa<\/a>/);
+  assert.doesNotMatch(pc, /href="\/painel\/gestao" aria-current/);
+  assert.match(pc, /id="pc-novo" aria-haspopup="menu" aria-expanded="false"/);
+  assert.equal((pc.match(/role="menuitem"/g) || []).length, 4);
+  assert.match(pc, /action="\/logout"/);
+});
+
+test('F13 menu PC: barbeiro com tudo bloqueado vê o mesmo menu, sem Caixa nem cadastros', async () => {
+  const pc = menuPC(await render('partials/nav-inferior.ejs', locais({ admin: false, bloqueados: TUDO_BLOQUEADO, plano: 'essencial', caminho: '/painel/agenda' })));
+  for (const h of ['/painel', '/painel/agenda', '/painel/gestao']) assert.match(pc, new RegExp('href="' + h + '"'), h);
+  assert.match(pc, /href="\/painel\/agenda" aria-current="page"/);
+  for (const h of ['/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/relatorios']) assert.doesNotMatch(pc, new RegExp('href="' + h + '"'), h);
+  assert.equal((pc.match(/role="menuitem"/g) || []).length, 1);
+  const css = fs.readFileSync(path.join(RAIZ, 'public/css/cv-pc.css'), 'utf8');
+  assert.match(css, /^\.pc-menu \{ display: none; \}/m);
+  assert.match(css, /@media \(min-width: 1024px\)[\s\S]*\.cv-navbar \{ display: none !important; \}/);
 });
 
 // ---------- F1: Gestão e estado vazio (spec 12, critério 2) ----------

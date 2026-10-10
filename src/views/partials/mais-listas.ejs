@@ -1,0 +1,86 @@
+<%/* Itens do Mais, numa peça só: a tela Mais (painel/mais.ejs) e o menu
+     lateral do PC (partials/nav-inferior.ejs, F13) leem daqui. Quem inclui
+     passa um objeto vazio em `saida`; esta peça preenche saida.secoes,
+     saida.conta e os dados do topo (nome, iniciais, papel, plano).
+
+     Mesmo filtro do menu antigo, item a item:
+     - admin: só admin vê;
+     - permissão do funcionário (podeAcessar): o que não foi liberado some;
+     - plano da Cortavo (foraDoPlano): o admin vê o item com o cadeado e o
+       nome do plano; o barbeiro não vê o item (spec 12, R1). */-%>
+<%
+  var _ehAdm = (typeof ehAdmin !== 'undefined') && !!ehAdmin;
+  var _ehDono = (typeof ehDono !== 'undefined') && !!ehDono;
+  var _usu = (typeof usuario !== 'undefined' && usuario) || {};
+  var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
+  var pode = (typeof podeAcessar === 'function') ? podeAcessar : function () { return true; };
+  var plano = (typeof planoCortavo !== 'undefined' && planoCortavo) ? planoCortavo : null;
+  var tetos = (plano && plano.tetos) || {};
+  // "Disponível no plano Barbearia. Fale com a Cortavo." -> "Barbearia"
+  function nomeDoPlano(tranca) {
+    var m = tranca && /plano (.+?)\./.exec(tranca.texto || '');
+    return m ? m[1] : 'Barbearia';
+  }
+  // Monta o item já decidido: null = não aparece; .cadeado = nome do plano.
+  function item(o) {
+    if (o.admin && !_ehAdm) return null;
+    if (o.href && o.href.indexOf('/painel/') === 0 && !pode(o.href.split('#')[0])) return null;
+    var tranca = o.href ? fdp(o.href.split('#')[0]) : null;
+    var cadeado = tranca ? nomeDoPlano(tranca) : (o.cadeado || null);
+    if (cadeado && !_ehAdm) return null;
+    o.cadeadoPlano = cadeado;
+    return o;
+  }
+  function lista(itens) { return itens.map(item).filter(Boolean); }
+
+  var nome = _usu.nome || '';
+  var partes = nome.trim().split(/\s+/);
+  var iniciais = ((partes[0] || '?').charAt(0) + (partes.length > 1 ? partes[partes.length - 1].charAt(0) : '')).toUpperCase();
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'barbearia';
+  var papelTxt = _ehDono ? 'Dono do sistema' : _ehAdm ? 'Responsável' : 'Barbeiro';
+  var semAssistente = (typeof iaAtiva !== 'undefined' && iaAtiva === false);
+
+  var secoes = _ehAdm ? [
+    { t: 'Barbearia', itens: lista([
+      { href: '/painel/equipe', t: 'Equipe e permissões', s: 'Quem atende e o que cada um vê', ic: 'equipe', admin: true },
+      { href: '/painel/horarios', t: 'Horários e bloqueios', s: 'Jornada da equipe, folgas e janela de agendamento', ic: 'relogio' },
+      { href: '/painel/logo', t: 'Link de agendamento', s: 'Logo e aparência do seu link', ic: 'link', admin: true },
+      { href: '/painel/meu-plano', t: 'Meu plano', s: 'O que inclui e quanto já usou', ic: 'plano', admin: true },
+    ]) },
+    { t: 'Atendimento', itens: lista([
+      { href: '/painel/secretaria', t: 'Secretária de IA', s: 'Responde e agenda no WhatsApp', ic: 'secretaria', admin: true, cadeado: tetos.secretaria === 0 ? 'Barbearia + IA' : null },
+      { href: '/painel/conversas', t: 'Conversas', s: 'O WhatsApp da barbearia', ic: 'conversa' },
+      semAssistente ? null : { href: '/painel/ia', t: 'Assistente', s: 'Pergunte sobre a agenda e os números', ic: 'assistente', cadeado: tetos.assistente === 0 ? 'Barbearia' : null },
+      { href: '/painel/fidelidade', t: 'Fidelidade', s: 'Selos e cupons dos clientes', ic: 'fidelidade', admin: true },
+    ].filter(Boolean)) },
+    { t: 'Cadastros', itens: lista([
+      { href: '/painel/clientes', t: 'Clientes', s: 'Contatos e histórico', ic: 'cliente' },
+      { href: '/painel/servicos', t: 'Serviços', s: 'Preço, tempo e foto opcional', ic: 'tesoura' },
+      { href: '/painel/produtos', t: 'Produtos', s: 'O que a barbearia vende', ic: 'loja' },
+      { href: '/painel/estoque', t: 'Estoque', s: 'Quantidades e mínimo de cada item', ic: 'estoque' },
+      { href: '/painel/planos', t: 'Planos de assinatura', s: 'Pacotes mensais para os clientes', ic: 'cartao' },
+    ]) },
+  ] : [
+    { t: 'Seu dia a dia', itens: lista([
+      { href: '/painel/perfil#pf-jornada', t: 'Minha jornada', s: 'Dias e horários em que você atende', ic: 'relogio' },
+      { href: '/painel/horarios', t: 'Bloqueios', s: 'Folgas e horários fechados', ic: 'bloqueio' },
+      { href: '/painel/comissoes', t: 'Minha comissão', s: 'Quanto você fez no mês', ic: 'comissao' },
+      { href: '/painel/conversas', t: 'Conversas', s: 'O WhatsApp da barbearia', ic: 'conversa' },
+      (semAssistente || tetos.assistente === 0) ? null : { href: '/painel/ia', t: 'Assistente', s: 'Pergunte sobre a sua agenda', ic: 'assistente' },
+    ].filter(Boolean)) },
+    { t: 'Cadastros', itens: lista([
+      { href: '/painel/clientes', t: 'Clientes', s: 'Contatos e histórico', ic: 'cliente' },
+      { href: '/painel/servicos', t: 'Serviços', s: 'Preço e tempo de cada um', ic: 'tesoura' },
+      { href: '/painel/produtos', t: 'Produtos', s: 'O que a barbearia vende', ic: 'loja' },
+      { href: '/painel/estoque', t: 'Estoque', s: 'Quantidades de cada item', ic: 'estoque' },
+      { href: '/painel/planos', t: 'Planos de assinatura', s: 'Pacotes mensais para os clientes', ic: 'cartao' },
+    ]) },
+  ];
+  var conta = lista([
+    { href: '/painel/perfil#pf-avisos', t: 'Notificações', s: 'Aviso de agendamento novo neste aparelho', ic: 'sino' },
+    { href: '/painel/perfil#pf-backup', t: 'Exportar dados', s: 'Cópia em PDF e arquivo de backup', ic: 'exportar', admin: true },
+    { href: 'mailto:' + (typeof suporteCortavo !== 'undefined' ? suporteCortavo : 'cortavo.app@gmail.com'), t: 'Ajuda', s: 'Fale com a Cortavo', ic: 'ajuda' },
+  ]);
+  saida.secoes = secoes; saida.conta = conta; saida.nome = nome; saida.iniciais = iniciais;
+  saida.nomeBarbearia = nomeBarbearia; saida.papelTxt = papelTxt; saida.plano = plano;
+-%>

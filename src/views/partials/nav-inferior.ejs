@@ -78,3 +78,76 @@
     </div>
   </div>
 </section>
+
+<%
+  // Menu lateral do PC (fatia F13): a navbar do celular aberta. Mesmas 5
+  // seções e o mesmo Novo (com as mesmas ações filtradas, num popover em
+  // vidro), mais os itens do Mais, lidos da mesma peça que a tela Mais usa
+  // (mais-listas.ejs). Só aparece a partir de 1024 px (cv-pc.css); abaixo
+  // disso fica escondido e a navbar continua sendo a única navegação.
+  var _cam = String(typeof currentPath !== 'undefined' ? currentPath : '').replace(/\/+$/, '') || '/painel';
+  var _PM = {};
+%><%- include('mais-listas', { saida: _PM }) %><%
+  var SUB_GESTAO = [
+    // Mesmo filtro da tela Gestão (painel/gestao.ejs): o barbeiro só vê a
+    // própria comissão, e nada do que o plano não libera.
+    { href: '/painel/caixa', t: 'Caixa', admin: true },
+    { href: '/painel/comissoes', t: _adm ? 'Comissões' : 'Minha comissão' },
+    { href: '/painel/relatorios', t: 'Relatórios', admin: true },
+    { href: '/painel/metas', t: 'Metas', admin: true },
+  ].filter(function (x) {
+    var _fdp = (typeof foraDoPlano === 'function') ? foraDoPlano(x.href) : null;
+    return (!x.admin || _adm) && _acessa(x.href) && !(_fdp && !_adm);
+  });
+  var _iniBarb = String(_PM.nomeBarbearia || 'C').replace(/^Barbearia\s+(d[aeo]s?\s+|e\s+)?/i, '').charAt(0).toUpperCase();
+  var _logoPc = (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) ? marcaLogoUrl : null;
+  var _ft = (typeof faixaTeste !== 'undefined' && faixaTeste) ? faixaTeste : null;
+  var _ehAtual = function (href) { return _cam === href.split('#')[0]; };
+  var _subAtual = SUB_GESTAO.some(function (x) { return _ehAtual(x.href); });
+  // Um item só marcado: se a tela é um item do Mais (ex.: Horários), ele
+  // ganha o destaque e a seção não.
+  var _maisAtual = _PM.secoes.some(function (sec) { return sec.itens.some(function (it) { return it.href.indexOf('#') < 0 && _ehAtual(it.href); }); });
+  var _secPc = (_subAtual || _maisAtual) ? '' : secaoAtual;
+%>
+<aside class="pc-menu" aria-label="Menu da barbearia">
+  <div class="pc-marca">
+    <span class="logo" aria-hidden="true"><% if (_logoPc) { %><img src="<%= _logoPc %>" alt="" /><% } else { %><span class="ini"><%= _iniBarb %></span><% } %></span>
+    <span><b><%= _PM.nomeBarbearia %></b><small><%= _adm && _PM.plano ? 'Plano ' + _PM.plano.nome : _PM.papelTxt %></small></span>
+  </div>
+  <button class="cv-btn pc-novo" type="button" id="pc-novo" aria-haspopup="menu" aria-expanded="false" aria-controls="pc-pop"><%- include('icone', { cvIc: 'mais', cvCls: 'cv-ic--20' }) %>Novo<kbd aria-hidden="true">N</kbd></button>
+  <div class="pc-pop" id="pc-pop" role="menu" aria-label="Novo" hidden>
+    <% ACOES_NOVO.forEach(function (a, i) { %>
+      <a role="menuitem" class="<%= i === 0 ? 'principal' : '' %>" href="<%= a.href %>"><span class="q"><%- include('icone', { cvIc: a.ic, cvCls: 'cv-ic--20' }) %></span><span><b><%= a.t %></b><small><%= a.s %></small></span></a>
+    <% }) %>
+  </div>
+  <nav class="pc-nav" aria-label="Seções do painel">
+    <a class="pc-item" href="/painel"<% if (_secPc === 'inicio') { %> aria-current="page"<% } %>><%- include('icone', { cvIc: 'inicio' }) %>Início</a>
+    <a class="pc-item" href="/painel/agenda"<% if (_secPc === 'agenda') { %> aria-current="page"<% } %>><%- include('icone', { cvIc: 'agenda' }) %>Agenda</a>
+    <a class="pc-item" href="/painel/gestao"<% if (_secPc === 'gestao') { %> aria-current="page"<% } %>><%- include('icone', { cvIc: 'gestao' }) %>Gestão</a>
+    <% if (SUB_GESTAO.length) { %>
+      <div class="pc-sub">
+        <% SUB_GESTAO.forEach(function (x) { %><a class="pc-item" href="<%= x.href %>"<% if (_ehAtual(x.href)) { %> aria-current="page"<% } %>><%= x.t %></a><% }) %>
+      </div>
+    <% } %>
+    <% _PM.secoes.forEach(function (sec) { if (!sec.itens.length) return; %>
+      <div class="pc-grupo"><%= sec.t %></div>
+      <% sec.itens.forEach(function (it) { %>
+        <a class="pc-item<%= it.cadeadoPlano ? ' bloq' : '' %>" href="<%= it.href %>"<% if (_ehAtual(it.href) && it.href.indexOf('#') < 0) { %> aria-current="page"<% } %><% if (it.cadeadoPlano) { %> aria-label="<%= it.t %> (fora do plano)"<% } %>><%- include('icone', { cvIc: it.ic }) %><span class="t"><%= it.t %></span><% if (it.cadeadoPlano) { %><span class="cv-cadeado"><%- include('icone', { cvIc: 'cadeado' }) %><%= it.cadeadoPlano === 'Barbearia + IA' ? '+ IA' : it.cadeadoPlano %></span><% } %></a>
+      <% }) %>
+    <% }) %>
+    <div class="pc-grupo">Conta</div>
+    <% _PM.conta.forEach(function (it) { %>
+      <a class="pc-item" href="<%= it.href %>"><%- include('icone', { cvIc: it.ic }) %><span class="t"><%= it.t %></span></a>
+    <% }) %>
+  </nav>
+  <div class="pc-rodape">
+    <% if (_ft) { %>
+      <a class="pc-teste" href="/painel/meu-plano"><b><%= _ft.dias > 0 ? _ft.dias : '0' %></b><span><%= _ft.dias > 0 ? (_ft.dias === 1 ? 'dia de teste' : 'dias de teste') : 'O teste terminou' %></span></a>
+    <% } %>
+    <a class="pc-usuario" href="/painel/perfil" aria-label="Meu perfil: <%= _PM.nome %>">
+      <span class="cv-avatar cv-avatar--p" aria-hidden="true"><% if (typeof usuarioFotoUrl !== 'undefined' && usuarioFotoUrl) { %><img src="<%= usuarioFotoUrl %>" alt="" /><% } else { %><%= _PM.iniciais %><% } %></span>
+      <span><b><%= _PM.nome %></b><small><%= _PM.papelTxt %></small></span>
+    </a>
+    <form method="POST" action="/logout"><button class="pc-item pc-sair" type="submit"><%- include('icone', { cvIc: 'sair' }) %>Sair</button></form>
+  </div>
+</aside>

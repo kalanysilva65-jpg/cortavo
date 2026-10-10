@@ -116,7 +116,7 @@
   <% if (horasLivresV && horasLivresV.livres > 0) { %> Há <b><%= horasLivresV.livres %> <%= plural(horasLivresV.livres, 'horário livre', 'horários livres') %></b> <%= horasLivresV.faixa %>.<% } %>
 </p>
 
-<div class="cv-secao" style="margin-top:20px">
+<div class="cv-secao pc-g-hoje" style="margin-top:20px">
   <section class="cv-objeto cv-gravada" aria-label="Resumo de hoje">
     <div class="cv-painel">
       <svg class="cv-aneis" width="<%= tam %>" height="<%= tam %>" viewBox="0 0 <%= tam %> <%= tam %>" role="img" aria-label="<%= comAnel.map(function (a) { return a.rot + ' ' + Math.round(Math.min(1, a.p) * 100) + '%'; }).join(', ') %>">
@@ -158,6 +158,7 @@
   <% } %>
 </div>
 
+<div class="pc-g-duo">
 <% if (horasLivresV && horasLivresV.ocup && horasLivresV.ocup.length) { %>
   <% var hl = horasLivresV, n = hl.ocup.length; %>
   <section class="cv-secao" style="margin-top:12px">
@@ -189,6 +190,7 @@
     </ul>
   </section>
 <% } %>
+</div>
 
 <script>
   /* M2 (abertura do dia): anéis fecham e números contam só na PRIMEIRA vez que

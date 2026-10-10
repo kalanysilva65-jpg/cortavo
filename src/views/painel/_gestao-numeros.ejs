@@ -57,7 +57,7 @@
     </div>
   </div>
 <% } else { %>
-<div class="cv-secao" style="margin-top:16px">
+<div class="cv-secao cv-g-cartoes" style="margin-top:16px">
   <% if (G.caixaHoje) { var cx = partes(G.caixaHoje.saldo, 2); %>
     <a class="cv-cartao cv-toca cv-g-caixa" href="/painel/caixa">
       <%- include('../partials/icone', { cvIc: 'caixa' }) %>

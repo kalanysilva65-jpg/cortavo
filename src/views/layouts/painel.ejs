@@ -85,6 +85,8 @@
     <%/* Por último: casca v3 (navbar, avisos) com especificidade acima das
          regras antigas (.pg-sv a) e as peças de tela das telas v3. */%>
     <link rel="stylesheet" href="/css/cv-telas.css?v=<%= assetV %>" />
+    <%/* F13: menu lateral e grades no PC (só vale a partir de 1024 px). */%>
+    <link rel="stylesheet" href="/css/cv-pc.css?v=<%= assetV %>" />
     <% if (extraV3) { %><link rel="stylesheet" href="/css/<%= extraV3 %>.css?v=<%= assetV %>" /><% } %>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F2F2F2" />

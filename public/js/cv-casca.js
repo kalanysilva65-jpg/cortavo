@@ -129,8 +129,40 @@
     });
   }
 
+  // F13: Novo do menu lateral no PC. Popover em vidro com as mesmas ações da
+  // folha; abre pelo botão ou pela tecla N (fora de campos), fecha com Esc ou
+  // clique fora. Setas sobem e descem entre as ações. Pelo teclado, sem
+  // animação de entrada (M7).
+  function novoPC() {
+    var btn = doc.getElementById('pc-novo'), pop = doc.getElementById('pc-pop');
+    if (!btn || !pop) return;
+    function itens() { return Array.prototype.slice.call(pop.querySelectorAll('[role="menuitem"]')); }
+    function abrir(peloTeclado) {
+      var r = btn.getBoundingClientRect();
+      pop.style.left = r.left + 'px'; pop.style.top = (r.bottom + 8) + 'px';
+      pop.style.transition = peloTeclado ? 'none' : '';
+      pop.hidden = false; btn.setAttribute('aria-expanded', 'true');
+      var i = itens(); if (i[0]) i[0].focus({ preventScroll: true });
+    }
+    function fechar(devolverFoco) { if (pop.hidden) return; pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (devolverFoco) btn.focus(); }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); if (pop.hidden) abrir(e.detail === 0); else fechar(); });
+    doc.addEventListener('click', function (e) { if (!pop.hidden && !e.target.closest('#pc-pop')) fechar(); });
+    doc.addEventListener('keydown', function (e) {
+      var alvo = doc.activeElement, emCampo = alvo && /^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName) || (alvo && alvo.isContentEditable);
+      if (e.key === 'Escape' && !pop.hidden) { fechar(true); return; }
+      if ((e.key === 'n' || e.key === 'N') && !emCampo && !e.metaKey && !e.ctrlKey && !e.altKey && btn.offsetParent !== null) { e.preventDefault(); if (pop.hidden) abrir(true); else fechar(true); return; }
+      if (!pop.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        var l = itens(), k = l.indexOf(alvo);
+        k = e.key === 'ArrowDown' ? (k + 1) % l.length : (k - 1 + l.length) % l.length;
+        l[k].focus();
+      }
+    });
+  }
+
   function iniciar() {
     navbar();
+    novoPC();
     seletorPeriodo();
     folhaNovo();
     abrirPelaUrl();
