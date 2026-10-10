@@ -170,7 +170,12 @@ function estadoDoAcesso(usuario, ultimo, agora = new Date()) {
         ? 'Link de nova senha: e-mail não enviado'
         : `Link de nova senha enviado em ${fmtDataHora(ultimo.enviadoEm)} · vence em ${fmtDataHora(ultimo.expiraEm)}`;
     }
-    return { codigo: 'senha_criada', texto: `Senha criada em ${fmtData(usuario.senhaDefinidaEm)}`, detalhe, botao: 'Enviar link para nova senha', alerta: !!(detalhe && naoEnviado) };
+    // Contas de antes do acesso por link: a migração copiou criado_em para
+    // senha_definida_em, mas essa senha foi digitada no mestre, não criada pela
+    // pessoa (revisão da Vera). Para elas, o texto diz isso e sugere o link.
+    const antiga = usuario.criadoEm && new Date(usuario.criadoEm).getTime() === new Date(usuario.senhaDefinidaEm).getTime();
+    const texto = antiga ? 'Senha de antes do link · envie um link para a pessoa criar a dela' : `Senha criada em ${fmtData(usuario.senhaDefinidaEm)}`;
+    return { codigo: antiga ? 'senha_antiga' : 'senha_criada', texto, detalhe, botao: 'Enviar link para nova senha', alerta: !!(detalhe && naoEnviado) };
   }
   if (naoEnviado) return { codigo: 'nao_enviado', texto: 'E-mail não enviado', detalhe: null, botao: 'Reenviar link', alerta: true };
   if (vencido) return { codigo: 'vencido', texto: `Link vencido em ${fmtData(ultimo.expiraEm)}`, detalhe: null, botao: 'Reenviar link', alerta: true };

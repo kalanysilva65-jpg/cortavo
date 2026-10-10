@@ -358,7 +358,7 @@ test('C11 estado do acesso de cada pessoa no mestre: aguardando, vencido, não e
 
 test('C11 detalhe da barbearia mostra o estado e o botão certo de cada pessoa', async (t) => {
   comEnv({ ...ENV_OK, EMAIL_SMTP_SENHA: undefined }, t);
-  const m = mundo({ usuarios: [pessoa(), pessoa({ id: 11, nome: "D'Ávila", email: 'd@exemplo.test', papel: 'funcionario', senhaDefinidaEm: new Date('2026-10-01T12:00:00Z') })] });
+  const m = mundo({ usuarios: [pessoa(), pessoa({ id: 11, nome: "D'Ávila", email: 'd@exemplo.test', papel: 'funcionario', senhaDefinidaEm: new Date('2026-10-02T12:00:00Z') })] });
   await m.acesso.enviarLink({ usuario: m.banco.usuarios[0], barbearia: BARB, tipo: 'primeiro_acesso', criadoPorId: 1, req: {} });
   m.banco.prisma.usuario.findMany = async () => m.banco.usuarios.map((u) => ({ ...u }));
   const res = res2();
@@ -376,7 +376,7 @@ test('C11 detalhe da barbearia mostra o estado e o botão certo de cada pessoa',
   assert.match(html, /data-acesso="nao_enviado">E-mail não enviado/);
   assert.match(html, />Reenviar link</);
   assert.match(html, />Enviar link para nova senha</);
-  assert.match(html, /Senha criada em 01\/10/);
+  assert.match(html, /Senha criada em 02\/10/);
   assert.match(html, /data-nome="D&#39;Ávila"/);
   assert.match(html, /role="status">Envio de e-mail não configurado/);
 });
