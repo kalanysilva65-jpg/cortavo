@@ -156,3 +156,25 @@ fieldset.cv-campo legend { padding: 0; margin-bottom: 4px; }
 .cv-es-repor b { display: block; font-size: 16px; font-weight: 800; }
 .cv-es-repor small { display: block; font-size: 14px; color: var(--c-apoio); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cv-linha .fim b.cv-es-qtd { font-size: 22px; line-height: 1; letter-spacing: -.03em; }
+
+/* ---- Planos -------------------------------------------------------------- */
+.cv-pl-lista { display: grid; gap: 10px; }
+.cv-pl-card { display: block; width: 100%; text-align: left; border: 0; font: inherit; color: inherit; cursor: pointer; }
+div.cv-pl-card { cursor: default; }
+.cv-pl-card .topo { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.cv-pl-card .corpo { min-width: 0; }
+.cv-pl-card .corpo b { display: block; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.cv-pl-card .corpo small { display: block; font-size: 14px; color: var(--c-apoio); margin-top: 2px; }
+.cv-pl-card .assin { text-align: right; flex-shrink: 0; }
+.cv-pl-card .assin b { display: block; font-size: 24px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.cv-pl-card .assin small { font-size: 12px; color: var(--c-apoio); font-weight: 600; }
+.cv-pl-card .desc { display: block; margin-top: 10px; font-size: 14px; color: var(--c-tinta-2); line-height: 1.45; }
+.cv-pl-card .dias { display: flex; align-items: center; gap: 4px; margin-top: 12px; }
+.cv-pl-card .dias i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 800; background: var(--listra-bloqueado); color: var(--c-apoio); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-pl-card .dias i.on { background: var(--c-tinta); color: #fff; box-shadow: none; }
+.cv-pl-card .dias em { margin-left: auto; font-style: normal; font-size: 13px; font-weight: 600; color: var(--c-tinta-2); }
+.cv-pl-form .cv-campo + .cv-campo { margin-top: 14px; }
+.cv-pl-qtds { margin-top: 4px; }
+.cv-folha .cv-chips { flex-wrap: wrap; overflow: visible; }
+.cv-pl-card .dias em { white-space: nowrap; }
+.cv-folha .cv-dupla + .cv-campo { margin-top: 14px; }

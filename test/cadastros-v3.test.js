@@ -89,3 +89,19 @@ test('Estoque v3: objeto do gasto, "para repor" listrado, lista, folhas e o form
   assert.match(f, /action="\/painel\/estoque\/2"/);
   assert.match(layout, /AVULSOS_V3 = /);
 });
+
+test('Planos v3: objeto com a receita (admin) ou o volume (barbeiro, sem R$), chips sem verde/vermelho e mesmas rotas', async () => {
+  v3('/painel/planos');
+  const p = { id: 1, nome: 'Clube', valor: 9900, tipo: 'limitado', usos: 2, diasSemana: '1,2', validadeDias: 30, ativo: true, assinantes: 3, mrr: 29700, servicos: [{ servicoId: 5, usos: 2, servico: { nome: 'Corte' } }] };
+  const d = { ...comuns, planos: [p], servicos: [{ id: 5, nome: 'Corte' }], resumo: { mrr: 29700, assinantes: 3, ticket: 9900, ativos: 1, lider: null } };
+  const adm = await render('painel/planos.ejs', d);
+  assert.doesNotMatch(adm, SEM_ANTIGO);
+  assert.doesNotMatch(adm, /verde|vermelho/);
+  assert.match(adm, /Receita recorrente por mês/);
+  assert.match(adm, /name="diasSemana" value="1,2" data-dias/);
+  assert.match(adm, /name="usosServ_5" value="2"/);
+  assert.match(adm, /action="\/painel\/planos\/1\/remover" data-confirmar=/);
+  const barb = await render('painel/planos.ejs', { ...d, ehAdmin: false });
+  assert.doesNotMatch(barb, /Receita|R\$ 297,00/);
+  assert.doesNotMatch(barb, /data-abrir-folha="pl-folha/);
+});

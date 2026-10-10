@@ -1,345 +1,125 @@
-<%/* Planos no design SUAVE (pedido do dono, 2026-07-31): substitui os blocos
-     chapados do Turno 6 (uma tinta de cinza por plano, receita em 72px) pelo
-     HTML de referência — cartão preto do resumo no topo e, abaixo, um cartão
-     branco arredondado por plano com o contador de assinantes em ladrilho e os
-     sete dias como bolinhas no rodapé.
-     A edição continua em pop-up, mas neste design o pop-up é FOLHA INFERIOR
-     (sobe de baixo), não mais o diálogo centrado do Turno 6.
-     Estilos em public/css/sv-planos-perfil.css. */%>
+<%/* Planos de assinatura (redesign v3). Sem mockup próprio: o sistema
+     aplicado com rigor. O objeto preto é a receita recorrente (admin) ou o
+     volume de planos (barbeiro, sem dinheiro). Cada plano é um cartão; dias e
+     serviços viram chips (pressionado = vale), sem verde nem vermelho.
+     Edição em folha, só para o admin. Mesmas rotas e campos. */%>
 <%
-  // diasSemana grava 0=Dom..6=Sáb, mas as bolinhas/pílulas aparecem na ordem
-  // Seg→Dom — a ORDEM abaixo só afeta a exibição.
   var ORDEM_SEMANA = [1, 2, 3, 4, 5, 6, 0];
   var NOME_DIA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  var LETRA_DIA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-  function _diasArr(diasStr) {
-    return String(diasStr || '0,1,2,3,4,5,6').split(',').map(Number).filter(function (n) { return !isNaN(n); });
-  }
+  function _diasArr(d) { return String(d || '0,1,2,3,4,5,6').split(',').map(Number).filter(function (n) { return !isNaN(n); }); }
+  var fechar = include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' });
+  var dinheiro = function (c, tam) { return include('../partials/dinheiro', { cvC: c, cvTam: tam || 'p' }); };
 %>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup">Cadastros</p><h1>Planos</h1></div>
+  <% if (ehAdmin) { %><div class="cv-cab-acoes"><button class="cv-btn" type="button" data-abrir-folha="pl-folha-novo"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--18' }) %>Novo</button></div><% } %>
+</header>
 
-<div class="sv-tela">
+<div class="cv-secao" style="margin-top:16px">
+  <section class="cv-objeto cv-gravada" aria-label="Resumo dos planos">
+    <% if (ehAdmin) { %>
+      <span class="rot" style="color:var(--c-sobre-objeto-2);font-size:14px;font-weight:600">Receita recorrente por mês</span>
+      <div style="margin-top:6px"><%- dinheiro(resumo.mrr, 'g') %></div>
+      <p style="margin:8px 0 0;font-size:14px;color:var(--c-sobre-objeto-2)"><%= resumo.assinantes %> <%= resumo.assinantes === 1 ? 'assinante' : 'assinantes' %><% if (resumo.assinantes) { %> · <%= fmtBRL(resumo.ticket) %> por assinante<% } %><% if (resumo.lider) { %> · <%= resumo.lider.nome %> lidera<% } %></p>
+    <% } else { %>
+      <span class="rot" style="color:var(--c-sobre-objeto-2);font-size:14px;font-weight:600">Planos ativos</span>
+      <div style="margin-top:6px"><span class="cv-num cv-num--g"><%= resumo.ativos %></span></div>
+      <p style="margin:8px 0 0;font-size:14px;color:var(--c-sobre-objeto-2)"><%= resumo.assinantes %> <%= resumo.assinantes === 1 ? 'assinante em dia' : 'assinantes em dia' %></p>
+    <% } %>
+  </section>
+</div>
 
-  <div class="sv-pl-topo sv-reveal">
-    <div class="sv-pl-topo-linha">
-      <div class="sv-titulo">Planos</div>
-      <% if (ehAdmin) { %>
-        <button type="button" class="sv-pl-novo" data-sv-abre="novo">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          <span>Novo</span>
-        </button>
-      <% } %>
-    </div>
-    <div class="sv-pl-dica"><%= ehAdmin ? 'Toque em um plano para editar' : 'Assinaturas e pacotes para clientes' %></div>
-  </div>
-
-  <% if (ehAdmin) { %>
-    <div class="sv-cartao sv-cartao--escuro sv-pl-resumo sv-reveal sv-pl-p2">
-      <div class="sv-pl-resumo-rot">Receita recorrente</div>
-      <div class="sv-pl-resumo-num"><%= fmtT6(resumo.mrr) %></div>
-      <div class="sv-pl-selos">
-        <span class="sv-pilula"><%= resumo.assinantes %> assinante<%= resumo.assinantes === 1 ? '' : 's' %></span>
-        <% if (resumo.assinantes) { %>
-          <span class="sv-pilula"><%= fmtT6(resumo.ticket) %> /assinante</span>
-        <% } %>
-      </div>
-      <% if (resumo.lider) { %>
-        <div class="sv-pl-resumo-linha"><%= resumo.lider.nome %> lidera com <%= resumo.lider.assinantes %> assinante<%= resumo.lider.assinantes === 1 ? '' : 's' %></div>
-      <% } %>
-    </div>
-  <% } else { %>
-    <%/* Funcionário não vê receita (mesma regra da Home): a mesma moldura
-         mostra o VOLUME — quantos planos estão no ar e quantos clientes têm
-         plano em dia —, sem dinheiro nenhum. */%>
-    <div class="sv-cartao sv-cartao--escuro sv-pl-resumo sv-reveal sv-pl-p2">
-      <div class="sv-pl-resumo-rot">Planos ativos</div>
-      <div class="sv-pl-resumo-num"><%= resumo.ativos %></div>
-      <div class="sv-pl-selos">
-        <span class="sv-pilula"><%= resumo.assinantes %> assinante<%= resumo.assinantes === 1 ? '' : 's' %> em dia</span>
-      </div>
-    </div>
-  <% } %>
-
+<section class="cv-secao" style="margin-top:14px" aria-label="Planos">
   <% if (planos.length === 0) { %>
-    <div class="sv-vazio sv-reveal sv-pl-p3">Nenhum plano cadastrado<%= ehAdmin ? ' ainda.' : '.' %></div>
+    <div class="cv-cartao cv-vazio" role="status"><h2>Nenhum plano ainda</h2><p>Planos mensais fidelizam: o cliente paga por mês e marca pelo link usando o plano.</p></div>
   <% } else { %>
-    <div class="sv-pl-lista">
-      <% planos.forEach(function (p) { %>
-        <%
-          var ilimitado = p.tipo === 'ilimitado';
-          var diasAtivos = _diasArr(p.diasSemana);
-          var tipoRot = ilimitado ? 'Ilimitado' : 'Limitado';
-          var comCota = !ilimitado && (p.servicos || []).some(function (x) { return x.usos; });
-          var usosRot = ilimitado ? 'usos livres' : (p.usos || 0) + 'x por mês';
-          var nomesServ = (p.servicos || []).map(function (x) { return (comCota && x.usos ? x.usos + 'x ' : '') + x.servico.nome; });
-          var descricao = (nomesServ.length ? nomesServ.join(' + ') : 'Qualquer serviço') + ' · validade de ' + p.validadeDias + ' dias';
-        %>
-        <%/* Só o admin edita, então só para ele o cartão é <button> (abre a
-             folha). Para o funcionário sai um <div> — sem cursor, sem toque,
-             sem foco. A tag sai por saída CRUA (traço) porque é MARCAÇÃO, não
-             texto: escapada, as aspas do atributo virariam &#34; e a tag
-             quebraria. */%>
-        <<%- ehAdmin ? 'button type="button" data-sv-abre="' + p.id + '"' : 'div' %> class="sv-cartao sv-pl-card">
-          <% if (!p.ativo) { %>
-            <div class="sv-pl-inativo"><span class="sv-pilula">Inativo</span></div>
-          <% } %>
-          <div class="sv-pl-card-topo">
-            <div class="sv-pl-card-corpo">
-              <div class="sv-pl-nome"><%= p.nome %></div>
-              <div class="sv-pl-meta"><%= fmtT6(p.valor) %> /mês · <%= tipoRot %> · <%= usosRot %></div>
-            </div>
-            <div class="sv-pl-assin">
-              <div class="sv-pl-assin-num"><%= p.assinantes %></div>
-              <div class="sv-pl-assin-rot">assin.</div>
-            </div>
-          </div>
-          <div class="sv-pl-desc"><%= descricao %></div>
-          <div class="sv-pl-rodape">
-            <div class="sv-pl-dias">
-              <% ORDEM_SEMANA.forEach(function (i) { %>
-                <span class="sv-pl-dia <%= diasAtivos.indexOf(i) !== -1 ? 'on' : '' %>"><%= LETRA_DIA[i] %></span>
-              <% }) %>
-            </div>
-            <%/* A receita do plano é dinheiro recorrente — só o admin vê. */%>
-            <% if (ehAdmin && p.assinantes) { %>
-              <div class="sv-pl-mrr"><%= fmtT6(p.mrr) %> /mês</div>
-            <% } %>
-          </div>
-        </<%- ehAdmin ? 'button' : 'div' %>>
+    <div class="cv-pl-lista">
+      <% planos.forEach(function (p) {
+           var ilim = p.tipo === 'ilimitado', dias = _diasArr(p.diasSemana);
+           var comCota = !ilim && (p.servicos || []).some(function (x) { return x.usos; });
+           var nomes = (p.servicos || []).map(function (x) { return (comCota && x.usos ? x.usos + 'x ' : '') + x.servico.nome; });
+           var tag = ehAdmin ? 'button' : 'div'; %>
+        <<%- tag %> class="cv-cartao cv-pl-card"<% if (ehAdmin) { %> type="button" data-abrir-folha="pl-folha-<%= p.id %>"<% } %>>
+          <span class="topo"><span class="corpo"><b><%= p.nome %><% if (!p.ativo) { %> <span class="cv-etq cv-etq--listra">inativo</span><% } %></b><small><%= fmtBRL(p.valor) %> por mês · <%= ilim ? 'ilimitado' : (p.usos || 0) + ' usos por mês' %></small></span><span class="assin"><b><%= p.assinantes %></b><small><%= p.assinantes === 1 ? 'assinante' : 'assinantes' %></small></span></span>
+          <span class="desc"><%= nomes.length ? nomes.join(' + ') : 'Qualquer serviço' %> · validade de <%= p.validadeDias %> dias</span>
+          <span class="dias" aria-label="Dias: <%= ORDEM_SEMANA.filter(function (i) { return dias.indexOf(i) !== -1; }).map(function (i) { return NOME_DIA[i]; }).join(', ') %>"><% ORDEM_SEMANA.forEach(function (i) { %><i class="<%= dias.indexOf(i) !== -1 ? 'on' : '' %>" aria-hidden="true"><%= NOME_DIA[i].charAt(0) %></i><% }) %><% if (ehAdmin && p.assinantes) { %><em><%= fmtBRL(p.mrr) %> por mês</em><% } %></span>
+        </<%- tag %>>
       <% }) %>
     </div>
   <% } %>
-
-</div>
+</section>
 
 <% if (ehAdmin) { %>
-  <%/* As folhas ficam FORA de .sv-tela: são `position:fixed` e, dentro de um
-       elemento animado com transform, virariam posicionadas em relação a ele. */%>
+<% function form(p) {
+     var id = p ? p.id : 'novo', tipo = p ? p.tipo : 'limitado', dias = _diasArr(p ? p.diasSemana : null);
+     var servIds = p ? (p.servicos || []).map(function (x) { return x.servicoId; }) : []; %>
+  <form method="POST" action="<%= p ? '/painel/planos/' + p.id : '/painel/planos' %>" class="cv-pl-form" data-plano="<%= id %>">
+    <div class="cv-campo"><label for="nome-<%= id %>">Nome</label><input class="cv-entrada" id="nome-<%= id %>" name="nome" value="<%= p ? p.nome : '' %>" placeholder="Ex.: Corte mensal" required /></div>
+    <div class="cv-campo"><span class="cv-rotulo" id="tipo-rot-<%= id %>">Tipo de uso</span>
+      <input type="hidden" name="tipo" value="<%= tipo %>" data-tipo />
+      <div class="cv-seg" role="group" aria-labelledby="tipo-rot-<%= id %>" style="margin-top:6px"><button type="button" data-valor="limitado" aria-pressed="<%= tipo === 'limitado' %>">Limitado</button><button type="button" data-valor="ilimitado" aria-pressed="<%= tipo === 'ilimitado' %>">Ilimitado</button></div>
+    </div>
+    <div class="cv-dupla" style="margin-top:14px">
+      <div class="cv-campo"><label for="valor-<%= id %>">Preço por mês, em reais</label><input class="cv-entrada cv-entrada--num" id="valor-<%= id %>" name="valor" type="number" step="0.01" min="0" inputmode="decimal" value="<%= p ? (p.valor / 100).toFixed(2) : '' %>" placeholder="0,00" /></div>
+      <div class="cv-campo" data-usos<% if (tipo === 'ilimitado') { %> hidden<% } %>><label for="usos-<%= id %>">Usos por mês</label><input class="cv-entrada cv-entrada--num" id="usos-<%= id %>" name="usos" type="number" min="1" inputmode="numeric" value="<%= p ? (p.usos || 1) : 1 %>" /></div>
+    </div>
+    <div class="cv-campo"><span class="cv-rotulo" id="dias-rot-<%= id %>">Dias em que o plano vale</span>
+      <input type="hidden" name="diasSemana" value="<%= dias.join(',') %>" data-dias />
+      <div class="cv-chips" role="group" aria-labelledby="dias-rot-<%= id %>" style="margin-top:6px"><% ORDEM_SEMANA.forEach(function (i) { %><button type="button" class="cv-chip" data-dia="<%= i %>" aria-pressed="<%= dias.indexOf(i) !== -1 %>"><span><%= NOME_DIA[i] %></span></button><% }) %></div>
+    </div>
+    <div class="cv-campo"><span class="cv-rotulo" id="serv-rot-<%= id %>">Serviços inclusos</span>
+      <input type="hidden" name="servicoIds" value="<%= servIds.join(',') %>" data-servs />
+      <div class="cv-chips" role="group" aria-labelledby="serv-rot-<%= id %>" style="margin-top:6px"><% servicos.forEach(function (s) { %><button type="button" class="cv-chip" data-serv="<%= s.id %>" aria-pressed="<%= servIds.indexOf(s.id) !== -1 %>"><span><%= s.nome %></span></button><% }) %></div>
+      <div class="cv-pl-qtds">
+        <% servicos.forEach(function (s) { var ps = p ? (p.servicos || []).filter(function (x) { return x.servicoId === s.id; })[0] : null; var on = servIds.indexOf(s.id) !== -1 && tipo === 'limitado'; %>
+          <label class="cv-consumo-linha" data-serv-qtd="<%= s.id %>"<% if (!on) { %> hidden<% } %>><span><%= s.nome %>, usos por mês</span><input class="cv-entrada cv-entrada--num" type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="<%= ps && ps.usos ? ps.usos : 1 %>" /></label>
+        <% }) %>
+      </div>
+      <span class="cv-ajuda">Sem nenhum marcado, o plano vale para qualquer serviço. No limitado, defina os usos de cada serviço (ex.: 2 cortes e 4 barbas).</span>
+    </div>
+    <div class="cv-campo"><label for="validadeDias-<%= id %>">Validade, em dias</label><input class="cv-entrada cv-entrada--num" id="validadeDias-<%= id %>" name="validadeDias" type="number" min="1" inputmode="numeric" value="<%= p ? p.validadeDias : 30 %>" /></div>
+    <button class="cv-btn cv-btn--largo" type="submit"><%= p ? 'Salvar alterações' : 'Adicionar' %></button>
+  </form>
+<% } %>
 
-  <div class="sv-folha-fundo" id="sv-pl-folha-novo" hidden>
-    <div class="sv-folha">
-      <div class="sv-folha-puxador"></div>
-      <div class="sv-folha-titulo">Novo plano</div>
-      <form method="POST" action="/painel/planos">
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="nome-novo">Nome</label>
-          <input class="sv-campo-input" id="nome-novo" name="nome" placeholder="Ex.: Corte mensal" required />
-        </div>
-
-        <div class="sv-pl-dupla">
-          <div class="sv-campo">
-            <label class="sv-campo-rot" for="valor-novo">Preço (R$)</label>
-            <input class="sv-campo-input" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="0,00" />
-          </div>
-          <div class="sv-campo" id="campo-usos-novo">
-            <label class="sv-campo-rot" for="usos-novo">Usos/mês</label>
-            <input class="sv-campo-input" id="usos-novo" name="usos" type="number" min="1" value="1" />
-          </div>
-        </div>
-
-        <div class="sv-campo">
-          <span class="sv-campo-rot">Tipo de uso</span>
-          <input type="hidden" name="tipo" id="tipo-novo" value="limitado" />
-          <div class="pill-group">
-            <button type="button" class="pill-opcao ativo" data-valor="limitado" onclick="svPlTipo(this,'novo')">Limitado</button>
-            <button type="button" class="pill-opcao" data-valor="ilimitado" onclick="svPlTipo(this,'novo')">Ilimitado</button>
-          </div>
-        </div>
-
-        <div class="sv-campo">
-          <span class="sv-campo-rot">Dias disponíveis <small class="sv-pl-legenda"><b class="verde">verde</b> = funciona · <b class="vermelho">vermelho</b> = não funciona</small></span>
-          <input type="hidden" name="diasSemana" id="dias-novo" value="0,1,2,3,4,5,6" />
-          <div class="pill-group" id="dias-group-novo">
-            <% ORDEM_SEMANA.forEach(function (i) { %>
-              <button type="button" class="pill-opcao ativo" data-dia="<%= i %>" onclick="svPlDia(this,'novo')"><%= NOME_DIA[i] %></button>
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="sv-campo">
-          <span class="sv-campo-rot">Serviços inclusos</span>
-          <input type="hidden" name="servicoIds" id="servs-novo" value="" />
-          <div class="pill-group" id="servs-group-novo">
-            <% servicos.forEach(function (s) { %>
-              <button type="button" class="pill-opcao" data-serv="<%= s.id %>" onclick="svPlServ(this,'novo')"><%= s.nome %></button>
-            <% }) %>
-          </div>
-          <div class="sv-pl-qtds" id="servs-qtds-novo">
-            <% servicos.forEach(function (s) { %>
-              <label class="sv-pl-qtd" data-serv-qtd="<%= s.id %>" style="display:none">
-                <span><%= s.nome %></span>
-                <input class="sv-campo-input" type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="1" aria-label="Usos de <%= s.nome %> por mês" />
-                <small>por mês</small>
-              </label>
-            <% }) %>
-          </div>
-          <div class="sv-pl-ajuda">Toque para marcar um ou mais serviços. Em plano <b>limitado</b>, defina quantos usos de cada serviço por mês (ex.: 2 cortes e 4 barbas). Sem nenhum marcado, o plano vale para qualquer serviço.</div>
-        </div>
-
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="validadeDias-novo">Validade (dias)</label>
-          <input class="sv-campo-input" id="validadeDias-novo" name="validadeDias" type="number" min="1" value="30" />
-        </div>
-
-        <button class="sv-btn sv-pl-cta" type="submit">Adicionar</button>
-        <button type="button" class="sv-btn sv-btn--claro sv-pl-cta sv-pl-cta--claro" data-sv-fecha>Cancelar</button>
-      </form>
+<section class="cv-folha" id="pl-folha-novo" data-folha role="dialog" aria-modal="true" aria-labelledby="pl-novo-t">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="pl-novo-t" tabindex="-1" data-foco>Novo plano</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo"><% form(null) %></div>
+</section>
+<% planos.forEach(function (p) { %>
+<section class="cv-folha" id="pl-folha-<%= p.id %>" data-folha role="dialog" aria-modal="true" aria-labelledby="pl-t-<%= p.id %>">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="pl-t-<%= p.id %>" tabindex="-1" data-foco><%= p.nome %></h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
+    <% form(p) %>
+    <div class="cv-folha-acoes cv-dupla">
+      <form method="POST" action="/painel/planos/<%= p.id %>/toggle"><button class="cv-btn cv-btn--2 cv-btn--largo" type="submit"><%= p.ativo ? 'Desativar' : 'Ativar' %></button></form>
+      <form method="POST" action="/painel/planos/<%= p.id %>/remover" data-confirmar="Excluir este plano?"><button class="cv-btn cv-btn--2 cv-txt-perigo cv-btn--largo" type="submit">Excluir</button></form>
     </div>
   </div>
+</section>
+<% }) %>
 
-  <%/* Uma folha de edição por plano. */%>
-  <% planos.forEach(function (p) { %>
-    <% var diasAtivosEdit = _diasArr(p.diasSemana); var servIdsEdit = (p.servicos || []).map(function (x) { return x.servicoId; }); %>
-    <div class="sv-folha-fundo" id="sv-pl-folha-<%= p.id %>" hidden>
-      <div class="sv-folha">
-        <div class="sv-folha-puxador"></div>
-        <div class="sv-folha-titulo"><%= p.nome %></div>
-        <form method="POST" action="/painel/planos/<%= p.id %>">
-          <div class="sv-campo">
-            <label class="sv-campo-rot" for="nome-<%= p.id %>">Nome</label>
-            <input class="sv-campo-input" id="nome-<%= p.id %>" name="nome" value="<%= p.nome %>" required />
-          </div>
-
-          <div class="sv-pl-dupla">
-            <div class="sv-campo">
-              <label class="sv-campo-rot" for="valor-<%= p.id %>">Preço (R$)</label>
-              <input class="sv-campo-input" id="valor-<%= p.id %>" name="valor" type="number" step="0.01" min="0" value="<%= (p.valor / 100).toFixed(2) %>" />
-            </div>
-            <div class="sv-campo" id="campo-usos-<%= p.id %>" style="display:<%= p.tipo === 'ilimitado' ? 'none' : '' %>">
-              <label class="sv-campo-rot" for="usos-<%= p.id %>">Usos/mês</label>
-              <input class="sv-campo-input" id="usos-<%= p.id %>" name="usos" type="number" min="1" value="<%= p.usos || 1 %>" />
-            </div>
-          </div>
-
-          <div class="sv-campo">
-            <span class="sv-campo-rot">Tipo de uso</span>
-            <input type="hidden" name="tipo" id="tipo-<%= p.id %>" value="<%= p.tipo %>" />
-            <div class="pill-group">
-              <button type="button" class="pill-opcao <%= p.tipo === 'limitado' ? 'ativo' : '' %>" data-valor="limitado" onclick="svPlTipo(this,'<%= p.id %>')">Limitado</button>
-              <button type="button" class="pill-opcao <%= p.tipo === 'ilimitado' ? 'ativo' : '' %>" data-valor="ilimitado" onclick="svPlTipo(this,'<%= p.id %>')">Ilimitado</button>
-            </div>
-          </div>
-
-          <div class="sv-campo">
-            <span class="sv-campo-rot">Dias disponíveis <small class="sv-pl-legenda"><b class="verde">verde</b> = funciona · <b class="vermelho">vermelho</b> = não funciona</small></span>
-            <input type="hidden" name="diasSemana" id="dias-<%= p.id %>" value="<%= p.diasSemana %>" />
-            <div class="pill-group" id="dias-group-<%= p.id %>">
-              <% ORDEM_SEMANA.forEach(function (i) { %>
-                <button type="button" class="pill-opcao <%= diasAtivosEdit.indexOf(i) !== -1 ? 'ativo' : '' %>" data-dia="<%= i %>" onclick="svPlDia(this,'<%= p.id %>')"><%= NOME_DIA[i] %></button>
-              <% }) %>
-            </div>
-          </div>
-
-          <div class="sv-campo">
-            <span class="sv-campo-rot">Serviços inclusos</span>
-            <input type="hidden" name="servicoIds" id="servs-<%= p.id %>" value="<%= servIdsEdit.join(',') %>" />
-            <div class="pill-group" id="servs-group-<%= p.id %>">
-              <% servicos.forEach(function (s) { %>
-                <button type="button" class="pill-opcao <%= servIdsEdit.indexOf(s.id) !== -1 ? 'ativo' : '' %>" data-serv="<%= s.id %>" onclick="svPlServ(this,'<%= p.id %>')"><%= s.nome %></button>
-              <% }) %>
-            </div>
-            <div class="sv-pl-qtds" id="servs-qtds-<%= p.id %>">
-              <% servicos.forEach(function (s) {
-                   var ps = (p.servicos || []).filter(function (x) { return x.servicoId === s.id; })[0];
-                   var marcado = servIdsEdit.indexOf(s.id) !== -1; %>
-                <label class="sv-pl-qtd" data-serv-qtd="<%= s.id %>" style="display:<%= marcado && p.tipo === 'limitado' ? '' : 'none' %>">
-                  <span><%= s.nome %></span>
-                  <input class="sv-campo-input" type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="<%= ps && ps.usos ? ps.usos : 1 %>" aria-label="Usos de <%= s.nome %> por mês" />
-                  <small>por mês</small>
-                </label>
-              <% }) %>
-            </div>
-            <div class="sv-pl-ajuda">Em plano <b>limitado</b>, defina quantos usos de cada serviço por mês. Sem nenhum marcado, o plano vale para qualquer serviço.</div>
-          </div>
-
-          <div class="sv-campo">
-            <label class="sv-campo-rot" for="validadeDias-<%= p.id %>">Validade (dias)</label>
-            <input class="sv-campo-input" id="validadeDias-<%= p.id %>" name="validadeDias" type="number" min="1" value="<%= p.validadeDias %>" />
-          </div>
-
-          <button class="sv-btn sv-pl-cta" type="submit">Salvar alterações</button>
-          <button type="button" class="sv-btn sv-btn--claro sv-pl-cta sv-pl-cta--claro" data-sv-fecha>Cancelar</button>
-        </form>
-
-        <div class="sv-pl-acoes">
-          <form method="POST" action="/painel/planos/<%= p.id %>/toggle">
-            <button class="sv-pl-acao" type="submit"><%= p.ativo ? 'Desativar' : 'Ativar' %></button>
-          </form>
-          <form method="POST" action="/painel/planos/<%= p.id %>/remover" onsubmit="return confirm('Excluir este plano?')">
-            <button class="sv-pl-acao sv-pl-acao--perigo" type="submit">Excluir</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  <% }) %>
-
-  <script>
-    // Folha inferior: uma por plano (+ a de "novo"), abertas pelo cartão.
-    function svPlAbrir(id) {
-      var f = document.getElementById('sv-pl-folha-' + id);
-      if (f) f.hidden = false;
-    }
-    function svPlFechar(f) {
-      if (f) f.hidden = true;
-    }
-    document.querySelectorAll('[data-sv-abre]').forEach(function (el) {
-      el.addEventListener('click', function () { svPlAbrir(el.getAttribute('data-sv-abre')); });
-    });
-    document.querySelectorAll('[data-sv-fecha]').forEach(function (el) {
-      el.addEventListener('click', function () { svPlFechar(el.closest('.sv-folha-fundo')); });
-    });
-    // Só o fundo escurecido fecha — clique DENTRO da folha não pode fechá-la.
-    document.querySelectorAll('.sv-folha-fundo').forEach(function (f) {
-      f.addEventListener('click', function (e) { if (e.target === f) svPlFechar(f); });
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.sv-folha-fundo').forEach(function (f) { svPlFechar(f); });
-      }
-    });
-    // Tipo de uso: seleção única (Limitado/Ilimitado) — mostra/esconde "Usos/mês".
-    // Linhas de quantidade por serviço: só aparecem p/ serviço marcado em plano
-    // limitado; com serviço marcado o total "Usos/mês" some (é a soma).
-    function svPlQtds(id) {
-      var tipo = document.getElementById('tipo-' + id).value;
-      var grupo = document.getElementById('servs-group-' + id);
-      var marcados = {};
-      Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao.ativo'), function (b) { marcados[b.getAttribute('data-serv')] = true; });
+<script>
+  // Tipo, dias e serviços: o estado fica nos campos ocultos de sempre.
+  Array.prototype.forEach.call(document.querySelectorAll('.cv-pl-form'), function (f) {
+    var tipo = f.querySelector('[data-tipo]'), dias = f.querySelector('[data-dias]'), servs = f.querySelector('[data-servs]'), usos = f.querySelector('[data-usos]');
+    function qtds() {
       var algum = false;
-      Array.prototype.forEach.call(document.querySelectorAll('#servs-qtds-' + id + ' [data-serv-qtd]'), function (l) {
-        var on = tipo === 'limitado' && marcados[l.getAttribute('data-serv-qtd')];
-        if (on) algum = true;
-        l.style.display = on ? '' : 'none';
+      Array.prototype.forEach.call(f.querySelectorAll('[data-serv-qtd]'), function (l) {
+        var b = f.querySelector('[data-serv="' + l.getAttribute('data-serv-qtd') + '"]');
+        var on = tipo.value === 'limitado' && b.getAttribute('aria-pressed') === 'true';
+        l.hidden = !on; if (on) algum = true;
       });
-      var campoUsos = document.getElementById('campo-usos-' + id);
-      if (campoUsos) campoUsos.style.display = (tipo === 'ilimitado' || algum) ? 'none' : '';
+      usos.hidden = tipo.value === 'ilimitado' || algum;
     }
-    function svPlTipo(btn, id) {
-      var grupo = btn.parentElement;
-      Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao'), function (b) { b.classList.remove('ativo'); });
-      btn.classList.add('ativo');
-      document.getElementById('tipo-' + id).value = btn.getAttribute('data-valor');
-      var campoUsos = document.getElementById('campo-usos-' + id);
-      if (campoUsos) campoUsos.style.display = btn.getAttribute('data-valor') === 'ilimitado' ? 'none' : '';
-      svPlQtds(id);
-    }
-    // Serviços inclusos: seleção múltipla (alterna cada serviço). Vazio = qualquer.
-    function svPlServ(btn, id) {
-      btn.classList.toggle('ativo');
-      var grupo = document.getElementById('servs-group-' + id);
-      var ids = Array.prototype.filter.call(grupo.querySelectorAll('.pill-opcao'), function (b) {
-        return b.classList.contains('ativo');
-      }).map(function (b) { return b.getAttribute('data-serv'); });
-      document.getElementById('servs-' + id).value = ids.join(',');
-      svPlQtds(id);
-    }
-    // Dias disponíveis: seleção múltipla (alterna cada dia).
-    function svPlDia(btn, id) {
-      btn.classList.toggle('ativo');
-      var grupo = document.getElementById('dias-group-' + id);
-      var dias = Array.prototype.filter.call(grupo.querySelectorAll('.pill-opcao'), function (b) {
-        return b.classList.contains('ativo');
-      }).map(function (b) { return b.getAttribute('data-dia'); });
-      document.getElementById('dias-' + id).value = dias.join(',');
-    }
-  </script>
+    function lista(sel, attr) { return Array.prototype.filter.call(f.querySelectorAll(sel), function (b) { return b.getAttribute('aria-pressed') === 'true'; }).map(function (b) { return b.getAttribute(attr); }).join(','); }
+    Array.prototype.forEach.call(f.querySelectorAll('.cv-seg [data-valor]'), function (b) { b.addEventListener('click', function () {
+      Array.prototype.forEach.call(f.querySelectorAll('.cv-seg [data-valor]'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      tipo.value = b.getAttribute('data-valor'); qtds();
+    }); });
+    Array.prototype.forEach.call(f.querySelectorAll('[data-dia]'), function (b) { b.addEventListener('click', function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); dias.value = lista('[data-dia]', 'data-dia'); }); });
+    Array.prototype.forEach.call(f.querySelectorAll('[data-serv]'), function (b) { b.addEventListener('click', function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); servs.value = lista('[data-serv]', 'data-serv'); qtds(); }); });
+    qtds();
+  });
+</script>
 <% } %>
