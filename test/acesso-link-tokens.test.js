@@ -166,7 +166,12 @@ test('C1 e-mail sai com remetente "Cortavo <cortavo.app@gmail.com>", responder p
   assert.match(enviados[0].text, /O link vale por 72 horas e funciona uma vez só\./);
   assert.match(enviados[0].text, /https:\/\/cortavo\.com\.br\/criar-senha\?t=abc/);
   assert.match(enviados[0].html, /Criar minha senha/);
-  assert.doesNotMatch(enviados[0].html, /<img/i, 'sem imagem nem pixel');
+  // HTML da Dani: uma imagem só (o ícone oficial servido pelo app), sem pixel.
+  const imgs = enviados[0].html.match(/<img [^>]*>/gi) || [];
+  assert.equal(imgs.length, 1);
+  assert.match(imgs[0], /src="https:\/\/cortavo\.com\.br\/email\/icone-cortavo-192\.png"/);
+  assert.match(enviados[0].html, /<title>Crie sua senha de acesso à Cortavo<\/title>/);
+  assert.doesNotMatch(enviados[0].html, /\{\{\w+\}\}/, 'nenhum campo do modelo sobrando');
 });
 
 test('C1 textos 6.1 e 6.2 idênticos aos aprovados; nome da barbearia passa por escape no HTML', () => {
@@ -183,7 +188,7 @@ test('C1 textos 6.1 e 6.2 idênticos aos aprovados; nome da barbearia passa por 
   ]) assert.ok(a.texto.includes(frase), frase);
   const b = em.modeloNovaSenha({ nome: 'Ana Paula', nomeBarbearia: 'Casa', link: 'https://cortavo.com.br/criar-senha?t=2' });
   assert.equal(b.assunto, 'Link para criar uma nova senha na Cortavo');
-  assert.ok(b.texto.includes('O link vale por 1 hora e funciona uma vez só. Enquanto você não criar a nova senha, a atual continua valendo.'));
+  assert.ok(b.texto.includes('O link vale por 1 hora e funciona uma vez só.\n\nEnquanto você não criar a nova senha, a atual continua valendo.'));
   assert.ok(b.texto.includes('Se não foi você que pediu, pode ignorar este e-mail. Sua senha não muda.'));
   assert.match(b.texto, /^Olá, Ana\./);
 });
@@ -259,4 +264,40 @@ test('.env.example traz só os NOMES das variáveis de e-mail (sem valores) e o 
   }
   const pkg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'package.json'), 'utf8'));
   assert.ok(pkg.dependencies.nodemailer);
+});
+
+test('e-mails: versão em texto idêntica às da Dani (redesign/v3/acesso/emails/*.txt) e ícone do APP_DOMAIN', () => {
+  const em = carregar('src/services/email.js');
+  const link1 = 'https://cortavo.com.br/criar-senha?t=Rk3x9QmZ2pLw7VbT4nYc8HsJ1dGe6UaK0iOq5Xf';
+  const a = em.modeloPrimeiroAcesso({ nome: 'Rafael Lima', nomeBarbearia: 'Barbearia Vila Rosa', email: 'rafael@vilarosa.com.br', link: link1 });
+  assert.equal(a.texto, [
+    'Olá, Rafael.', '',
+    'A conta da Barbearia Vila Rosa na Cortavo foi criada. Para entrar, crie a sua senha pelo link abaixo:', '',
+    'Criar minha senha:', link1, '',
+    'O link vale por 72 horas e funciona uma vez só.', '',
+    'Depois de criar a senha, você entra com este e-mail (rafael@vilarosa.com.br) e a senha que escolheu:',
+    '- no iPhone, pelo app Cortavo da App Store: https://apps.apple.com/br/app/cortavo/id6804311130',
+    '- no Android ou no computador, pelo navegador, em https://cortavo.com.br', '',
+    'Se você não esperava este e-mail, pode ignorar. Sem criar a senha, ninguém entra na conta.', '',
+    'A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.', '',
+    'Dúvidas? É só responder este e-mail.', '',
+    'Equipe Cortavo', '',
+  ].join('\n'));
+  const link2 = 'https://cortavo.com.br/criar-senha?t=Pw2nB7cX4kMs9QdL1vRz6TfY3hGa8UeJ5oNi0Kb';
+  const b = em.modeloNovaSenha({ nome: 'Rafael', nomeBarbearia: 'Barbearia Vila Rosa', link: link2 });
+  assert.equal(b.texto, [
+    'Olá, Rafael.', '',
+    'Recebemos um pedido para criar uma nova senha para o seu acesso à Barbearia Vila Rosa na Cortavo. Para continuar, use o link abaixo:', '',
+    'Criar nova senha:', link2, '',
+    'O link vale por 1 hora e funciona uma vez só.', '',
+    'Enquanto você não criar a nova senha, a atual continua valendo. Se não foi você que pediu, pode ignorar este e-mail. Sua senha não muda.', '',
+    'A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.', '',
+    'Equipe Cortavo', '',
+  ].join('\n'));
+  assert.match(b.html, /Criar uma nova senha<\/h1>/);
+  assert.match(b.html, />1 <span[^>]*>hora, uma vez só/);
+  assert.doesNotMatch(b.html, /Dúvidas\?/);
+  assert.equal(em.urlIcone({ APP_DOMAIN: 'cortavo.com.br' }), 'https://cortavo.com.br/email/icone-cortavo-192.png');
+  assert.equal(em.urlIcone({}), 'https://cortavo.com.br/email/icone-cortavo-192.png');
+  assert.ok(fs.statSync(path.join(RAIZ, 'public/email/icone-cortavo-192.png')).size > 1000, 'o ícone está no public/ e sai em cortavo.com.br/email/');
 });

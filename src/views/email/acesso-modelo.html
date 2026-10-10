@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>{{assunto}}</title>
+<!--
+  Cortavo · e-mail de acesso (Dani Design, 2026-10-09). Modelo único para os
+  dois e-mails (6.1 primeiro acesso, 6.2 nova senha). O Beto troca os {{campos}}
+  com escape de HTML. Regras de compatibilidade (Gmail, Apple Mail, Outlook):
+  tabelas, estilos inline, largura máxima 560, uma imagem só (o ícone oficial,
+  hospedado em https://cortavo.com.br/email/icone-cortavo-192.png, com texto
+  alternativo), botão de tabela (funciona sem imagens), nada de SVG, de fonte
+  externa obrigatória, de pixel de rastreio ou de link encurtado.
+-->
+<style>
+  body { margin: 0; padding: 0; }
+  a { color: #111111; }
+  @media (max-width: 600px) {
+    .p-moldura { padding: 12px 8px !important; }
+    .p-bloco { padding: 28px 22px !important; }
+    .p-titulo { font-size: 30px !important; line-height: 34px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#F2F2F2;">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#F2F2F2;">{{preheader}}</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#F2F2F2" style="background-color:#F2F2F2;">
+  <tr><td align="center" class="p-moldura" style="padding:32px 16px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;width:100%;">
+
+      <!-- o objeto preto: ícone oficial (C branco sobre preto) + título -->
+      <tr><td class="p-bloco" bgcolor="#111111" style="background-color:#111111;border-radius:28px 28px 0 0;padding:32px 36px 30px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
+          <td valign="middle" style="padding:0 12px 0 0;"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td width="44" height="44" bgcolor="#000000" style="background-color:#000000;border-radius:10px;width:44px;height:44px;"><img src="{{urlIcone}}" width="44" height="44" alt="" style="display:block;width:44px;height:44px;border:0;outline:none;text-decoration:none;border-radius:10px;"></td></tr></table></td>
+          <td valign="middle" style="font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:19px;line-height:24px;font-weight:800;color:#FFFFFF;letter-spacing:-0.4px;">Cortavo</td>
+        </tr></table>
+        <h1 class="p-titulo" style="margin:36px 0 0;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:36px;line-height:40px;font-weight:800;color:#FFFFFF;letter-spacing:-1.2px;">{{titulo}}</h1>
+        <p style="margin:12px 0 0;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;color:#A8A8A8;">{{nomeBarbearia}}</p>
+      </td></tr>
+
+      <!-- corpo branco -->
+      <tr><td class="p-bloco" bgcolor="#FFFFFF" style="background-color:#FFFFFF;border-radius:0 0 28px 28px;padding:32px 36px 36px;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#3D3D3D;font-size:16px;line-height:25px;">
+        <p style="margin:0 0 16px;color:#111111;">Olá, {{primeiroNome}}.</p>
+        <p style="margin:0 0 28px;">{{abertura}}</p>
+
+        <!-- botão: tabela, aparece mesmo com imagens bloqueadas -->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"><tr>
+          <td align="center" bgcolor="#111111" style="background-color:#111111;border-radius:999px;">
+            <a href="{{link}}" target="_blank" style="display:block;padding:16px 24px;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:20px;font-weight:bold;color:#FFFFFF;text-decoration:none;border-radius:999px;">{{botao}}</a>
+          </td>
+        </tr></table>
+        <p style="margin:14px 0 0;font-size:13px;line-height:19px;color:#666666;">Ou copie este endereço no navegador:<br><a href="{{link}}" target="_blank" style="color:#111111;text-decoration:underline;word-break:break-all;">{{link}}</a></p>
+
+        <!-- validade em número grande -->
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:28px 0 0;"><tr>
+          <td bgcolor="#F2F2F2" style="background-color:#F2F2F2;border-radius:14px;padding:16px 18px;">
+            <p style="margin:0;font-size:13px;line-height:18px;font-weight:bold;color:#666666;">O link vale por</p>
+            <p style="margin:2px 0 0;font-size:34px;line-height:38px;font-weight:800;color:#111111;letter-spacing:-1px;">{{validade}} <span style="font-size:15px;line-height:20px;font-weight:bold;color:#666666;letter-spacing:0;">{{validadeUnidade}}, uma vez só</span></p>
+          </td>
+        </tr></table>
+
+        {{blocoExtra}}
+
+        <p style="margin:24px 0 0;">{{aviso}}</p>
+        <p style="margin:16px 0 0;font-size:14px;line-height:21px;color:#666666;">A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.</p>
+        {{duvidas}}
+        <p style="margin:24px 0 0;color:#111111;">Equipe Cortavo</p>
+      </td></tr>
+
+      <!-- rodapé: listra a 45° (o poste de barbeiro) feita de cor sólida, compatível -->
+      <tr><td style="padding:20px 8px 0;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#666666;text-align:center;">
+        Cortavo · cortavo.app@gmail.com<br>Você recebeu este e-mail porque uma conta de acesso foi criada ou alterada para este endereço.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>
