@@ -1,161 +1,106 @@
+<%/* Horários e bloqueios (redesign v3). Sem mockup próprio: o sistema
+     aplicado com rigor. Janela de agendamento em chips (admin), a jornada de
+     cada barbeiro em lista, bloqueios futuros com o estado listrado. Jornada
+     e "Bloquear horário" em folha. Mesmas rotas e campos. */%>
+<% var fechar = include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }); %>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup">Barbearia</p><h1><%= ehAdmin ? 'Horários' : 'Meus horários' %></h1></div>
+  <% if (barbeiros.length) { %><div class="cv-cab-acoes"><button class="cv-btn" type="button" data-abrir-folha="agm-bloqueio"><%- include('../partials/icone', { cvIc: 'bloqueio', cvCls: 'cv-ic--18' }) %>Bloquear</button></div><% } %>
+</header>
+
 <% if (barbeiros.length === 0) { %>
-  <div class="card"><p class="texto-secundario">Nenhum barbeiro ativo.</p></div>
+  <div class="cv-secao" style="margin-top:16px"><div class="cv-cartao cv-vazio" role="status"><h2>Nenhum barbeiro ativo</h2><p>Cadastre a equipe para definir os horários.</p></div></div>
 <% } else { %>
 
   <% if (ehAdmin) { %>
     <% var _presets = [7, 14, 30]; var _semLimite = janelaAgendamento >= 365; var _custom = !_semLimite && _presets.indexOf(janelaAgendamento) === -1; %>
-    <span class="dash-rotulo texto-sutil">JANELA DE AGENDAMENTO DO CLIENTE</span>
-    <p class="janela-desc">Até quantos dias à frente o cliente pode marcar pelo app.</p>
-    <form method="POST" action="/painel/horarios/janela" class="janela-pills" id="form-janela">
-      <% _presets.forEach(function (d) { %>
-        <button type="submit" name="janela" value="<%= d %>" class="janela-pill <%= janelaAgendamento === d ? 'ativo' : '' %>"><%= d %> dias</button>
-      <% }) %>
-      <button type="submit" name="janela" value="365" class="janela-pill <%= _semLimite ? 'ativo' : '' %>">Sem limite</button>
-    </form>
-    <%/* Campo livre pra qualquer outro número de dias (ex.: "só 3 dias"). */%>
-    <form method="POST" action="/painel/horarios/janela" class="janela-custom mb-24" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-      <label class="texto-secundario" style="display:flex;align-items:center;gap:8px;">
-        Outro:
-        <input type="number" name="janelaDias" min="1" max="365" inputmode="numeric"
-               value="<%= _custom ? janelaAgendamento : '' %>" placeholder="dias"
-               style="width:78px;padding:8px 10px;border:1px solid var(--cor-borda,#e0e0e0);border-radius:10px;font:inherit;" />
-        dias
-      </label>
-      <button type="submit" class="janela-pill <%= _custom ? 'ativo' : '' %>">Aplicar</button>
-    </form>
-  <% } %>
-
-  <span class="dash-rotulo texto-sutil"><%= ehAdmin ? 'JORNADA SEMANAL' : 'MEUS DIAS DE TRABALHO' %></span>
-  <div class="linha-simples-lista mt-16 mb-24">
-    <% barbeirosComJornada.forEach(function (bj) { %>
-      <a href="#" class="linha-simples" onclick="abrirModal(<%= bj.barbeiro.id %>);return false;">
-        <span class="linha-simples-info">
-          <span class="linha-simples-titulo"><%= bj.barbeiro.nome %></span>
-        </span>
-        <span class="linha-simples-valor"><%= bj.resumo %></span>
-        <span class="linha-simples-editar">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-        </span>
-      </a>
-    <% }) %>
-  </div>
-
-  <div class="flex-fim" style="justify-content:space-between;">
-    <span class="dash-rotulo texto-sutil">BLOQUEIOS MANUAIS</span>
-    <button type="button" class="texto-secundario" style="font-size:12px;background:none;border:none;cursor:pointer;" onclick="abrirModal('bloqueio')">+ Adicionar</button>
-  </div>
-  <div class="linha-simples-lista mt-16">
-    <% if (bloqueios.length === 0) { %>
-      <p class="texto-secundario">Nenhum bloqueio futuro.</p>
-    <% } else { %>
-      <% bloqueios.forEach(function (bl) { %>
-        <div class="linha-simples">
-          <span class="linha-simples-info">
-            <span class="linha-simples-titulo"><%= fmtData(bl.data) %> · <%= bl.horaInicio %>–<%= bl.horaFim %></span>
-            <span class="linha-simples-sub"><%= bl.motivo || 'Bloqueado' %> · <%= bl.usuario.nome %></span>
-          </span>
-          <form method="POST" action="/painel/horarios/bloqueios/<%= bl.id %>/remover" class="linha-simples-x" onsubmit="return confirm('Remover este bloqueio?')">
-            <button title="Remover bloqueio" type="submit">×</button>
-          </form>
-        </div>
-      <% }) %>
-    <% } %>
-  </div>
-
-  <!-- Pop-up: bloquear horário -->
-  <div class="ag-overlay" id="agm-bloqueio" onclick="if(event.target===this)fecharModal(this)">
-    <div class="ag-modal-box">
-      <div class="ag-modal-topo">
-        <div class="ag-modal-nome">Bloquear horário</div>
-        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-      </div>
-      <form method="POST" action="/painel/horarios/bloqueios" class="form mt-16">
-        <% if (ehAdmin) { %>
-          <div class="campo">
-            <label for="barbeiroId">Barbeiro</label>
-            <select id="barbeiroId" name="barbeiroId" required>
-              <% barbeiros.forEach(function (b) { %>
-                <option value="<%= b.id %>"><%= b.nome %></option>
-              <% }) %>
-            </select>
-          </div>
-        <% } %>
-        <div class="campo">
-          <label for="data">Data</label>
-          <input id="data" type="date" name="data" required />
-        </div>
-        <div class="grid-2">
-          <div class="campo">
-            <label for="horaInicio">Início</label>
-            <input id="horaInicio" type="time" name="horaInicio" required />
-          </div>
-          <div class="campo">
-            <label for="horaFim">Fim</label>
-            <input id="horaFim" type="time" name="horaFim" required />
-          </div>
-        </div>
-        <div class="campo">
-          <label for="motivo">Motivo (opcional)</label>
-          <input id="motivo" name="motivo" placeholder="Almoço, compromisso…" />
-        </div>
-        <div class="modal-acoes">
-          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button class="btn btn-primario">Adicionar bloqueio</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Pop-up: jornada semanal por barbeiro -->
-  <% barbeirosComJornada.forEach(function (bj) { %>
-    <div class="ag-overlay" id="agm-<%= bj.barbeiro.id %>" onclick="if(event.target===this)fecharModal(this)">
-      <div class="ag-modal-box">
-        <div class="ag-modal-topo">
-          <div class="ag-modal-nome"><%= bj.barbeiro.nome %></div>
-          <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-        </div>
-        <p class="texto-secundario mb-16">Desmarque um dia para fechar (folga).</p>
-        <form method="POST" action="/painel/horarios/jornada">
-          <input type="hidden" name="barbeiroId" value="<%= bj.barbeiro.id %>" />
-          <table class="tabela tabela-jornada">
-            <tbody>
-              <% bj.jornada.forEach(function (j) { %>
-                <tr>
-                  <td>
-                    <label class="check">
-                      <input type="checkbox" name="trabalha_<%= j.diaSemana %>" <%= j.trabalha ? 'checked' : '' %> />
-                      <%= DIAS_SEMANA[j.diaSemana] %>
-                    </label>
-                  </td>
-                  <td><input type="time" name="inicio_<%= j.diaSemana %>" value="<%= j.horaInicio %>" /></td>
-                  <td><input type="time" name="fim_<%= j.diaSemana %>" value="<%= j.horaFim %>" /></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-          <div class="modal-acoes mt-16">
-            <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-            <button class="btn btn-primario">Salvar jornada</button>
-          </div>
+    <section class="cv-secao" style="margin-top:20px" aria-labelledby="hr-janela">
+      <div class="cv-secao-cab"><h2 id="hr-janela">Janela de agendamento</h2></div>
+      <div class="cv-cartao">
+        <p class="cv-texto-apoio" style="margin:0 0 12px">Até quantos dias à frente o cliente pode marcar pelo link.</p>
+        <form method="POST" action="/painel/horarios/janela" class="cv-chips" style="flex-wrap:wrap;padding:0;margin:0">
+          <% _presets.forEach(function (d) { %><button type="submit" name="janela" value="<%= d %>" class="cv-chip" aria-pressed="<%= janelaAgendamento === d %>"><span><%= d %> dias</span></button><% }) %>
+          <button type="submit" name="janela" value="365" class="cv-chip" aria-pressed="<%= _semLimite %>"><span>Sem limite</span></button>
+        </form>
+        <form method="POST" action="/painel/horarios/janela" class="cv-linha-form" style="margin-top:12px">
+          <label class="cv-oculto" for="hr-outro">Outro número de dias</label>
+          <input class="cv-entrada" id="hr-outro" type="number" name="janelaDias" min="1" max="365" inputmode="numeric" value="<%= _custom ? janelaAgendamento : '' %>" placeholder="Outro: dias" />
+          <button type="submit" class="cv-btn <%= _custom ? '' : 'cv-btn--2 ' %>cv-btn--p">Aplicar</button>
         </form>
       </div>
+    </section>
+  <% } %>
+
+  <section class="cv-secao" aria-labelledby="hr-jornada">
+    <div class="cv-secao-cab"><h2 id="hr-jornada"><%= ehAdmin ? 'Jornada semanal' : 'Meus dias de trabalho' %></h2></div>
+    <ul class="cv-lista">
+      <% barbeirosComJornada.forEach(function (bj) { %>
+        <li><button type="button" class="cv-linha" data-abrir-folha="agm-<%= bj.barbeiro.id %>">
+          <%- include('../partials/icone', { cvIc: 'relogio' }) %>
+          <span class="corpo"><span class="t"><%= bj.barbeiro.nome %></span><span class="s"><%= bj.resumo %></span></span>
+          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button></li>
+      <% }) %>
+    </ul>
+  </section>
+
+  <section class="cv-secao" aria-labelledby="hr-bloq">
+    <div class="cv-secao-cab"><h2 id="hr-bloq">Bloqueios</h2></div>
+    <% if (bloqueios.length === 0) { %>
+      <div class="cv-cartao"><p class="cv-texto-apoio" style="margin:0">Nenhum bloqueio futuro. Use "Bloquear" para fechar um horário (almoço, compromisso).</p></div>
+    <% } else { %>
+      <ul class="cv-lista">
+        <% bloqueios.forEach(function (bl) { %>
+          <li><div class="cv-linha">
+            <span class="cv-hr-listra" aria-hidden="true"></span>
+            <span class="corpo"><span class="t"><%= fmtData(bl.data) %> · <%= bl.horaInicio %> às <%= bl.horaFim %></span><span class="s"><%= bl.motivo || 'Bloqueado' %> · <%= bl.usuario.nome %></span></span>
+            <form method="POST" action="/painel/horarios/bloqueios/<%= bl.id %>/remover" data-confirmar="Remover este bloqueio?"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Remover o bloqueio de <%= fmtData(bl.data) %>"><%- fechar %></button></form>
+          </div></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+
+  <section class="cv-folha" id="agm-bloqueio" data-folha role="dialog" aria-modal="true" aria-labelledby="hr-bloq-t">
+    <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="hr-bloq-t" tabindex="-1" data-foco>Bloquear horário</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+    <div class="cv-folha-corpo">
+      <form method="POST" action="/painel/horarios/bloqueios">
+        <% if (ehAdmin) { %><div class="cv-campo"><label for="barbeiroId">Barbeiro</label><select class="cv-entrada" id="barbeiroId" name="barbeiroId" required><% barbeiros.forEach(function (b) { %><option value="<%= b.id %>"><%= b.nome %></option><% }) %></select></div><% } %>
+        <div class="cv-campo"><label for="data">Data</label><input class="cv-entrada" id="data" type="date" name="data" required /></div>
+        <div class="cv-dupla" style="margin-top:14px">
+          <div class="cv-campo"><label for="horaInicio">Início</label><input class="cv-entrada" id="horaInicio" type="time" name="horaInicio" required /></div>
+          <div class="cv-campo"><label for="horaFim">Fim</label><input class="cv-entrada" id="horaFim" type="time" name="horaFim" required /></div>
+        </div>
+        <div class="cv-campo"><label for="motivo">Motivo <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><input class="cv-entrada" id="motivo" name="motivo" placeholder="Almoço, compromisso…" /></div>
+        <button class="cv-btn cv-btn--largo" type="submit">Bloquear</button>
+      </form>
     </div>
+  </section>
+
+  <% barbeirosComJornada.forEach(function (bj) { %>
+  <section class="cv-folha" id="agm-<%= bj.barbeiro.id %>" data-folha role="dialog" aria-modal="true" aria-labelledby="hr-j-<%= bj.barbeiro.id %>">
+    <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="hr-j-<%= bj.barbeiro.id %>" tabindex="-1" data-foco><%= bj.barbeiro.nome %></h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+    <div class="cv-folha-corpo">
+      <p class="cv-folha-sub">Desligue o dia para folga. Os horários valem para a agenda e o link.</p>
+      <form method="POST" action="/painel/horarios/jornada">
+        <input type="hidden" name="barbeiroId" value="<%= bj.barbeiro.id %>" />
+        <ul class="cv-linhas cv-hr-jornada">
+          <% bj.jornada.forEach(function (j) { %>
+            <li>
+              <label class="cv-chave" style="min-height:44px;flex:1"><span><%= DIAS_SEMANA[j.diaSemana] %></span><input type="checkbox" name="trabalha_<%= j.diaSemana %>" <%= j.trabalha ? 'checked' : '' %> /></label>
+              <input class="cv-entrada" type="time" name="inicio_<%= j.diaSemana %>" value="<%= j.horaInicio %>" aria-label="Início de <%= DIAS_SEMANA[j.diaSemana] %>" />
+              <input class="cv-entrada" type="time" name="fim_<%= j.diaSemana %>" value="<%= j.horaFim %>" aria-label="Fim de <%= DIAS_SEMANA[j.diaSemana] %>" />
+            </li>
+          <% }) %>
+        </ul>
+        <button class="cv-btn cv-btn--largo" type="submit">Salvar jornada</button>
+      </form>
+    </div>
+  </section>
   <% }) %>
 
   <script>
-    function abrirModal(id) {
-      var o = document.getElementById('agm-' + id);
-      if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
-    }
-    function fecharModal(o) {
-      if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
-    }
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
-        document.body.classList.remove('modal-aberto');
-      }
-    });
+    // ?abrir=bloqueio e links antigos (abrirModal('bloqueio'), abrirModal(id)).
+    function abrirModal(id) { var ir = function () { if (window.cvAbrirFolha) cvAbrirFolha('agm-' + id); }; if (window.cvAbrirFolha) ir(); else document.addEventListener('DOMContentLoaded', ir); }
   </script>
-
 <% } %>

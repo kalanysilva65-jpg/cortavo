@@ -128,3 +128,15 @@ test('Logo e aparência v3 (Dani, link.html#aparencia): prévia, posição, tama
   assert.match(html, /action="\/painel\/logo\/remover" data-confirmar="Excluir a logo\?/);
   assert.ok(!/semNav = \[[^\]]*'\/painel\/logo'/.test(layout), 'navbar fixa também em Logo');
 });
+
+test('Horários v3: janela em chips, jornada e bloqueio em folha, mesmas rotas e campos', async () => {
+  v3('/painel/horarios');
+  const html = await render('painel/horarios.ejs', { ...comuns, ehAdmin: true, janelaAgendamento: 14, DIAS_SEMANA: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], barbeiros: [{ id: 2, nome: 'Diego' }],
+    barbeirosComJornada: [{ barbeiro: { id: 2, nome: 'Diego' }, resumo: 'x', jornada: [{ diaSemana: 1, trabalha: true, horaInicio: '09:00', horaFim: '19:00' }] }], bloqueios: [{ id: 3, data: new Date(), horaInicio: '12:00', horaFim: '13:00', motivo: '', usuario: { nome: 'Diego' } }] });
+  assert.doesNotMatch(html, SEM_ANTIGO);
+  assert.match(html, /name="janela" value="14" class="cv-chip" aria-pressed="true"/);
+  assert.match(html, /name="trabalha_1"\s+checked/);
+  assert.match(html, /id="agm-bloqueio" data-folha/);
+  assert.match(html, /action="\/painel\/horarios\/bloqueios\/3\/remover" data-confirmar/);
+  assert.match(html, /function abrirModal\(/);
+});
