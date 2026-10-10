@@ -24,3 +24,15 @@ test('#2 cascata: até 8 itens visíveis, 1 vez por sessão por tela, interromp�
   assert.match(js, /rd \? \[\{ opacity: 0 \}, \{ opacity: 1 \}\]/);
   assert.doesNotMatch(js, /(width|height|top|left|margin)\s*:\s*['"]?\d/); // nada de animar layout
 });
+
+test('#3 M2 em Gestão, Caixa, Comissões e Metas: conta, fecha anéis e cresce barras 1 vez por dia', () => {
+  const js = ler('public', 'js', 'cv-vida.js');
+  assert.match(js, /TELAS_M2 = \['\/painel\/gestao', '\/painel\/caixa', '\/painel\/comissoes', '\/painel\/metas'\]/);
+  assert.match(js, /primeiraVez\('cvM2:' \+ caminho\(\) \+ ':' \+ new Date\(\)\.toDateString\(\)\)/);
+  assert.match(js, /n >= 6/);
+  assert.match(js, /C\.contar\(el, v, \{ casas: cEl \? 2 : 0, dur: 700 \}\)/);
+  assert.match(js, /C\.aneis\(svg, \{ abertura: true \}\)/);
+  assert.match(js, /C\.barras\(horizontais,[\s\S]*eixo: 'X'/);
+  assert.match(js, /setAttribute\('aria-label'/); // leitor de tela ouve o valor final
+  assert.match(ler('src', 'views', 'layouts', 'painel.ejs'), /data-tela="<%= currentPath %>"/);
+});

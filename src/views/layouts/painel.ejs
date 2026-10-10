@@ -60,7 +60,7 @@
     // botão final fica fixo no pé (revisão Dani, P1 #4).
     var semNav = AVULSOS_V3.test(currentPath) || currentPath === '/painel/ia' || currentPath === '/painel/secretaria/teste' || (currentPath === '/painel/conversas' && typeof aberta !== 'undefined' && !!aberta);
   %>
-  <body class="app-painel pg-cv<%= semNav ? ' sem-nav' : '' %>">
+  <body class="app-painel pg-cv<%= semNav ? ' sem-nav' : '' %>" data-tela="<%= currentPath %>">
     <%/* .cv-palco recua quando uma folha abre (M4); o aviso do servidor vira
          o aviso em vidro preto acima da navbar. */%>
     <div class="cv-palco"><main class="cv-tela" id="tela"><%- body %></main></div>
