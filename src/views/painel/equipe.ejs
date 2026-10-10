@@ -40,7 +40,7 @@
      Comissões. */%>
 <section class="cv-secao" style="margin-top:14px" id="eq-painel-historico" role="tabpanel" aria-labelledby="eq-aba-historico"<% if (aba !== 'historico') { %> hidden<% } %>>
   <% if (historico.length === 0) { %>
-    <div class="cv-cartao cv-vazio" role="status"><h2>Nenhum atendimento concluído</h2><p>Os atendimentos concluídos no caixa aparecem aqui.</p></div>
+    <div class="cv-cartao cv-vazio" role="status"><h2>Nenhum atendimento concluído</h2><p>Aqui fica o histórico de atendimentos de cada barbeiro. Ele começa quando você conclui um atendimento na agenda.</p><div class="acoes"><a class="cv-btn cv-btn--2" href="/painel/agenda">Abrir a agenda</a></div></div>
   <% } else { %>
     <ul class="cv-lista cv-lista--sem-ic">
       <% historico.forEach(function (h) { %>

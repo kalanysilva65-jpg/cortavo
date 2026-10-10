@@ -381,6 +381,13 @@
   }
   function centralizarDia() {
     var tira = doc.getElementById('cv-ag-dias'), sel = tira && tira.querySelector('.cv-dia.sel'); if (!sel) return;
+    // No PC (revisão Dani P3 #27) a tira começa dois dias antes do
+    // selecionado, sem dia cortado na borda; no celular, centraliza.
+    if (g.matchMedia && g.matchMedia('(min-width: 1024px)').matches) {
+      var dias = Array.prototype.slice.call(tira.querySelectorAll('.cv-dia')), i = dias.indexOf(sel), ini = dias[Math.max(0, i - 2)];
+      tira.scrollLeft = Math.max(0, ini.offsetLeft - dias[0].offsetLeft);
+      return;
+    }
     tira.scrollLeft = Math.max(0, Math.min(sel.offsetLeft - (tira.clientWidth - sel.offsetWidth) / 2, tira.scrollWidth - tira.clientWidth));
   }
 

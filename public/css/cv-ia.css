@@ -38,3 +38,7 @@
 @media (prefers-reduced-transparency: reduce) { .cv-ia-composer { background: var(--c-superficie); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 @media (min-width: 1024px) { .cv-ia-msg { max-width: 64%; } .cv-ia-sugs { grid-template-columns: 1fr 1fr; } }
 .cv-ia-mic.gravando { background: var(--c-tinta); color: #fff; }
+
+/* P3 #30: sugestões em chips, como em Secretária › Testar. */
+.cv-ia-sugs.cv-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cv-ia-sugs .cv-ia-sug { min-height: 40px; padding: 0 14px; border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }

@@ -4,7 +4,7 @@
   function inic(nome) { var p = (nome || '?').trim().split(/\s+/); return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
 %>
 <% if (!conversas || conversas.length === 0) { %>
-  <div class="cv-cartao cv-vazio" role="status"><h2>Nenhuma conversa ainda</h2><p>Quando o WhatsApp estiver ligado, as mensagens dos clientes aparecem aqui.</p></div>
+  <div class="cv-cartao cv-vazio" role="status"><h2>Nenhuma conversa ainda</h2><p>Aqui chegam as mensagens dos clientes pelo WhatsApp da barbearia. Para começar, ligue o número na Secretária.</p><div class="acoes"><a class="cv-btn cv-btn--2" href="/painel/secretaria">Ligar o WhatsApp</a></div></div>
 <% } else { %>
   <ul class="cv-lista">
     <% conversas.forEach(function (c) { %>

@@ -80,7 +80,7 @@
     <select class="cv-entrada" id="categoriaId-<%= id %>" name="categoriaId"><option value="">Sem categoria</option><% categorias.forEach(function (c) { %><option value="<%= c.id %>"<%= s && s.categoriaId === c.id ? ' selected' : '' %>><%= c.nome %></option><% }) %></select>
   </div>
   <% if (ehS) { %>
-    <label class="cv-chave" style="margin-top:8px"><span>É um encaixe<small style="display:block;font-size:13px;color:var(--c-apoio)">Junto de outro serviço não soma tempo; sozinho, conta o próprio.</small></span><input type="checkbox" name="ehEncaixe" value="on"<%= s && s.ehEncaixe ? ' checked' : '' %> /></label>
+    <label class="cv-chave cv-chave-linha"><span>É um encaixe<small style="display:block;font-size:13px;color:var(--c-apoio)">Junto de outro serviço não soma tempo; sozinho, conta o próprio.</small></span><input type="checkbox" name="ehEncaixe" value="on"<%= s && s.ehEncaixe ? ' checked' : '' %> /></label>
   <% } %>
   <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: s ? ((insumosPorServico && insumosPorServico[s.id]) || {}) : {} }) %>
 <% } %>

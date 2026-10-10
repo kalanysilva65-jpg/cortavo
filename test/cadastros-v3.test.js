@@ -270,3 +270,17 @@ test('Revisão Dani P2: ações destrutivas, vidro preto único, listra e textos
   assert.match(conv, /modoTeste/);
   assert.match(ler('src', 'controllers', 'conversasController.js'), /modoTeste: req\.query\.teste === '1'/);
 });
+
+test('Revisão Dani P3: acabamento', () => {
+  const fs = require('fs'); const path = require('path');
+  const ler = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
+  const css = ler('public', 'css', 'cv-cadastro.css');
+  assert.match(ler('src', 'views', 'painel', 'horarios.ejs'), /cv-ph-normal/); // 22
+  assert.match(ler('src', 'views', 'painel', 'servico-form.ejs'), /cv-chave cv-chave-linha/); // 23
+  assert.match(ler('src', 'views', 'painel', 'plano-form.ejs'), /n\.hidden = !c\.checked/); // 24
+  assert.match(css, /\.cv-pl-card \.dias em \{ flex-basis: 100%/); // 25
+  assert.match(ler('public', 'js', 'cv-agenda.js'), /i - 2/); // 27
+  assert.match(ler('src', 'views', 'painel', '_conversas-lista.ejs'), /Ligar o WhatsApp/); // 29
+  assert.match(ler('src', 'views', 'painel', 'equipe.ejs'), /Abrir a agenda/);
+  assert.match(ler('src', 'views', 'painel', 'ia.ejs'), /cv-ia-sugs cv-chips/); // 30
+});

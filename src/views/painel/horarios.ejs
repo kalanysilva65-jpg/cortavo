@@ -24,7 +24,7 @@
         </form>
         <form method="POST" action="/painel/horarios/janela" class="cv-linha-form" style="margin-top:12px">
           <label class="cv-oculto" for="hr-outro">Outro número de dias</label>
-          <input class="cv-entrada" id="hr-outro" type="number" name="janelaDias" min="1" max="365" inputmode="numeric" value="<%= _custom ? janelaAgendamento : '' %>" placeholder="Outro: dias" />
+          <input class="cv-entrada cv-entrada--num cv-ph-normal" id="hr-outro" type="number" name="janelaDias" min="1" max="365" inputmode="numeric" value="<%= _custom ? janelaAgendamento : '' %>" placeholder="Outro: dias" />
           <button type="submit" class="cv-btn <%= _custom ? '' : 'cv-btn--2 ' %>cv-btn--p">Aplicar</button>
         </form>
       </div>
