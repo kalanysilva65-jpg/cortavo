@@ -186,3 +186,18 @@ test('Relatórios v3: período sem vidro, objeto do faturamento, cartões e as 8
   assert.match(src, /action="\/painel\/relatorios"/);
   assert.match(src, /function abrirModal\(/);
 });
+
+test('Formulários avulsos no v3: serviço (com preço por barbeiro), plano, agendamento manual e teste da Secretária', async () => {
+  const sf = await render('painel/servico-form.ejs', { ...comuns, servico: { id: 1, nome: 'Corte', valor: 4500, duracaoMin: 40, ehProduto: false, ehEncaixe: false, comissaoPercentual: 10, categoriaId: null, ativo: true, fotoUrl: null, descricao: '' }, categorias: [], estoqueItens: [], insumosMap: {}, barbeiros: [{ id: 2, nome: 'A' }, { id: 3, nome: 'B' }], precosBarbeiro: { 3: 5000 } });
+  assert.doesNotMatch(sf, SEM_ANTIGO);
+  assert.match(sf, /name="precoBarbeiro_3"[^>]*value="50\.00"/);
+  const pf = await render('painel/plano-form.ejs', { ...comuns, plano: null, servicos: [{ id: 1, nome: 'Corte' }] });
+  assert.doesNotMatch(pf, SEM_ANTIGO);
+  assert.match(pf, /name="usosServ_1"/);
+  const an = await render('painel/agenda-novo.ejs', { ...comuns, erro: 'x', ehAdmin: true, barbeiros: [], servicos: [], valores: null, hojeIso: '2026-10-10', clientes: [], jsonSeguro: JSON.stringify, usuario: { nome: 'R' } });
+  assert.doesNotMatch(an, SEM_ANTIGO);
+  assert.match(an, /action="\/painel\/agenda\/novo"/);
+  const st = await render('painel/secretaria-teste.ejs', { ...comuns, modo: 'cortavo', iaAtiva: true, jsonSeguro: JSON.stringify });
+  assert.doesNotMatch(st, /class="sv-|💈|📍/u);
+  assert.match(layout, /AVULSOS_V3 = .*servicos\|planos.*agenda.*secretaria/);
+});

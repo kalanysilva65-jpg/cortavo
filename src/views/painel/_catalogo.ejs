@@ -116,6 +116,7 @@
       <div style="margin-top:16px"><% campos(s) %></div>
       <button class="cv-btn cv-btn--largo" type="submit">Salvar alterações</button>
     </form>
+    <a class="cv-btn cv-btn--texto cv-btn--largo" href="/painel/servicos/<%= s.id %>/editar"><%= ehS ? 'Mais opções: preço por barbeiro' : 'Mais opções' %></a>
     <div class="cv-folha-acoes cv-dupla">
       <form method="POST" action="/painel/servicos/<%= s.id %>/toggle"><button class="cv-btn cv-btn--2 cv-btn--largo" type="submit"><%= s.ativo ? 'Desativar' : 'Ativar' %></button></form>
       <form method="POST" action="/painel/servicos/<%= s.id %>/remover" data-confirmar="Excluir este <%= palavra %>?"><button class="cv-btn cv-btn--2 cv-txt-perigo cv-btn--largo" type="submit">Excluir</button></form>

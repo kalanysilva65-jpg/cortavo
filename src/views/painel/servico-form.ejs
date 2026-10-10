@@ -1,155 +1,47 @@
-<a href="/painel/servicos" class="link-voltar mb-16">← Voltar</a>
-
-<div class="card">
-  <form method="POST" enctype="multipart/form-data" class="form"
-        action="<%= servico ? '/painel/servicos/' + servico.id : '/painel/servicos' %>">
-
-    <div class="campo">
-      <label for="nome">Nome</label>
-      <input id="nome" name="nome" value="<%= servico ? servico.nome : '' %>" required autofocus />
+<%/* Serviço ou produto em página inteira (/servicos/novo e /:id/editar), no
+     v3. É aqui que mora o preço por barbeiro; a tela de Serviços e produtos
+     leva até ela por "Mais opções". Mesmos campos e rotas. */%>
+<% var ehProd = !!(servico && servico.ehProduto); %>
+<header class="cv-cab"><div class="cv-cab-txt"><p class="cv-cab-sup"><a href="/painel/<%= ehProd ? 'produtos' : 'servicos' %>" style="color:inherit">Serviços e produtos</a></p><h1><%= servico ? servico.nome : 'Novo serviço' %></h1></div></header>
+<div class="cv-secao" style="margin-top:16px">
+  <form method="POST" enctype="multipart/form-data" class="cv-cartao cv-pl-form" action="<%= servico ? '/painel/servicos/' + servico.id : '/painel/servicos' %>">
+    <div class="cv-campo"><label for="nome">Nome</label><input class="cv-entrada" id="nome" name="nome" value="<%= servico ? servico.nome : '' %>" required autofocus /></div>
+    <div class="cv-campo"><label for="descricao">Descrição <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><textarea class="cv-entrada" id="descricao" name="descricao" maxlength="1000" rows="4" placeholder="Ex.: Corte na tesoura e máquina, lavagem e finalização."><%= servico && servico.descricao ? servico.descricao : '' %></textarea><span class="cv-ajuda">No link de agendamento, aparece quando o cliente toca no serviço.</span></div>
+    <div class="cv-dupla" style="margin-top:14px">
+      <div class="cv-campo"><label for="valor">Preço, em reais</label><input class="cv-entrada cv-entrada--num" id="valor" name="valor" type="number" step="0.01" min="0" inputmode="decimal" value="<%= servico ? (servico.valor / 100).toFixed(2) : '' %>" required /></div>
+      <div class="cv-campo"><label for="duracaoMin">Duração, em minutos</label><input class="cv-entrada cv-entrada--num" id="duracaoMin" name="duracaoMin" type="number" min="0" inputmode="numeric" value="<%= servico ? servico.duracaoMin : 0 %>" /></div>
     </div>
-
-    <div class="campo">
-      <label for="descricao">Descrição <span class="texto-sutil">(opcional)</span></label>
-      <textarea id="descricao" name="descricao" maxlength="1000" rows="5"
-                placeholder="Ex.: Corte na tesoura e máquina, lavagem e finalização com pomada."><%= servico && servico.descricao ? servico.descricao : '' %></textarea>
-      <span class="texto-sutil">No agendamento do cliente, aparece quando ele toca no serviço (fica escondida até lá). Até 1000 caracteres.</span>
-    </div>
-
-    <div class="grid-2">
-      <div class="campo">
-        <label for="valor">Valor (R$)</label>
-        <input id="valor" name="valor" type="number" step="0.01" min="0"
-               value="<%= servico ? (servico.valor / 100).toFixed(2) : '' %>" required />
-      </div>
-      <div class="campo">
-        <label for="duracaoMin">Duração (min)</label>
-        <input id="duracaoMin" name="duracaoMin" type="number" min="0"
-               value="<%= servico ? servico.duracaoMin : 0 %>" />
-      </div>
-    </div>
-    <div class="campo">
-      <label class="check">
-        <input type="checkbox" name="ehProduto" id="ehProduto" <%= servico && servico.ehProduto ? 'checked' : '' %> onchange="toggleComissaoProduto()" />
-        É um produto
-      </label>
-      <span class="texto-sutil">
-        Produto: usa a % de comissão definida abaixo, não ocupa horário (deixe a duração em 0).
-        Serviço: usa a % de comissão do barbeiro.
-      </span>
-    </div>
-
-    <div class="campo" id="campo-encaixe" style="display:<%= servico && servico.ehProduto ? 'none' : 'block' %>">
-      <label class="check">
-        <input type="checkbox" name="ehEncaixe" id="ehEncaixe" <%= servico && servico.ehEncaixe ? 'checked' : '' %> />
-        É um encaixe
-      </label>
-      <span class="texto-sutil">
-        Encaixe: quando o cliente marca JUNTO com outro serviço, não soma tempo — cabe
-        dentro do tempo do outro. Marcado sozinho, conta a própria duração.
-        Ex.: sobrancelha ou pézinho durante o corte.
-      </span>
-    </div>
-
-    <div class="campo" id="campo-comissao-produto" style="display:<%= servico && servico.ehProduto ? 'block' : 'none' %>">
-      <label for="comissaoPercentual">Comissão do produto (%)</label>
-      <input id="comissaoPercentual" name="comissaoPercentual" type="number" min="0" max="100" step="0.1"
-             value="<%= servico ? servico.comissaoPercentual : 10 %>" />
-    </div>
-    <script>
-      function toggleComissaoProduto() {
-        var ehProd = document.getElementById('ehProduto').checked;
-        document.getElementById('campo-comissao-produto').style.display = ehProd ? 'block' : 'none';
-        var enc = document.getElementById('campo-encaixe');
-        if (enc) enc.style.display = ehProd ? 'none' : 'block';
-        var pb = document.getElementById('campo-precos-barbeiro');
-        if (pb) pb.style.display = ehProd ? 'none' : 'block';
-      }
-    </script>
-
+    <label class="cv-chave" style="margin-top:8px"><span>É um produto<small style="display:block;font-size:13px;color:var(--c-apoio)">Usa a comissão abaixo e não ocupa horário.</small></span><input type="checkbox" name="ehProduto" id="ehProduto"<%= ehProd ? ' checked' : '' %> /></label>
+    <label class="cv-chave" id="campo-encaixe"<% if (ehProd) { %> hidden<% } %>><span>É um encaixe<small style="display:block;font-size:13px;color:var(--c-apoio)">Junto de outro serviço não soma tempo (ex.: sobrancelha durante o corte).</small></span><input type="checkbox" name="ehEncaixe" id="ehEncaixe"<%= servico && servico.ehEncaixe ? ' checked' : '' %> /></label>
+    <div class="cv-campo" id="campo-comissao-produto"<% if (!ehProd) { %> hidden<% } %>><label for="comissaoPercentual">Comissão do produto, em %</label><input class="cv-entrada cv-entrada--num" id="comissaoPercentual" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= servico ? servico.comissaoPercentual : 10 %>" /></div>
     <% if (barbeiros && barbeiros.length > 1) { %>
-      <%/* Preço por barbeiro (opcional): em branco = usa o valor padrão acima.
-           Regra única de leitura em services/precos.js — agendamento público,
-           app, agenda manual e secretária cobram o mesmo valor. */%>
-      <div class="campo" id="campo-precos-barbeiro" style="display:<%= servico && servico.ehProduto ? 'none' : 'block' %>">
-        <label>Preço por barbeiro <span class="texto-sutil">(opcional)</span></label>
-        <span class="texto-sutil">Deixe em branco para usar o valor padrão. Preencha só para quem cobra diferente.</span>
-        <div class="grid-2" style="margin-top:8px">
-          <% barbeiros.forEach(function (u) { %>
-            <div class="campo" style="margin:0">
-              <label for="pb-<%= u.id %>" style="font-weight:500"><%= u.nome %></label>
-              <input id="pb-<%= u.id %>" name="precoBarbeiro_<%= u.id %>" type="number" step="0.01" min="0" inputmode="decimal"
-                     placeholder="padrão"
-                     value="<%= precosBarbeiro && precosBarbeiro[u.id] !== undefined ? (precosBarbeiro[u.id] / 100).toFixed(2) : '' %>" />
-            </div>
-          <% }) %>
-        </div>
-      </div>
+      <%/* Preço por barbeiro (opcional): em branco usa o valor padrão. Regra única em services/precos.js. */%>
+      <fieldset class="cv-campo" id="campo-precos-barbeiro"<% if (ehProd) { %> hidden<% } %>><legend class="cv-rotulo">Preço por barbeiro <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></legend>
+        <span class="cv-ajuda">Em branco, usa o preço padrão. Preencha só para quem cobra diferente.</span>
+        <% barbeiros.forEach(function (u) { %><label class="cv-consumo-linha"><span><%= u.nome %></span><input class="cv-entrada" id="pb-<%= u.id %>" name="precoBarbeiro_<%= u.id %>" type="number" step="0.01" min="0" inputmode="decimal" placeholder="padrão" value="<%= precosBarbeiro && precosBarbeiro[u.id] !== undefined ? (precosBarbeiro[u.id] / 100).toFixed(2) : '' %>" /></label><% }) %>
+      </fieldset>
     <% } %>
-
-    <div class="campo">
-      <label for="categoriaId">Categoria</label>
-      <select id="categoriaId" name="categoriaId">
-        <option value="">Sem categoria</option>
-        <% categorias.forEach(function (c) { %>
-          <option value="<%= c.id %>" <%= servico && servico.categoriaId === c.id ? 'selected' : '' %>><%= c.nome %></option>
-        <% }) %>
-      </select>
+    <div class="cv-campo"><label for="categoriaId">Categoria</label><select class="cv-entrada" id="categoriaId" name="categoriaId"><option value="">Sem categoria</option><% categorias.forEach(function (c) { %><option value="<%= c.id %>"<%= servico && servico.categoriaId === c.id ? ' selected' : '' %>><%= c.nome %></option><% }) %></select></div>
+    <div class="cv-campo"><label for="foto">Foto <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label>
+      <% if (servico && servico.fotoUrl) { %><span class="cv-cat-mini" style="width:72px;height:72px;margin:6px 0"><img src="<%= servico.fotoUrl %>" alt="Foto atual" /></span><% } %>
+      <input class="cv-entrada cv-cat-arquivo" id="foto" name="foto" type="file" accept="image/*" data-foto-mini />
+      <span class="cv-ajuda">JPG, PNG ou WEBP, reduzida no próprio aparelho.<%= servico && servico.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
+      <% if (servico && servico.fotoUrl) { %><button type="submit" class="cv-perigo-link" formaction="/painel/servicos/<%= servico.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
     </div>
-
-    <div class="campo">
-      <label for="foto">Foto</label>
-      <% if (servico && servico.fotoUrl) { %>
-        <div class="preview-foto"><img src="<%= servico.fotoUrl %>" alt="Foto atual" /></div>
-      <% } %>
-      <input id="foto" name="foto" type="file" accept="image/*" />
-      <span class="texto-sutil">
-        JPG, PNG ou WEBP. A foto é reduzida automaticamente.<%= servico && servico.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %>
-      </span>
-      <% if (servico && servico.fotoUrl) { %><button type="submit" class="sv-foto-rem" formaction="/painel/servicos/<%= servico.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
-    </div>
-
-    <%/* Receita de consumo de estoque (2026-09-03): baixa automática ao concluir
-         o atendimento. Serve tanto pra "produto vendido baixa a si mesmo" quanto
-         pra "serviço gasta insumos". Cada item de estoque tem um campo de
-         quantidade; 0/vazio = não consome. */%>
-    <div class="campo">
-      <label>Consome do estoque</label>
-      <span class="texto-sutil">
-        Baixa sozinho quando o atendimento é concluído — sem trabalho a mais.
-        Produto vendido: 1 do próprio item. Serviço: os insumos que gasta (lâmina, creme…).
-        Deixe 0 no que não consome.
-      </span>
-      <% if (!estoqueItens || !estoqueItens.length) { %>
-        <p class="texto-sutil" style="margin-top:8px;">Nenhum item de estoque cadastrado ainda — cadastre em <strong>Estoque</strong> para usar aqui.</p>
-      <% } else { %>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
-          <% estoqueItens.forEach(function (e) { %>
-            <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-              <span><%= e.nome %></span>
-              <input type="number" name="insumo_<%= e.id %>" min="0" step="1" inputmode="numeric"
-                     value="<%= insumosMap && insumosMap[e.id] ? insumosMap[e.id] : '' %>" placeholder="0"
-                     style="width:82px;padding:8px 10px;border:1px solid var(--cor-borda,#e0e0e0);border-radius:8px;font:inherit;text-align:center;" />
-            </label>
-          <% }) %>
-        </div>
-      <% } %>
-    </div>
-
-    <button class="btn btn-primario btn-bloco" type="submit">
-      <%= servico ? 'Salvar alterações' : 'Criar serviço' %>
-    </button>
+    <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: insumosMap || {} }) %>
+    <button class="cv-btn cv-btn--largo" type="submit" style="margin-top:18px"><%= servico ? 'Salvar alterações' : 'Criar serviço' %></button>
   </form>
+  <% if (servico) { %>
+    <div class="cv-dupla" style="margin-top:12px">
+      <form method="POST" action="/painel/servicos/<%= servico.id %>/toggle"><button class="cv-btn cv-btn--2 cv-btn--largo" type="submit"><%= servico.ativo ? 'Desativar' : 'Ativar' %></button></form>
+      <form method="POST" action="/painel/servicos/<%= servico.id %>/remover" data-confirmar="Excluir este item?"><button class="cv-btn cv-btn--2 cv-txt-perigo cv-btn--largo" type="submit">Excluir</button></form>
+    </div>
+  <% } %>
 </div>
-
-<% if (servico) { %>
-  <div class="flex gap-8 mt-16">
-    <form method="POST" action="/painel/servicos/<%= servico.id %>/toggle" class="inline">
-      <button class="btn btn-secundario btn-sm"><%= servico.ativo ? 'Desativar' : 'Ativar' %></button>
-    </form>
-    <form method="POST" action="/painel/servicos/<%= servico.id %>/remover" class="inline"
-          onsubmit="return confirm('Excluir este item?')">
-      <button class="btn btn-perigo btn-sm">Excluir</button>
-    </form>
-  </div>
-<% } %>
+<script>
+  (function () {
+    var p = document.getElementById('ehProduto');
+    function sync() { var e = p.checked; document.getElementById('campo-comissao-produto').hidden = !e; document.getElementById('campo-encaixe').hidden = e; var pb = document.getElementById('campo-precos-barbeiro'); if (pb) pb.hidden = e; }
+    p.addEventListener('change', sync);
+  })();
+</script>

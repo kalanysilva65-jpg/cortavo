@@ -1,71 +1,24 @@
-<a href="/painel/agenda" class="link-voltar mb-16">← Voltar para a agenda</a>
-
-<% if (erro) { %>
-  <div class="alerta alerta-erro"><%= erro %></div>
-<% } %>
-
-<div class="card">
-  <form method="POST" action="/painel/agenda/novo" class="form">
+<%/* Agendamento manual em página inteira (/painel/agenda/novo), no v3. A
+     Agenda usa a folha "Novo"; esta página fica para o envio sem JS e para os
+     erros de validação. Mesmos campos e rota. */%>
+<header class="cv-cab"><div class="cv-cab-txt"><p class="cv-cab-sup"><a href="/painel/agenda" style="color:inherit">Agenda</a></p><h1>Novo agendamento</h1></div></header>
+<% if (erro) { %><div class="cv-secao" style="margin-top:14px"><div class="cv-cartao cv-erro-caixa" role="alert"><%= erro %></div></div><% } %>
+<div class="cv-secao" style="margin-top:16px">
+  <form method="POST" action="/painel/agenda/novo" class="cv-cartao cv-pl-form">
     <% if (ehAdmin) { %>
-      <div class="campo">
-        <label for="barbeiroId">Barbeiro</label>
-        <select id="barbeiroId" name="barbeiroId" required>
-          <option value="">Selecione…</option>
-          <% barbeiros.forEach(function (b) { %>
-            <option value="<%= b.id %>" <%= valores && String(valores.barbeiroId) === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
-          <% }) %>
-        </select>
-      </div>
+      <div class="cv-campo"><label for="barbeiroId">Barbeiro</label><select class="cv-entrada" id="barbeiroId" name="barbeiroId" required><option value="">Selecione…</option><% barbeiros.forEach(function (b) { %><option value="<%= b.id %>"<%= valores && String(valores.barbeiroId) === String(b.id) ? ' selected' : '' %>><%= b.nome %></option><% }) %></select></div>
     <% } else { %>
-      <p class="texto-secundario mb-16">Agendamento para você (<%= usuario.nome %>).</p>
+      <p class="cv-texto-apoio" style="margin:0 0 4px">Agendamento para você (<%= usuario.nome %>).</p>
     <% } %>
-
-    <div class="campo">
-      <label for="servicoId">Serviço</label>
-      <select id="servicoId" name="servicoId" required>
-        <option value="">Selecione…</option>
-        <% servicos.forEach(function (s) { %>
-          <option value="<%= s.id %>" <%= valores && String(valores.servicoId) === String(s.id) ? 'selected' : '' %>>
-            <%= s.nome %> — <%= fmtBRL(s.valor) %><%= s.duracaoMin > 0 ? ' (' + s.duracaoMin + ' min)' : '' %>
-          </option>
-        <% }) %>
-      </select>
+    <div class="cv-campo"><label for="servicoId">Serviço</label><select class="cv-entrada" id="servicoId" name="servicoId" required><option value="">Selecione…</option><% servicos.forEach(function (s) { %><option value="<%= s.id %>"<%= valores && String(valores.servicoId) === String(s.id) ? ' selected' : '' %>><%= s.nome %> · <%= fmtBRL(s.valor) %><%= s.duracaoMin > 0 ? ' · ' + s.duracaoMin + ' min' : '' %></option><% }) %></select></div>
+    <div class="cv-dupla" style="margin-top:14px">
+      <div class="cv-campo"><label for="data">Data</label><input class="cv-entrada" id="data" type="date" name="data" required value="<%= valores && valores.data ? valores.data : hojeIso %>" /></div>
+      <div class="cv-campo"><label for="hora">Horário</label><input class="cv-entrada" id="hora" type="time" name="hora" required value="<%= valores && valores.hora ? valores.hora : '' %>" /></div>
     </div>
-
-    <div class="grid-2">
-      <div class="campo">
-        <label for="data">Data</label>
-        <input id="data" type="date" name="data" required
-               value="<%= valores && valores.data ? valores.data : hojeIso %>" />
-      </div>
-      <div class="campo">
-        <label for="hora">Horário</label>
-        <input id="hora" type="time" name="hora" required
-               value="<%= valores && valores.hora ? valores.hora : '' %>" />
-      </div>
-    </div>
-
-    <div class="campo autocomplete">
-      <label for="cliente_nome">Cliente</label>
-      <input id="cliente_nome" name="cliente_nome" autocomplete="off" placeholder="Digite o nome (sugere cadastrados)"
-             required value="<%= valores && valores.cliente_nome ? valores.cliente_nome : '' %>" />
-      <div id="sugestoes-cliente" class="sugestoes"></div>
-    </div>
-
-    <div class="grid-2">
-      <div class="campo">
-        <label for="cliente_telefone">Telefone</label>
-        <input id="cliente_telefone" name="cliente_telefone" inputmode="tel" placeholder="(51) 99999-9999"
-               required value="<%= valores && valores.cliente_telefone ? valores.cliente_telefone : '' %>" />
-      </div>
-      <div class="campo">
-        <label for="cliente_email">E-mail (opcional)</label>
-        <input id="cliente_email" type="email" name="cliente_email"
-               value="<%= valores && valores.cliente_email ? valores.cliente_email : '' %>" />
-      </div>
-    </div>
-
-    <button class="btn btn-primario btn-bloco" type="submit">Criar agendamento</button>
+    <div class="cv-campo cv-autocomp"><label for="cliente_nome">Cliente</label><input class="cv-entrada" id="cliente_nome" name="cliente_nome" autocomplete="off" placeholder="Digite o nome (sugere os cadastrados)" required value="<%= valores && valores.cliente_nome ? valores.cliente_nome : '' %>" /><div id="sugestoes-cliente" class="cv-sugestoes"></div></div>
+    <div class="cv-campo"><label for="cliente_telefone">Telefone</label><input class="cv-entrada" id="cliente_telefone" name="cliente_telefone" type="tel" inputmode="tel" placeholder="(51) 99999-9999" required value="<%= valores && valores.cliente_telefone ? valores.cliente_telefone : '' %>" /></div>
+    <div class="cv-campo"><label for="cliente_email">E-mail <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><input class="cv-entrada" id="cliente_email" type="email" name="cliente_email" value="<%= valores && valores.cliente_email ? valores.cliente_email : '' %>" /></div>
+    <button class="cv-btn cv-btn--largo" type="submit" style="margin-top:18px">Criar agendamento</button>
   </form>
 </div>
 
@@ -101,12 +54,12 @@
     function render(lista) {
       if (!lista.length) { fechar(); return; }
       box.innerHTML = lista.map(function (c) {
-        return '<button type="button" class="sugestao" data-nome="' + escapar(c.nome) +
+        return '<button type="button" class="cv-sugestao" data-nome="' + escapar(c.nome) +
           '" data-tel="' + c.telefone + '"><strong>' + escapar(c.nome) +
           '</strong><span>' + fmtTel(c.telefone) + '</span></button>';
       }).join('');
       box.style.display = 'block';
-      Array.prototype.forEach.call(box.querySelectorAll('.sugestao'), function (btn) {
+      Array.prototype.forEach.call(box.querySelectorAll('.cv-sugestao'), function (btn) {
         btn.addEventListener('click', function () {
           inputNome.value = btn.getAttribute('data-nome');
           inputTel.value = fmtTel(btn.getAttribute('data-tel'));

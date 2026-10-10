@@ -287,3 +287,13 @@ div.cv-pl-card { cursor: default; }
 .cv-rl-colunas .l { font-size: 12px; color: var(--c-apoio); }
 @media (min-width: 1024px) { .cv-rl-grade { grid-template-columns: repeat(4, 1fr); } }
 @media print { .cv-navbar, .pc-menu, .cv-cab-acoes, .cv-rl-per, .cv-rl-custom { display: none !important; } body.app-painel { padding: 0 !important; } }
+
+/* ---- Formulários em página inteira -------------------------------------- */
+.cv-pl-form .cv-entrada { background: var(--c-bloco-2); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-autocomp { position: relative; }
+.cv-sugestoes { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin-top: 4px; background: var(--c-superficie); border-radius: 16px; box-shadow: var(--s-flutua); overflow: hidden; display: none; }
+.cv-sugestao { display: flex; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 0 14px; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; align-items: center; }
+.cv-sugestao + .cv-sugestao { border-top: .5px solid var(--c-fio-forte); }
+.cv-sugestao span { color: var(--c-apoio); font-size: 13px; }
+.cv-erro-caixa { background: var(--c-perigo-fundo); color: var(--c-perigo); font-weight: 600; box-shadow: none; }
+.cv-dupla { align-items: end; }

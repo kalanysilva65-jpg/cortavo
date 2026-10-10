@@ -1,72 +1,25 @@
-<%/* Página de plano (rotas /painel/planos/novo e /painel/planos/:id/editar).
-     A lista de planos edita por folha inferior, mas estas rotas continuam
-     existindo — link direto, histórico, e é para onde os erros de validação
-     redirecionam.
-     Design SUAVE (2026-07-31): mesma linguagem da folha (campo cinza de canto
-     14px, rótulo pequeno, CTA preto em pílula), num wrapper que traz os
-     próprios tokens e o próprio fundo — estas URLs não estão na lista de telas
-     "suave" do layout, então o <body> aqui não tem `.pg-sv`. */%>
-<div class="sv-pl-pagina">
-  <a href="/painel/planos" class="sv-pl-voltar" aria-label="Voltar">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-  </a>
-
-  <div class="sv-pl-pagina-titulo"><%= plano ? plano.nome : 'Novo plano' %></div>
-
-  <form method="POST" action="<%= plano ? '/painel/planos/' + plano.id : '/painel/planos' %>">
-    <div class="sv-campo">
-      <label class="sv-campo-rot" for="nome">Nome</label>
-      <input class="sv-campo-input" id="nome" name="nome" value="<%= plano ? plano.nome : '' %>" required autofocus />
-    </div>
-
-    <div class="sv-campo">
-      <label class="sv-campo-rot" for="tipo">Tipo de uso</label>
-      <select class="sv-campo-input sv-pl-select" id="tipo" name="tipo">
-        <option value="limitado" <%= plano && plano.tipo === 'limitado' ? 'selected' : '' %>>Limitado (nº de usos)</option>
-        <option value="ilimitado" <%= plano && plano.tipo === 'ilimitado' ? 'selected' : '' %>>Ilimitado</option>
-      </select>
-    </div>
-
-    <div class="sv-campo">
-      <span class="sv-campo-rot">Serviços inclusos</span>
-      <% var marcados = plano && plano.servicos ? plano.servicos.map(function (x) { return x.servicoId; }) : []; %>
-      <% servicos.forEach(function (s) { %>
-        <% var psOld = plano && plano.servicos ? plano.servicos.filter(function (x) { return x.servicoId === s.id; })[0] : null; %>
-        <label class="sv-pl-check"><input type="checkbox" name="servicoIds" value="<%= s.id %>" <%= marcados.indexOf(s.id) !== -1 ? 'checked' : '' %> /> <%= s.nome %> <input type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="<%= psOld && psOld.usos ? psOld.usos : 1 %>" style="width:64px;margin-left:auto" aria-label="Usos por mês" /></label>
+<%/* Plano em página inteira (/planos/novo e /:id/editar, para onde os erros
+     de validação redirecionam), no v3. Mesmos campos e rotas. */%>
+<% var marcados = plano && plano.servicos ? plano.servicos.map(function (x) { return x.servicoId; }) : []; %>
+<header class="cv-cab"><div class="cv-cab-txt"><p class="cv-cab-sup"><a href="/painel/planos" style="color:inherit">Planos</a></p><h1><%= plano ? plano.nome : 'Novo plano' %></h1></div></header>
+<div class="cv-secao" style="margin-top:16px">
+  <form method="POST" class="cv-cartao cv-pl-form" action="<%= plano ? '/painel/planos/' + plano.id : '/painel/planos' %>">
+    <div class="cv-campo"><label for="nome">Nome</label><input class="cv-entrada" id="nome" name="nome" value="<%= plano ? plano.nome : '' %>" required autofocus /></div>
+    <div class="cv-campo"><label for="tipo">Tipo de uso</label><select class="cv-entrada" id="tipo" name="tipo"><option value="limitado"<%= plano && plano.tipo === 'limitado' ? ' selected' : '' %>>Limitado (número de usos)</option><option value="ilimitado"<%= plano && plano.tipo === 'ilimitado' ? ' selected' : '' %>>Ilimitado</option></select></div>
+    <fieldset class="cv-campo"><legend class="cv-rotulo">Serviços inclusos e usos por mês</legend>
+      <% servicos.forEach(function (s) { var ps = plano && plano.servicos ? plano.servicos.filter(function (x) { return x.servicoId === s.id; })[0] : null; %>
+        <div class="cv-consumo-linha"><label class="cv-chave" style="flex:1;min-height:44px"><span><%= s.nome %></span><input type="checkbox" name="servicoIds" value="<%= s.id %>"<%= marcados.indexOf(s.id) !== -1 ? ' checked' : '' %> /></label><input class="cv-entrada cv-entrada--num" type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="<%= ps && ps.usos ? ps.usos : 1 %>" aria-label="Usos de <%= s.nome %> por mês" /></div>
       <% }) %>
-      <div class="sv-pl-ajuda">Marque um ou mais. Sem nenhum marcado, o plano vale para qualquer serviço.</div>
+      <span class="cv-ajuda">Sem nenhum marcado, o plano vale para qualquer serviço.</span>
+    </fieldset>
+    <div class="cv-dupla" style="margin-top:14px">
+      <div class="cv-campo" id="campo-usos"><label for="usos">Usos por mês</label><input class="cv-entrada cv-entrada--num" id="usos" name="usos" type="number" min="1" value="<%= plano && plano.usos ? plano.usos : '' %>" /></div>
+      <div class="cv-campo"><label for="validadeDias">Validade, em dias</label><input class="cv-entrada cv-entrada--num" id="validadeDias" name="validadeDias" type="number" min="1" value="<%= plano ? plano.validadeDias : 30 %>" /></div>
     </div>
-
-    <div class="sv-pl-dupla">
-      <div class="sv-campo" id="campo-usos">
-        <label class="sv-campo-rot" for="usos">Usos/mês</label>
-        <input class="sv-campo-input" id="usos" name="usos" type="number" min="1" value="<%= plano && plano.usos ? plano.usos : '' %>" />
-      </div>
-      <div class="sv-campo">
-        <label class="sv-campo-rot" for="validadeDias">Validade (dias)</label>
-        <input class="sv-campo-input" id="validadeDias" name="validadeDias" type="number" min="1" value="<%= plano ? plano.validadeDias : 30 %>" />
-      </div>
-    </div>
-    <div class="sv-pl-ajuda">Usos só valem para o tipo limitado. Ilimitado costuma ser 30 dias (mensal).</div>
-
-    <div class="sv-campo">
-      <label class="sv-campo-rot" for="valor">Preço (R$)</label>
-      <input class="sv-campo-input" id="valor" name="valor" type="number" step="0.01" min="0" value="<%= plano ? (plano.valor / 100).toFixed(2) : '' %>" />
-      <div class="sv-pl-ajuda">Entra como entrada no caixa quando o cliente adquirir o plano.</div>
-    </div>
-
-    <button class="sv-pl-cta" type="submit"><%= plano ? 'Salvar' : 'Criar plano' %></button>
+    <div class="cv-campo"><label for="valor">Preço, em reais</label><input class="cv-entrada cv-entrada--num" id="valor" name="valor" type="number" step="0.01" min="0" inputmode="decimal" value="<%= plano ? (plano.valor / 100).toFixed(2) : '' %>" /><span class="cv-ajuda">Entra como entrada no caixa quando o cliente adquire o plano.</span></div>
+    <button class="cv-btn cv-btn--largo" type="submit" style="margin-top:18px"><%= plano ? 'Salvar' : 'Criar plano' %></button>
   </form>
 </div>
-
 <script>
-  (function () {
-    var tipo = document.getElementById('tipo');
-    var campoUsos = document.getElementById('campo-usos');
-    function atualizar() {
-      campoUsos.style.display = tipo.value === 'ilimitado' ? 'none' : '';
-    }
-    tipo.addEventListener('change', atualizar);
-    atualizar();
-  })();
+  (function () { var t = document.getElementById('tipo'), u = document.getElementById('campo-usos'); function f() { u.hidden = t.value === 'ilimitado'; } t.addEventListener('change', f); f(); })();
 </script>

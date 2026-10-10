@@ -12,10 +12,10 @@
   // Telas de cadastro e configuração v3: peças comuns (cv-cadastro.css/js).
   var CAD_V3 = ['/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/metas', '/painel/logo', '/painel/horarios', '/painel/fidelidade', '/painel/conversas', '/painel/ia', '/painel/relatorios'];
   // Formulários avulsos (links antigos) também no v3.
-  var AVULSOS_V3 = /^\/painel\/estoque\/(novo|\d+\/editar)$/;
+  var AVULSOS_V3 = /^\/painel\/(estoque|servicos|planos)\/(novo|\d+\/editar)$|^\/painel\/agenda\/novo$|^\/painel\/secretaria\/teste$/;
   var ehCad = CAD_V3.indexOf(currentPath) !== -1 || AVULSOS_V3.test(currentPath);
   // Folha de estilo e script próprios de uma tela v3 (além de cv-telas).
-  var EXTRA_V3 = { '/painel/ia': 'cv-ia', '/painel/conversas': 'cv-conversas', '/painel': 'cv-link', '/painel/link': 'cv-link', '/painel/link/cartaz': 'cv-link', '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes', '/painel/secretaria': 'cv-secretaria', '/painel/meu-plano': 'cv-secretaria', '/painel/perfil': 'cv-secretaria' };
+  var EXTRA_V3 = { '/painel/secretaria/teste': 'cv-ia', '/painel/ia': 'cv-ia', '/painel/conversas': 'cv-conversas', '/painel': 'cv-link', '/painel/link': 'cv-link', '/painel/link/cartaz': 'cv-link', '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes', '/painel/secretaria': 'cv-secretaria', '/painel/meu-plano': 'cv-secretaria', '/painel/perfil': 'cv-secretaria' };
   var extraV3 = EXTRA_V3[currentPath] || null;
   // Script próprio da tela (nem toda tela v3 tem).
   var JS_V3 = { '/painel/link': 'cv-link', '/painel/link/cartaz': 'cv-link', '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes' };
@@ -134,7 +134,7 @@
     // Telas de tela cheia, sem a barra de navegação (pedido do dono, 2026-09-30).
     // v3: a navbar é fixa em todas as seções (spec 12); só as telas cheias de
     // conversa (campo de texto no rodapé) e a de logo ficam sem ela.
-    var semNav = currentPath === '/painel/ia' || (currentPath === '/painel/conversas' && typeof aberta !== 'undefined' && !!aberta);
+    var semNav = currentPath === '/painel/ia' || currentPath === '/painel/secretaria/teste' || (currentPath === '/painel/conversas' && typeof aberta !== 'undefined' && !!aberta);
   %>
   <body class="app-painel <%= ehV3 ? 'pg-cv' : ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %><%= semNav ? ' sem-nav' : '' %>">
     <% if (ehV3) { %>
