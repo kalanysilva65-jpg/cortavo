@@ -11,6 +11,7 @@ const { normalizarTelefone } = require('../utils/telefone');
 const permissoes = require('../services/permissoes');
 const STATUS = require('../config/statusAgendamento');
 const metricas = require('../services/metricas');
+const agendaColunas = require('../services/agendaColunas');
 
 const caixaServ = require('../services/caixa');
 const planoServ = require('../services/plano');
@@ -375,6 +376,20 @@ async function verAgenda(req, res) {
     hojeIso: iso(new Date()),
     mostrarBarbeiroNoCard: !filtroBarbeiro, // mostra o nome do barbeiro quando vê "todos"
   });
+}
+
+// GET /painel/agenda/dia.json?data=YYYY-MM-DD&barbeiro=todos|id — colunas por
+// barbeiro (F13). Funcionário recebe só a própria coluna.
+async function diaColunasJson(req, res) {
+  res.set('Cache-Control', 'no-store');
+  res.json(await agendaColunas.dia({ barbeariaId: req.barbeariaId, ehAdmin: req.ehAdmin, usuarioId: req.session.usuario.id, barbeiro: req.query.barbeiro || 'todos', data: req.query.data }));
+}
+
+// GET /painel/agenda/semana.json?data=YYYY-MM-DD&barbeiro=todos|id — semana
+// (segunda a domingo) que contém a data.
+async function semanaJson(req, res) {
+  res.set('Cache-Control', 'no-store');
+  res.json(await agendaColunas.semana({ barbeariaId: req.barbeariaId, ehAdmin: req.ehAdmin, usuarioId: req.session.usuario.id, barbeiro: req.query.barbeiro || 'todos', data: req.query.data }));
 }
 
 // POST /painel/agenda/:id/itens — adiciona um serviço/produto ao agendamento
@@ -994,4 +1009,6 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { desfazer, JANELA_DESFAZER_MS, verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson, planosJson };
+module.exports = {
+  diaColunasJson,
+  semanaJson, desfazer, JANELA_DESFAZER_MS, verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson, planosJson };

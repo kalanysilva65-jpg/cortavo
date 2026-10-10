@@ -314,6 +314,9 @@ router.post('/notificacoes/testar', notificacaoController.testar);
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
+// Agenda do PC (F13): dia em colunas por barbeiro e visão de semana (JSON).
+router.get('/agenda/dia.json', agendaController.diaColunasJson);
+router.get('/agenda/semana.json', agendaController.semanaJson);
 router.get('/agenda/horarios', agendaController.horariosJson); // JSON p/ o pop-up "Novo agendamento"
 router.get('/agenda/planos', agendaController.planosJson); // JSON: planos ativos do cliente (marcar pelo plano)
 router.get('/agenda/novo', agendaController.formNovo); // agendamento manual
