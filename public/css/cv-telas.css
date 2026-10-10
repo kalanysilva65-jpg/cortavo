@@ -138,3 +138,25 @@ a.cv-cartao { display: block; color: inherit; }
 .cv-cx-duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .cv-cx-duas .cv-campo + .cv-campo { margin-top: 0; }
 .cv-cx-val { margin-top: 6px; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+/* ---- Movimento, rodada 1 · #1 transição entre páginas do painel ----------
+   (movimento-app-proposta.md, Dani 2026-10-10). View Transitions entre
+   documentos, nativa do navegador: o conteúdo sai em 160 ms e entra em
+   240 ms subindo 8 px; a navbar e o menu do PC ficam parados. Navegador sem
+   suporte (iOS < 18.2) ignora a regra: troca direta, sem erro.
+   Reduzir movimento: esmaece (150 ms), sem deslocar. Só transform e opacity. */
+@view-transition { navigation: auto; }
+.pg-cv .cv-navbar { view-transition-name: cv-navbar; }
+.pg-cv .pc-menu { view-transition-name: cv-menu; }
+::view-transition-group(cv-navbar), ::view-transition-group(cv-menu) { animation: none; }
+::view-transition-old(cv-navbar), ::view-transition-old(cv-menu) { animation: none; opacity: 0; }
+::view-transition-new(cv-navbar), ::view-transition-new(cv-menu) { animation: none; }
+::view-transition-old(root) { animation: 160ms var(--ease-out) both cvPagSai; }
+::view-transition-new(root) { animation: 240ms var(--ease-out) 80ms both cvPagEntra; }
+@keyframes cvPagSai { to { opacity: 0; } }
+@keyframes cvPagEntra { from { opacity: 0; transform: translateY(8px); } }
+@keyframes cvPagEsmaece { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root) { animation: 150ms linear both cvPagSai; }
+  ::view-transition-new(root) { animation: 150ms linear both cvPagEsmaece; }
+}
