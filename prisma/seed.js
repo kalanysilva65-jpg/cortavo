@@ -1,30 +1,37 @@
-// Seed inicial do banco (MULTI-BARBEARIA) — configuração de PRODUÇÃO.
-// Cria apenas:
-//  - o DONO do sistema (super-admin do SaaS, painel-mestre, sem barbearia);
-//  - a barbearia "Andrade" (slug "andrade") com o Bruno como admin, jornada
-//    padrão e as configurações básicas — SEM catálogo/estoque de demonstração.
+// Seed inicial do banco (MULTI-BARBEARIA). Roda no `npm install` (postinstall),
+// inclusive em PRODUÇÃO, então segue três regras (achado B6 do Sergio):
+//  1. Nenhum dado pessoal no código: nada de e-mail de pessoa real nem senha
+//     fixa. Tudo aqui é fictício (domínio reservado .test).
+//  2. Nunca cria conta a mais num banco que já tem dono: se já existe um
+//     usuário "dono", o seed não cria outro. Em produção ele só confere.
+//  3. Nunca imprime senha. As contas nascem com senha ALEATÓRIA e provisória:
+//     o dono define a dele com `node scripts/senha-dono.js` (mostra uma senha
+//     provisória uma vez e obriga a troca no 1º login).
 // É idempotente: pode rodar várias vezes sem duplicar nem sobrescrever dados.
+//
+// Variáveis opcionais (só para o PRIMEIRO dono de um banco vazio):
+//   SEED_DONO_EMAIL  e-mail do dono do sistema (sem ele, usa dono@exemplo.test)
 require('dotenv').config();
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const prisma = require('../src/config/db');
 
-// Cria o dono do sistema (barbeariaId = null). Idempotente por e-mail.
+const EH_PRODUCAO = process.env.NODE_ENV === 'production' || !!process.env.APP_DOMAIN;
+
+// Senha que ninguém conhece (troca obrigatória / redefinição pelo script).
+function senhaAleatoria() {
+  return bcrypt.hashSync(crypto.randomBytes(24).toString('hex'), 10);
+}
+
+// Garante UM dono do sistema (barbeariaId = null). Se já existe algum, não cria.
 async function garantirDono() {
-  const email = 'kalanysilva65@gmail.com';
-  const existe = await prisma.usuario.findFirst({ where: { barbeariaId: null, email } });
-  if (existe) return existe;
-  return prisma.usuario.create({
-    data: {
-      barbeariaId: null,
-      nome: 'Kalany (Dono)',
-      email,
-      senhaHash: bcrypt.hashSync('dono123', 10),
-      papel: 'dono',
-      // Senha de fábrica: o app obriga a trocar no 1º login (fecha o buraco das
-      // senhas padrão em produção).
-      senhaProvisoria: true,
-    },
+  const existente = await prisma.usuario.findFirst({ where: { barbeariaId: null, papel: 'dono' } });
+  if (existente) return { usuario: existente, criado: false };
+  const email = String(process.env.SEED_DONO_EMAIL || 'dono@exemplo.test').trim().toLowerCase();
+  const usuario = await prisma.usuario.create({
+    data: { barbeariaId: null, nome: 'Dono do sistema', email, senhaHash: senhaAleatoria(), papel: 'dono', senhaProvisoria: true },
   });
+  return { usuario, criado: true };
 }
 
 // Cria/garante uma barbearia pelo slug.
@@ -46,13 +53,13 @@ async function garantirBarbearia(nome, slug, emailAdmin) {
 }
 
 // Cria/garante um usuário dentro de uma barbearia.
-async function garantirUsuario(barbeariaId, { nome, email, senha, papel }) {
+async function garantirUsuario(barbeariaId, { nome, email, papel }) {
   return prisma.usuario.upsert({
     where: { barbeariaId_email: { barbeariaId, email } },
     update: {},
     // Senha de fábrica: força a troca no 1º login. Não sobrescreve quem já
     // existe (update vazio), então quem já trocou continua com a sua.
-    create: { barbeariaId, nome, email, senhaHash: bcrypt.hashSync(senha, 10), papel, senhaProvisoria: true },
+    create: { barbeariaId, nome, email, senhaHash: senhaAleatoria(), papel, senhaProvisoria: true },
   });
 }
 
@@ -77,46 +84,44 @@ async function garantirConfig(barbeariaId, chave, valor) {
 }
 
 async function main() {
-  console.log('› Populando o banco (produção: dono + Andrade)...');
-
+  console.log('› Seed: conferindo o dono do sistema...');
   const dono = await garantirDono();
+  console.log(dono.criado
+    ? '✓ Dono do sistema criado (' + dono.usuario.email + '). Defina a senha com: node scripts/senha-dono.js'
+    : '✓ Dono do sistema já existe: nada criado.');
 
-  // --- Barbearia: Andrade (só o admin Bruno; sem catálogo de demonstração) --
-  const EMAIL_BRUNO = 'andradebarbearia@gmail.com';
-  const andrade = await garantirBarbearia('Andrade Barbearia', 'andrade', EMAIL_BRUNO);
-  const bruno = await garantirUsuario(andrade.id, {
-    nome: 'Bruno Andrade',
-    email: EMAIL_BRUNO,
-    senha: 'admin123',
-    papel: 'admin',
-  });
-  await garantirJornada(andrade.id, bruno.id);
-
-  // Configurações básicas (não sobrescrevem se já existirem).
-  // Ligado por padrao: concluir um atendimento e o momento em que o dinheiro
-  // entra, e e o que qualquer dono espera ver no caixa e nos relatorios. Com
-  // isto desligado a barbearia nova mostrava R$0 de faturamento para sempre,
-  // sem pista de que faltava uma chave escondida na tela de Caixa. Quem
-  // registra o caixa a mao desliga em Caixa > 'Entrada automatica'.
-  await garantirConfig(andrade.id, 'caixa_automatico', 'true');
-  await garantirConfig(andrade.id, 'logo_url', '');
-  await garantirConfig(andrade.id, 'mostrar_powered_by', 'true');
-
-  console.log('✓ Seed concluído.');
-  console.log('');
-  console.log('  DONO (painel-mestre):');
-  console.log('   ' + dono.email + ' / dono123   (senha provisória — o app pede a troca no 1º login)');
-  console.log('');
-  console.log(`  Barbearia "${andrade.slug}" (subdomínio ${andrade.slug} / dev: ?b=${andrade.slug}):`);
-  console.log('   ' + EMAIL_BRUNO + ' / admin123  (Admin — Bruno; senha provisória — troca no 1º login)');
+  // Barbearia de exemplo SÓ em desenvolvimento (dados fictícios). Em produção
+  // as barbearias são criadas pelo painel-mestre (com o link por e-mail).
+  if (EH_PRODUCAO) {
+    console.log('✓ Produção: nenhuma barbearia criada pelo seed.');
+    return;
+  }
+  const EMAIL_ADMIN = 'admin@exemplo.test';
+  const exemplo = await garantirBarbearia('Barbearia Exemplo', 'exemplo', EMAIL_ADMIN);
+  const admin = await garantirUsuario(exemplo.id, { nome: 'Admin Exemplo', email: EMAIL_ADMIN, papel: 'admin' });
+  await garantirJornada(exemplo.id, admin.id);
+  // Ligado por padrão: concluir um atendimento lança no caixa (quem registra o
+  // caixa à mão desliga em Caixa > 'Entrada automática').
+  await garantirConfig(exemplo.id, 'caixa_automatico', 'true');
+  await garantirConfig(exemplo.id, 'logo_url', '');
+  await garantirConfig(exemplo.id, 'mostrar_powered_by', 'true');
+  console.log('✓ Desenvolvimento: "Barbearia Exemplo" (dev: ?b=exemplo), admin ' + EMAIL_ADMIN + '.');
+  console.log('  Senha aleatória e provisória: para entrar, crie uma pelo mestre ("Enviar link") ou pelo "Esqueci minha senha".');
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (e) => {
-    console.error('Erro no seed:', e);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+
+
+// `node prisma/seed.js` (postinstall) roda; os testes importam e chamam main().
+if (require.main === module) {
+  main()
+    .then(async () => {
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      console.error('Erro no seed:', e);
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}
+
+module.exports = { main };
