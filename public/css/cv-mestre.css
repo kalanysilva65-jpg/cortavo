@@ -181,3 +181,45 @@ body.m-pagina .m-menu a, body.m-pagina .m-corpo a.m-item { color: inherit; text-
 .m-teste { grid-template-columns: minmax(45%, 1fr) minmax(0, auto); }
 .m-teste > span:not(.t) { text-align: right; white-space: normal; font-size: 13px; }
 .m-sair-cel { margin-top: 28px; width: 100%; }
+
+/* ==== Telas internas do mestre no v3 (ficha, uso, canais, auditoria, nova,
+   editar barbeiro): as classes antigas viraram m-* e cv-*; aqui o desenho. */
+.m-corpo h1 { font-size: 34px; letter-spacing: -.035em; font-weight: 800; line-height: 1.1; margin: 0; }
+.m-corpo h2 { font-size: 19px; letter-spacing: -.02em; font-weight: 800; margin: 0; }
+.m-topo p { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--c-apoio); }
+.m-bloco + .m-bloco, .m-mb { margin-bottom: 12px; }
+.m-mt { margin-top: 14px; }
+.m-flex { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.m-inline { display: inline; margin: 0; }
+.m-sutil { font-size: 13px; color: var(--c-apoio); }
+.m-link { color: var(--c-tinta); font-weight: 600; text-decoration: none; }
+.m-voltar { text-decoration: none; }
+.m-alerta { padding: 12px 14px; border-radius: 14px; background: var(--c-bloco); font-size: 14px; line-height: 1.45; color: var(--c-tinta-2); margin-bottom: 12px; }
+.m-alerta--erro { background: var(--c-perigo-fundo); color: var(--c-perigo); font-weight: 600; }
+.m-rolagem { overflow-x: auto; margin: 0 -4px; }
+.m-form .cv-campo + .cv-campo, .m-form .cv-dupla + .cv-campo, .m-form .cv-campo + .cv-dupla { margin-top: 12px; }
+.m-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]), .m-form select, .m-form textarea, .m-corpo form .cv-campo input:not([type="checkbox"]):not([type="hidden"]):not([type="file"]), .m-corpo form .cv-campo select {
+  width: 100%; min-height: 48px; padding: 0 14px; border: 0; border-radius: var(--r-interno); background: var(--c-bloco-2); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); font: inherit; font-size: 16px; color: var(--c-tinta); box-sizing: border-box; }
+.m-form textarea { padding: 12px 14px; min-height: 96px; line-height: 1.45; }
+.m-form input:focus-visible, .m-form select:focus-visible, .m-form textarea:focus-visible { outline: 2.5px solid var(--c-tinta); outline-offset: 1px; }
+.m-form .cv-btn, .m-corpo form > .cv-btn { margin-top: 14px; }
+.m-form label:not(.m-check) { display: block; font-size: 14px; font-weight: 600; color: var(--c-tinta-2); margin-bottom: 6px; }
+.m-check { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; }
+.m-check input { width: 20px; height: 20px; accent-color: var(--c-tinta); }
+.m-foto img { border-radius: 12px; }
+.m-tab td.m-acao { text-align: right; }
+.m-tab th, .m-tab td { white-space: nowrap; }
+.m-bloco .m-tab { margin-top: 10px; }
+.m-aba[hidden] { display: none; }
+.m-abas a { text-decoration: none; }
+.m-risco { box-shadow: var(--s-cartao), inset 0 0 0 1px var(--c-perigo-fundo); }
+.m-risco h2 { color: var(--c-perigo); }
+details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+@media (max-width: 1023px) { .m-corpo h1 { font-size: 30px; } .m-bloco .m-tab thead { display: table-header-group; } .m-bloco .m-tab, .m-bloco .m-tab tbody, .m-bloco .m-tab tr { display: revert; } .m-bloco .m-tab td { display: table-cell; height: 52px; padding: 0 10px; border-bottom: .5px solid var(--c-fio-forte); } .m-bloco .m-tab td.esc { display: table-cell; } }
+.m-tab .acoes { position: relative; }
+.m-pop[hidden] { display: none; }
+.m-pop { top: 46px; }
+.m-pop a, .m-pop button { display: flex; align-items: center; gap: 12px; width: 100%; height: 42px; padding: 0 12px; border-radius: 12px; font-size: 15px; font-weight: 600; color: var(--c-tinta); text-align: left; text-decoration: none; border: 0; background: none; font-family: inherit; cursor: pointer; }
+.m-pop a:focus-visible, .m-pop button:focus-visible { outline: 2px solid var(--c-tinta); outline-offset: -2px; }
+.m-mais { border: 0; background: none; cursor: pointer; }
+.cv-txt-perigo { color: var(--c-perigo) !important; }

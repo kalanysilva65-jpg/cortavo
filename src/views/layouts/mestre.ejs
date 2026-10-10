@@ -2,7 +2,7 @@
   // Painel-mestre v3 (fatia F10): menu lateral sólido no PC e navbar em
   // pílula no celular (mockups/mestre.html). As telas internas antigas
   // (ficha, uso, canais, auditoria, nova) entram nesta moldura com o
-  // sv-mestre.css de sempre.
+  // cv-mestre.css de sempre.
   var _cam = String(typeof currentPath !== 'undefined' && currentPath ? currentPath : '').replace(/\/+$/, '') || '/mestre';
   var _rota = /^\/mestre\/(uso|canais|auditoria|nova)/.exec(_cam);
   _rota = _rota ? _rota[1] : (/^\/mestre\/barbearias/.test(_cam) ? 'barbearias' : 'visao');
@@ -27,7 +27,6 @@
     <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/css/tokens.css?v=<%= assetV %>" />
     <link rel="stylesheet" href="/css/cv.css?v=<%= assetV %>" />
-    <link rel="stylesheet" href="/css/sv-mestre.css?v=<%= assetV %>" />
     <link rel="stylesheet" href="/css/cv-mestre.css?v=<%= assetV %>" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F2F2F2" />

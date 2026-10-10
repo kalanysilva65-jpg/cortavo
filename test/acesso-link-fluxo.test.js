@@ -370,7 +370,7 @@ test('C11 detalhe da barbearia mostra o estado e o botão certo de cada pessoa',
   // A tabela mostra o estado e o botão (o nome com apóstrofo não quebra o JS da confirmação).
   const det = fs.readFileSync(path.join(VIEWS, 'mestre/barbearia-detalhe.ejs'), 'utf8');
   const ini = det.indexOf('<!-- Equipe -->');
-  const fim = det.indexOf('<h3 class="mt-16">Adicionar barbeiro</h3>');
+  const fim = det.indexOf('<h3 class="m-mt">Adicionar barbeiro</h3>') // v3: classe m-mt;
   const trecho = det.slice(ini, fim);
   const html = ejs.render(trecho, { ...d });
   assert.match(html, /data-acesso="nao_enviado">E-mail não enviado/);

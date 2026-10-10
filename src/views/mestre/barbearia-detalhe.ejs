@@ -1,182 +1,185 @@
-<div class="cabecalho-pagina agenda-cabecalho">
-  <div>
-    <h1><%= barbearia.nome %></h1>
-    <p class="texto-secundario">Subdomínio: <strong><%= barbearia.slug %></strong> · <%= barbearia.ativo ? 'Ativa' : 'Pausada' %></p>
+<%/* Ficha da barbearia no painel-mestre (redesign v3, F10; Dani,
+     mestre.html "ficha"). Abas: Resumo (plano, teste e fundador), Dados e
+     notas, Marca, Equipe e Zona de risco (pausar e excluir). Sem JS, todas
+     as seções aparecem em sequência. Mesmas rotas e campos. */%>
+<% var _ini = String(barbearia.nome || '?').trim().split(/\s+/); _ini = ((_ini[0] || '?').charAt(0) + (_ini.length > 1 ? _ini[_ini.length - 1].charAt(0) : '')).toUpperCase(); %>
+<a class="m-voltar" href="/mestre#barbearias"><%- include('../partials/icone', { cvIc: 'esquerda', cvCls: 'cv-ic--18' }) %>Barbearias</a>
+<div class="m-topo" style="margin-bottom:8px">
+  <div style="display:flex;gap:14px;align-items:center;min-width:0">
+    <span class="cv-avatar" style="width:56px;height:56px;font-size:19px" aria-hidden="true"><%= _ini %></span>
+    <div style="min-width:0"><p><%= barbearia.slug %>.cortavo.com.br · <%= barbearia.ativo ? 'ativa' : 'pausada' %></p><h1><%= barbearia.nome %></h1></div>
   </div>
-  <div class="flex gap-8">
-    <% if (barbearia.ativo) { %>
-      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="inline"
-            onsubmit="return confirm(<%= JSON.stringify('Pausar o acesso da ' + barbearia.nome + '? Vai parar: login do dono e dos barbeiros, secretária, assistente, lembretes e agendamento online. Nenhum dado é apagado; Reativar volta tudo.') %>)">
-        <input type="hidden" name="ativa" value="false" />
-        <button class="btn btn-secundario btn-sm" type="submit">Pausar acesso</button>
-      </form>
-    <% } else { %>
-      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="inline"
-            onsubmit="return confirm(<%= JSON.stringify('Reativar a ' + barbearia.nome + '? Login, secretária, assistente e lembretes futuros voltam.') %>)">
-        <input type="hidden" name="ativa" value="true" />
-        <button class="btn btn-secundario btn-sm" type="submit">Reativar</button>
-      </form>
-    <% } %>
-    <form method="POST" action="/mestre/entrar/<%= barbearia.id %>" class="inline">
-      <button class="btn btn-primario btn-sm" type="submit">Entrar nesta barbearia →</button>
-    </form>
-    <a href="/mestre" class="btn btn-secundario btn-sm">← Voltar</a>
-  </div>
+  <form method="POST" action="/mestre/entrar/<%= barbearia.id %>" class="m-inline"><button class="cv-btn" type="submit"><%- include('../partials/icone', { cvIc: 'entrar', cvCls: 'cv-ic--20' }) %>Entrar como dono</button></form>
 </div>
 
+<nav class="m-abas" aria-label="Seções da ficha" id="m-abas">
+  <a href="#aba-resumo" data-aba="resumo">Resumo</a>
+  <a href="#aba-dados" data-aba="dados">Dados e notas</a>
+  <a href="#aba-marca" data-aba="marca">Marca</a>
+  <a href="#aba-equipe" data-aba="equipe">Equipe</a>
+  <a href="#aba-risco" data-aba="risco" class="risco">Zona de risco</a>
+</nav>
+
+<section class="m-aba" id="aba-resumo" aria-label="Resumo">
 <!-- Plano da Cortavo (fase 2.4, spec 04). Vale na hora; dados das funções
      desligadas ficam guardados. Rota: POST /mestre/barbearias/:id/plano. -->
-<div class="card mb-16" id="plano">
+<div class="cv-cartao m-bloco m-mb" id="plano">
   <h2>Plano da Cortavo</h2>
-  <p class="texto-secundario">
-    Atual: <span class="selo-plano"><%= plano.nome %></span>
+  <p class="cv-texto-apoio">
+    Atual: <span class="cv-etq"><%= plano.nome %></span>
     <% if (barbearia.planoCortavoDesde) { %> · desde <%= new Date(barbearia.planoCortavoDesde).toLocaleDateString('pt-BR') %><% } %>
   </p>
   <% if (avisoBarbeiros) { %>
-    <div class="alerta alerta-aviso mt-16"><%= avisoBarbeiros %> O cadastro não é bloqueado.</div>
+    <div class="m-alerta m-mt"><%= avisoBarbeiros %> O cadastro não é bloqueado.</div>
   <% } %>
-  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/plano" class="form mt-16">
-    <div class="campo">
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/plano" class="m-form m-mt">
+    <div class="cv-campo">
       <label for="plano">Trocar plano</label>
       <select id="plano" name="plano" required>
         <% planos.forEach(function (p) { %>
           <option value="<%= p.chave %>" <%= p.chave === plano.chave ? 'selected' : '' %>><%= p.nome %><%= p.precoCentavos ? ' · R$ ' + (p.precoCentavos / 100) : ' · tudo liberado, tetos da configuração' %></option>
         <% }) %>
       </select>
-      <small class="texto-sutil">Vale na hora e fica na auditoria. Nada é apagado ao descer de plano.</small>
+      <small class="m-sutil">Vale na hora e fica na auditoria. Nada é apagado ao descer de plano.</small>
     </div>
-    <div class="mt-16">
-      <button class="btn btn-primario btn-sm" type="submit">Salvar plano</button>
+    <div class="m-mt">
+      <button class="cv-btn cv-btn--p" type="submit">Salvar plano</button>
     </div>
   </form>
 </div>
 
 <!-- Teste grátis e vaga de fundador (fase 2.7, spec 05). Sem pagamento dentro do app. -->
-<div class="card mb-16" id="teste">
+<div class="cv-cartao m-bloco m-mb" id="teste">
   <h2>Teste grátis e fundador</h2>
   <% var fmtD = function (d) { return d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '-'; }; %>
-  <p class="texto-secundario">
-    Situação: <span class="selo-plano"><%= { ativa: 'Ativa', teste: 'Em teste', pausada_teste: 'Pausada (fim do teste)', pausada_atraso: 'Pausada (atraso)' }[barbearia.situacaoCortavo] || 'Ativa' %></span>
+  <p class="cv-texto-apoio">
+    Situação: <span class="cv-etq"><%= { ativa: 'Ativa', teste: 'Em teste', pausada_teste: 'Pausada (fim do teste)', pausada_atraso: 'Pausada (atraso)' }[barbearia.situacaoCortavo] || 'Ativa' %></span>
     <% if (barbearia.testeInicio) { %> · início <%= fmtD(barbearia.testeInicio) %> · fim <%= fmtD(barbearia.testeFim) %><% } %>
   </p>
   <% if (teste.emTeste) { %>
-    <p class="mt-16"><strong><%= teste.diasRestantes > 0 ? 'Faltam ' + teste.diasRestantes + ' dia(s).' : teste.diasRestantes === 0 ? 'Último dia do teste.' : 'O teste acabou sem pagamento registrado.' %></strong>
-      <% if (barbearia.testeRespostas) { %><span class="texto-sutil"> · secretária no teste: <%= barbearia.testeRespostas %> de 250 respostas</span><% } %></p>
+    <p class="m-mt"><strong><%= teste.diasRestantes > 0 ? 'Faltam ' + teste.diasRestantes + ' dia(s).' : teste.diasRestantes === 0 ? 'Último dia do teste.' : 'O teste acabou sem pagamento registrado.' %></strong>
+      <% if (barbearia.testeRespostas) { %><span class="m-sutil"> · secretária no teste: <%= barbearia.testeRespostas %> de 250 respostas</span><% } %></p>
     <% if (barbearia.testeProrrogado) { %>
-      <p class="texto-sutil">Já prorrogado uma vez. Motivo: <%= barbearia.testeProrrogacaoMotivo %></p>
+      <p class="m-sutil">Já prorrogado uma vez. Motivo: <%= barbearia.testeProrrogacaoMotivo %></p>
     <% } else { %>
-      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/prorrogar" class="form mt-16">
-        <div class="grid-2">
-          <div class="campo">
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/prorrogar" class="m-form m-mt">
+        <div class="cv-dupla">
+          <div class="cv-campo">
             <label for="dias">Prorrogar (uma única vez)</label>
             <select id="dias" name="dias"><% for (var d = 1; d <= teste.prorrogacaoMax; d++) { %><option value="<%= d %>"><%= d %> dia(s)</option><% } %></select>
           </div>
-          <div class="campo">
+          <div class="cv-campo">
             <label for="motivo">Motivo (vai para a auditoria)</label>
             <input id="motivo" name="motivo" maxlength="500" required />
           </div>
         </div>
-        <button class="btn btn-secundario btn-sm mt-16" type="submit">Prorrogar teste</button>
+        <button class="cv-btn cv-btn--2 cv-btn--p m-mt" type="submit">Prorrogar teste</button>
       </form>
     <% } %>
-    <div class="flex gap-8 mt-16" style="flex-wrap:wrap">
-      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/segurar" class="inline">
+    <div class="m-flex m-mt" style="flex-wrap:wrap">
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/segurar" class="m-inline">
         <input type="hidden" name="segurar" value="<%= barbearia.testeSegurarPausa ? 'false' : 'true' %>" />
-        <button class="btn btn-secundario btn-sm" type="submit"><%= barbearia.testeSegurarPausa ? (teste.diasRestantes < 0 ? 'Soltar pausa (avisa e pausa amanhã)' : 'Soltar pausa automática') : 'Segurar pausa' %></button>
+        <button class="cv-btn cv-btn--2 cv-btn--p" type="submit"><%= barbearia.testeSegurarPausa ? (teste.diasRestantes < 0 ? 'Soltar pausa (avisa e pausa amanhã)' : 'Soltar pausa automática') : 'Segurar pausa' %></button>
       </form>
-      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/pago" class="inline"
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/teste/pago" class="m-inline"
             onsubmit="return confirm('Registrar que esta barbearia pagou? O teste vira assinatura e não haverá pausa.')">
-        <button class="btn btn-primario btn-sm" type="submit">Registrar pagamento</button>
+        <button class="cv-btn cv-btn--p" type="submit">Registrar pagamento</button>
       </form>
     </div>
-    <% if (barbearia.testeSegurarPausa) { %><p class="texto-sutil mt-16">Pausa automática segurada: a rotina não vai pausar esta barbearia.</p><% } %>
+    <% if (barbearia.testeSegurarPausa) { %><p class="m-sutil m-mt">Pausa automática segurada: a rotina não vai pausar esta barbearia.</p><% } %>
   <% } %>
-  <p class="mt-16">
+  <p class="m-mt">
     Vaga de fundador: <strong><%= barbearia.fundador === 'confirmada' ? 'confirmada' : barbearia.fundador === 'reservada' ? 'reservada' : 'sem vaga' %></strong>
-    <span class="texto-sutil"> · vagas usadas: <%= vagasFundador.usadas %> de <%= vagasFundador.total %></span>
+    <span class="m-sutil"> · vagas usadas: <%= vagasFundador.usadas %> de <%= vagasFundador.total %></span>
   </p>
   <% if (!barbearia.fundador && vagasFundador.livres <= 0) { %>
-    <div class="alerta alerta-aviso mt-16">As 5 vagas de fundador já estão reservadas.</div>
+    <div class="m-alerta m-mt">As 5 vagas de fundador já estão reservadas.</div>
   <% } else { %>
-    <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/fundador" class="inline"
+    <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/fundador" class="m-inline"
           <% if (barbearia.fundador === 'confirmada') { %>onsubmit="return confirm('Esta barbearia já é fundadora confirmada (pagou com desconto). Liberar a vaga mesmo assim?')"<% } %>>
       <input type="hidden" name="reservar" value="<%= barbearia.fundador ? 'false' : 'true' %>" />
-      <button class="btn btn-secundario btn-sm" type="submit"><%= barbearia.fundador ? 'Liberar vaga de fundador' : 'Reservar vaga de fundador' %></button>
+      <button class="cv-btn cv-btn--2 cv-btn--p" type="submit"><%= barbearia.fundador ? 'Liberar vaga de fundador' : 'Reservar vaga de fundador' %></button>
     </form>
   <% } %>
 </div>
+</section>
+
+<section class="m-aba" id="aba-dados" aria-label="Dados e notas">
 
 <!-- Dados da barbearia -->
-<div class="card mb-16">
+<div class="cv-cartao m-bloco m-mb">
   <h2>Dados da barbearia</h2>
-  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>" class="form mt-16">
-    <div class="grid-2">
-      <div class="campo">
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>" class="m-form m-mt">
+    <div class="cv-dupla">
+      <div class="cv-campo">
         <label for="nome">Nome</label>
         <input id="nome" name="nome" value="<%= barbearia.nome %>" required />
       </div>
-      <div class="campo">
+      <div class="cv-campo">
         <label for="slug">Subdomínio</label>
         <input id="slug" name="slug" value="<%= barbearia.slug %>" required />
       </div>
     </div>
-    <div class="campo mt-16">
+    <div class="cv-campo m-mt">
       <label for="endereco">Endereço</label>
       <input id="endereco" name="endereco" value="<%= barbearia.endereco || '' %>" placeholder="Rua, número, bairro, cidade — SP" />
-      <small class="texto-sutil">Usado na busca "perto de você" do app do cliente. Ao salvar, localizamos no mapa automaticamente.
+      <small class="m-sutil">Usado na busca "perto de você" do app do cliente. Ao salvar, localizamos no mapa automaticamente.
         <% if (barbearia.latitude && barbearia.longitude) { %>
-          <span style="color:var(--verde,#22c55e)">✓ Localizada no mapa.</span>
+          <span class="cv-etq cv-etq--preta">Localizada no mapa</span>
         <% } else if (barbearia.endereco) { %>
-          <span style="color:#e5a">Ainda não localizada — confira o endereço.</span>
+          <span class="cv-etq cv-etq--listra">Ainda não localizada: confira o endereço</span>
         <% } %>
       </small>
     </div>
-    <p class="texto-sutil" style="margin-top:8px">
+    <p class="m-sutil" style="margin-top:8px">
       Status: <strong><%= barbearia.ativo ? 'Ativa' : 'Pausada' %></strong> — use o botão
       <%= barbearia.ativo ? '“Pausar acesso”' : '“Reativar”' %> no topo para mudar (fica registrado na auditoria).
     </p>
-    <div class="mt-16">
-      <button class="btn btn-primario btn-sm" type="submit">Salvar dados</button>
+    <div class="m-mt">
+      <button class="cv-btn cv-btn--p" type="submit">Salvar dados</button>
     </div>
   </form>
 </div>
 
 <!-- Notas internas (só o painel-mestre vê) -->
-<div class="card mb-16">
+<div class="cv-cartao m-bloco m-mb">
   <h2>Notas internas</h2>
-  <p class="texto-secundario">Anotações suas sobre esta barbearia (contato, combinados, pendências). A barbearia nunca vê isto.</p>
-  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/notas" class="form mt-16">
-    <div class="campo">
+  <p class="cv-texto-apoio">Anotações suas sobre esta barbearia (contato, combinados, pendências). A barbearia nunca vê isto.</p>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/notas" class="m-form m-mt">
+    <div class="cv-campo">
       <textarea name="notasInternas" rows="4" placeholder="Ex.: dono é o Bruno, prefere contato por WhatsApp; combinou período de teste até dia 20."><%= barbearia.notasInternas || '' %></textarea>
     </div>
-    <div class="mt-16">
-      <button class="btn btn-primario btn-sm" type="submit">Salvar notas</button>
+    <div class="m-mt">
+      <button class="cv-btn cv-btn--p" type="submit">Salvar notas</button>
     </div>
   </form>
 </div>
+</section>
+
+<section class="m-aba" id="aba-marca" aria-label="Marca">
 
 <!-- Marca -->
-<div class="card mb-16">
+<div class="cv-cartao m-bloco m-mb">
   <h2>Marca</h2>
-  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/marca" enctype="multipart/form-data" class="form mt-16">
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/marca" enctype="multipart/form-data" class="m-form m-mt">
     <% if (marca.logoUrl) { %>
-      <div class="mb-16">
+      <div class="m-mb">
         <img src="<%= marca.logoUrl %>" alt="Logo atual" style="max-height:64px;" />
       </div>
     <% } %>
-    <div class="campo">
+    <div class="cv-campo">
       <label for="foto">Logo (JPG, PNG ou WEBP · máx. 4 MB)</label>
       <input id="foto" type="file" name="foto" accept="image/*" />
     </div>
-    <label class="flex gap-8" style="align-items:center;">
+    <label class="m-flex" style="align-items:center;">
       <input type="checkbox" name="mostrar_powered_by" <%= marca.mostrarPoweredBy ? 'checked' : '' %> />
       <span>Mostrar selo “Desenvolvido por Cortavo.”</span>
     </label>
-    <div class="flex gap-8 mt-16">
-      <button class="btn btn-primario btn-sm" type="submit">Salvar marca</button>
+    <div class="m-flex m-mt">
+      <button class="cv-btn cv-btn--p" type="submit">Salvar marca</button>
       <% if (marca.logoUrl) { %>
-        <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/marca/remover-logo" class="inline">
-          <button class="btn btn-secundario btn-sm" type="submit">Remover logo</button>
+        <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/marca/remover-logo" class="m-inline">
+          <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Remover logo</button>
         </form>
       <% } %>
     </div>
@@ -184,71 +187,74 @@
 </div>
 
 <!-- Foto de capa (hero da Home do painel) -->
-<div class="card mb-16">
+<div class="cv-cartao m-bloco m-mb">
   <h2>Foto de capa</h2>
-  <p class="texto-secundario">Aparece no topo da Home do painel, atrás da saudação. Sem foto, mostra um fundo escuro padrão.</p>
-  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/capa" enctype="multipart/form-data" class="form mt-16">
+  <p class="cv-texto-apoio">Aparece no topo da Home do painel, atrás da saudação. Sem foto, mostra um fundo escuro padrão.</p>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/capa" enctype="multipart/form-data" class="m-form m-mt">
     <% if (barbearia.capaUrl) { %>
-      <div class="mb-16">
+      <div class="m-mb">
         <img src="<%= barbearia.capaUrl %>" alt="Capa atual" style="width:100%;max-height:140px;object-fit:cover;border-radius:12px;" />
       </div>
     <% } %>
-    <div class="campo">
+    <div class="cv-campo">
       <label for="capa">Imagem (JPG, PNG ou WEBP · máx. 4 MB)</label>
       <input id="capa" type="file" name="foto" accept="image/*" />
     </div>
-    <div class="flex gap-8 mt-16">
-      <button class="btn btn-primario btn-sm" type="submit">Salvar capa</button>
+    <div class="m-flex m-mt">
+      <button class="cv-btn cv-btn--p" type="submit">Salvar capa</button>
       <% if (barbearia.capaUrl) { %>
-        <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/capa/remover" class="inline">
-          <button class="btn btn-secundario btn-sm" type="submit">Remover capa</button>
+        <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/capa/remover" class="m-inline">
+          <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Remover capa</button>
         </form>
       <% } %>
     </div>
   </form>
 </div>
+</section>
+
+<section class="m-aba" id="aba-equipe" aria-label="Equipe">
 
 <!-- Equipe -->
-<div class="card mb-16">
+<div class="cv-cartao m-bloco m-mb">
   <h2>Equipe (<%= equipe.length %>)</h2>
   <% if (typeof avisoEmail !== 'undefined' && avisoEmail) { %>
-    <div class="alerta alerta-aviso mt-16" role="status"><%= avisoEmail %></div>
+    <div class="m-alerta m-mt" role="status"><%= avisoEmail %></div>
   <% } %>
   <% if (equipe.length === 0) { %>
-    <p class="texto-secundario mt-16">Nenhum barbeiro cadastrado ainda.</p>
+    <p class="cv-texto-apoio m-mt">Nenhum barbeiro cadastrado ainda.</p>
   <% } else { %>
-    <div class="tabela-rolagem">
-      <table class="tabela mt-16">
+    <div class="m-rolagem">
+      <table class="m-tab m-mt">
         <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th>Acesso</th><th></th></tr></thead>
         <tbody>
           <% equipe.forEach(function (m) { %>
             <tr>
               <td><%= m.nome %></td>
-              <td><span class="texto-sutil"><%= m.email %></span></td>
+              <td><span class="m-sutil"><%= m.email %></span></td>
               <td><%= m.papel === 'admin' ? 'Admin' : 'Barbeiro' %></td>
               <td><%= m.ativo ? 'Ativo' : 'Inativo' %></td>
               <% var ac = (typeof acessos !== 'undefined' && acessos && acessos[m.id]) || null; %>
               <td>
                 <% if (ac) { %>
-                  <span class="texto-sutil" <%- ac.alerta ? 'style="color:#B42318;font-weight:600"' : '' %> data-acesso="<%= ac.codigo %>"><%= ac.texto %></span>
-                  <% if (ac.detalhe) { %><br /><span class="texto-sutil"><%= ac.detalhe %></span><% } %>
+                  <span class="m-sutil" <%- ac.alerta ? 'style="color:var(--c-perigo);font-weight:600"' : '' %> data-acesso="<%= ac.codigo %>"><%= ac.texto %></span>
+                  <% if (ac.detalhe) { %><br /><span class="m-sutil"><%= ac.detalhe %></span><% } %>
                 <% } %>
               </td>
-              <td class="col-acao">
-                <div class="flex gap-8" style="justify-content:flex-end">
-                  <a href="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+              <td class="m-acao">
+                <div class="m-flex" style="justify-content:flex-end">
+                  <a href="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/editar" class="cv-btn cv-btn--2 cv-btn--p">Editar</a>
                   <%/* Spec 13: substitui o antigo botão de senha provisória. O nome vai num data-atributo
                        (escapado) e não dentro do JS, para um apóstrofo no nome não
                        quebrar a confirmação. */%>
                   <% if (m.ativo) { %>
-                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/enviar-link" class="inline"
+                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/enviar-link" class="m-inline"
                         data-nome="<%= m.nome %>"
                         onsubmit="return confirm('Enviar um link para ' + this.dataset.nome + ' criar uma senha nova? O link anterior deixa de valer.')">
-                    <button class="btn btn-secundario btn-sm" type="submit"><%= ac ? ac.botao : (m.senhaDefinidaEm ? 'Enviar link para nova senha' : 'Reenviar link') %></button>
+                    <button class="cv-btn cv-btn--2 cv-btn--p" type="submit"><%= ac ? ac.botao : (m.senhaDefinidaEm ? 'Enviar link para nova senha' : 'Reenviar link') %></button>
                   </form>
                   <% } %>
-                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/toggle" class="inline">
-                    <button class="btn btn-secundario btn-sm" type="submit"><%= m.ativo ? 'Desativar' : 'Ativar' %></button>
+                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/toggle" class="m-inline">
+                    <button class="cv-btn cv-btn--2 cv-btn--p" type="submit"><%= m.ativo ? 'Desativar' : 'Ativar' %></button>
                   </form>
                 </div>
               </td>
@@ -259,21 +265,21 @@
     </div>
   <% } %>
 
-  <h3 class="mt-16">Adicionar barbeiro</h3>
-  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe" class="form mt-16">
-    <div class="grid-2">
-      <div class="campo">
+  <h3 class="m-mt">Adicionar barbeiro</h3>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe" class="m-form m-mt">
+    <div class="cv-dupla">
+      <div class="cv-campo">
         <label for="bnome">Nome</label>
         <input id="bnome" name="nome" required />
       </div>
-      <div class="campo">
+      <div class="cv-campo">
         <label for="bemail">E-mail</label>
         <input id="bemail" type="email" name="email" required />
       </div>
     </div>
-    <p class="texto-sutil">A pessoa recebe um e-mail para criar a própria senha. Confira o e-mail antes de adicionar.</p>
-    <div class="grid-2">
-      <div class="campo">
+    <p class="m-sutil">A pessoa recebe um e-mail para criar a própria senha. Confira o e-mail antes de adicionar.</p>
+    <div class="cv-dupla">
+      <div class="cv-campo">
         <label for="bpapel">Papel</label>
         <select id="bpapel" name="papel">
           <option value="funcionario">Barbeiro</option>
@@ -281,18 +287,57 @@
         </select>
       </div>
     </div>
-    <div class="mt-16">
-      <button class="btn btn-primario btn-sm" type="submit">Adicionar</button>
+    <div class="m-mt">
+      <button class="cv-btn cv-btn--p" type="submit">Adicionar</button>
     </div>
   </form>
 </div>
+</section>
 
-<!-- Zona de perigo -->
-<div class="card">
-  <h2>Excluir barbearia</h2>
-  <p class="texto-secundario mt-16">Remove a barbearia e todos os dados dela (equipe, clientes, agenda, caixa). Não dá para desfazer.</p>
-  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/remover" class="mt-16"
-        onsubmit="return confirm('Excluir a barbearia <%= barbearia.nome %> e TODOS os dados dela?')">
-    <button class="btn-x" style="width:auto;padding:8px 16px;border-radius:8px;" type="submit">Excluir barbearia</button>
-  </form>
-</div>
+<section class="m-aba" id="aba-risco" aria-label="Zona de risco">
+  <div class="cv-cartao m-bloco m-mb m-risco">
+    <h2><%= barbearia.ativo ? 'Pausar o acesso' : 'Reativar o acesso' %></h2>
+    <p class="cv-texto-apoio m-mt"><%= barbearia.ativo ? 'Para o login do dono e da equipe, a secretária, o assistente, os lembretes e o agendamento online. Nenhum dado é apagado.' : 'Login, secretária, assistente e lembretes futuros voltam.' %></p>
+    <div class="m-mt">
+    <% if (barbearia.ativo) { %>
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="m-inline"
+            onsubmit="return confirm(<%= JSON.stringify('Pausar o acesso da ' + barbearia.nome + '? Vai parar: login do dono e dos barbeiros, secretária, assistente, lembretes e agendamento online. Nenhum dado é apagado; Reativar volta tudo.') %>)">
+        <input type="hidden" name="ativa" value="false" />
+        <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Pausar acesso</button>
+      </form>
+    <% } else { %>
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="m-inline"
+            onsubmit="return confirm(<%= JSON.stringify('Reativar a ' + barbearia.nome + '? Login, secretária, assistente e lembretes futuros voltam.') %>)">
+        <input type="hidden" name="ativa" value="true" />
+        <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Reativar</button>
+      </form>
+    <% } %>
+    </div>
+  </div>
+  <div class="cv-cartao m-bloco m-risco">
+    <h2>Excluir barbearia</h2>
+    <p class="cv-texto-apoio m-mt">Remove a barbearia e todos os dados dela (equipe, clientes, agenda, caixa). Não dá para desfazer.</p>
+    <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/remover" class="m-mt" onsubmit="return confirm(<%= JSON.stringify('Excluir a barbearia ' + barbearia.nome + ' e TODOS os dados dela?') %>)">
+      <button class="cv-btn cv-btn--2 cv-txt-perigo" type="submit">Excluir barbearia</button>
+    </form>
+  </div>
+</section>
+
+<script>
+  // Abas da ficha: uma seção por vez, pelo #endereço (links antigos como
+  // #plano e #teste caem no Resumo). Sem JS, todas aparecem.
+  (function () {
+    var abas = document.querySelectorAll('#m-abas [data-aba]'), secs = document.querySelectorAll('.m-aba');
+    var MAPA = { plano: 'resumo', teste: 'resumo' };
+    function mostrar() {
+      var h = location.hash.replace('#', '').replace('aba-', ''), alvo = MAPA[h] || h;
+      if (!document.getElementById('aba-' + alvo)) alvo = 'resumo';
+      Array.prototype.forEach.call(secs, function (s) { s.hidden = s.id !== 'aba-' + alvo; });
+      Array.prototype.forEach.call(abas, function (a) { if (a.getAttribute('data-aba') === alvo) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+      if (MAPA[h]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); }
+    }
+    Array.prototype.forEach.call(abas, function (a) { a.addEventListener('click', function (e) { e.preventDefault(); history.replaceState(null, '', a.getAttribute('href')); mostrar(); }); });
+    window.addEventListener('hashchange', mostrar);
+    mostrar();
+  })();
+</script>

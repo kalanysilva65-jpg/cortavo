@@ -1,35 +1,35 @@
 <%/* Canais de agendamento + mensagens enviadas (painel-mestre, todas as
      barbearias, por mês). Dados de services/canaisMensagens.js. Estilo do
-     sv-mestre.css (mesmas classes de mestre/uso.ejs). */%>
+     cv-mestre.css (mesmas classes de mestre/uso.ejs). */%>
 <% function num(v){ return (v||0).toLocaleString('pt-BR'); } %>
-<div class="cabecalho-pagina agenda-cabecalho">
+<div class="m-topo">
   <div>
     <h1>Canais &amp; mensagens</h1>
-    <p class="texto-secundario">De onde vêm os agendamentos e o que foi enviado — <strong><%= competencia %></strong>, todas as barbearias.</p>
+    <p class="cv-texto-apoio">De onde vêm os agendamentos e o que foi enviado — <strong><%= competencia %></strong>, todas as barbearias.</p>
   </div>
-  <div class="flex gap-8">
-    <form method="GET" action="/mestre/canais" class="flex gap-8" style="align-items:flex-end;margin:0">
-      <div class="campo" style="margin:0">
+  <div class="m-flex">
+    <form method="GET" action="/mestre/canais" class="m-flex" style="align-items:flex-end;margin:0">
+      <div class="cv-campo" style="margin:0">
         <label for="competencia">Mês</label>
         <input id="competencia" type="month" name="competencia" value="<%= competencia %>" />
       </div>
-      <button class="btn btn-secundario btn-sm" type="submit">Ver</button>
+      <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Ver</button>
     </form>
-    <a href="/mestre/uso" class="btn btn-secundario btn-sm">Uso &amp; custos</a>
-    <a href="/mestre" class="btn btn-secundario btn-sm">Voltar</a>
+    <a href="/mestre/uso" class="cv-btn cv-btn--2 cv-btn--p">Uso &amp; custos</a>
+    <a href="/mestre" class="cv-btn cv-btn--2 cv-btn--p">Voltar</a>
   </div>
 </div>
 
 <%/* ---------------- Agendamentos por canal ---------------- */%>
-<div class="card">
+<div class="cv-cartao m-bloco">
   <h2 style="margin-top:0">Agendamentos por canal</h2>
-  <p class="texto-secundario" style="margin-top:0">
+  <p class="cv-texto-apoio" style="margin-top:0">
     <strong><%= num(canais.total) %></strong> agendamento(s) <strong>criado(s) neste mês</strong>, por origem.
-    <span class="texto-secundario">("Anterior" = marcados antes deste recurso existir.)</span>
+    <span class="cv-texto-apoio">("Anterior" = marcados antes deste recurso existir.)</span>
   </p>
 
-  <div class="tabela-rolagem">
-    <table class="tabela">
+  <div class="m-rolagem">
+    <table class="m-tab">
       <thead>
         <tr><th>Canal</th><th style="text-align:right">Agendamentos</th><th style="text-align:right">%</th></tr>
       </thead>
@@ -42,7 +42,7 @@
           </tr>
         <% }) %>
         <% if (canais.total === 0) { %>
-          <tr><td colspan="3" class="texto-secundario">Nenhum agendamento criado neste mês.</td></tr>
+          <tr><td colspan="3" class="cv-texto-apoio">Nenhum agendamento criado neste mês.</td></tr>
         <% } %>
       </tbody>
     </table>
@@ -50,8 +50,8 @@
 
   <% if (canais.porBarbearia.length) { %>
     <h3>Por barbearia</h3>
-    <div class="tabela-rolagem">
-      <table class="tabela">
+    <div class="m-rolagem">
+      <table class="m-tab">
         <thead>
           <tr>
             <th>Barbearia</th>
@@ -75,8 +75,8 @@
   <% if (canais.clientes.length) { %>
     <details style="margin-top:12px">
       <summary style="cursor:pointer">Ver clientes que agendaram (<%= num(canais.clientes.length) %><% if (canais.clientesTruncado) { %> de <%= num(canais.clientes.length + canais.clientesTruncado) %><% } %>)</summary>
-      <div class="tabela-rolagem" style="margin-top:8px">
-        <table class="tabela">
+      <div class="m-rolagem" style="margin-top:8px">
+        <table class="m-tab">
           <thead>
             <tr><th>Cliente</th><th>Barbearia</th><th>Canal</th><th>Marcou em</th><th>Para</th></tr>
           </thead>
@@ -93,19 +93,19 @@
           </tbody>
         </table>
       </div>
-      <% if (canais.clientesTruncado) { %><p class="texto-secundario">+ <%= num(canais.clientesTruncado) %> não listados (mostrando os mais recentes).</p><% } %>
+      <% if (canais.clientesTruncado) { %><p class="cv-texto-apoio">+ <%= num(canais.clientesTruncado) %> não listados (mostrando os mais recentes).</p><% } %>
     </details>
   <% } %>
 </div>
 
 <%/* ---------------- Lembretes enviados ---------------- */%>
-<div class="card">
+<div class="cv-cartao m-bloco">
   <h2 style="margin-top:0">Lembretes enviados</h2>
-  <p class="texto-secundario" style="margin-top:0"><strong><%= num(lembretes.total) %></strong> lembrete(s) de WhatsApp disparado(s) neste mês.</p>
+  <p class="cv-texto-apoio" style="margin-top:0"><strong><%= num(lembretes.total) %></strong> lembrete(s) de WhatsApp disparado(s) neste mês.</p>
 
   <% if (lembretes.porBarbearia.length) { %>
-    <div class="tabela-rolagem">
-      <table class="tabela">
+    <div class="m-rolagem">
+      <table class="m-tab">
         <thead><tr><th>Barbearia</th><th style="text-align:right">Lembretes</th></tr></thead>
         <tbody>
           <% lembretes.porBarbearia.forEach(function (r) { %>
@@ -116,8 +116,8 @@
     </div>
     <details style="margin-top:12px">
       <summary style="cursor:pointer">Ver pra quem (<%= num(lembretes.lista.length) %><% if (lembretes.truncado) { %> de <%= num(lembretes.total) %><% } %>)</summary>
-      <div class="tabela-rolagem" style="margin-top:8px">
-        <table class="tabela">
+      <div class="m-rolagem" style="margin-top:8px">
+        <table class="m-tab">
           <thead><tr><th>Cliente</th><th>Telefone</th><th>Barbearia</th><th>Enviado em</th><th>Horário</th></tr></thead>
           <tbody>
             <% lembretes.lista.forEach(function (r) { %>
@@ -126,21 +126,21 @@
           </tbody>
         </table>
       </div>
-      <% if (lembretes.truncado) { %><p class="texto-secundario">+ <%= num(lembretes.truncado) %> não listados (mostrando os mais recentes).</p><% } %>
+      <% if (lembretes.truncado) { %><p class="cv-texto-apoio">+ <%= num(lembretes.truncado) %> não listados (mostrando os mais recentes).</p><% } %>
     </details>
   <% } else { %>
-    <p class="texto-secundario">Nenhum lembrete enviado neste mês.</p>
+    <p class="cv-texto-apoio">Nenhum lembrete enviado neste mês.</p>
   <% } %>
 </div>
 
 <%/* ---------------- Mensagens da IA ---------------- */%>
-<div class="card">
+<div class="cv-cartao m-bloco">
   <h2 style="margin-top:0">Mensagens da IA (secretária)</h2>
-  <p class="texto-secundario" style="margin-top:0"><strong><%= num(ia.total) %></strong> mensagem(ns) enviada(s) pela secretária neste mês.</p>
+  <p class="cv-texto-apoio" style="margin-top:0"><strong><%= num(ia.total) %></strong> mensagem(ns) enviada(s) pela secretária neste mês.</p>
 
   <% if (ia.porBarbearia.length) { %>
-    <div class="tabela-rolagem">
-      <table class="tabela">
+    <div class="m-rolagem">
+      <table class="m-tab">
         <thead><tr><th>Barbearia</th><th style="text-align:right">Mensagens da IA</th></tr></thead>
         <tbody>
           <% ia.porBarbearia.forEach(function (r) { %>
@@ -151,8 +151,8 @@
     </div>
     <details style="margin-top:12px">
       <summary style="cursor:pointer">Ver pra quem (<%= num(ia.lista.length) %><% if (ia.truncado) { %> de <%= num(ia.total) %><% } %>)</summary>
-      <div class="tabela-rolagem" style="margin-top:8px">
-        <table class="tabela">
+      <div class="m-rolagem" style="margin-top:8px">
+        <table class="m-tab">
           <thead><tr><th>Cliente</th><th>Telefone</th><th>Barbearia</th><th>Enviada em</th></tr></thead>
           <tbody>
             <% ia.lista.forEach(function (r) { %>
@@ -161,9 +161,9 @@
           </tbody>
         </table>
       </div>
-      <% if (ia.truncado) { %><p class="texto-secundario">+ <%= num(ia.truncado) %> não listadas (mostrando as mais recentes).</p><% } %>
+      <% if (ia.truncado) { %><p class="cv-texto-apoio">+ <%= num(ia.truncado) %> não listadas (mostrando as mais recentes).</p><% } %>
     </details>
   <% } else { %>
-    <p class="texto-secundario">Nenhuma mensagem da IA neste mês.</p>
+    <p class="cv-texto-apoio">Nenhuma mensagem da IA neste mês.</p>
   <% } %>
 </div>

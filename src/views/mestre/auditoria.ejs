@@ -1,18 +1,18 @@
-<div class="cabecalho-pagina agenda-cabecalho">
+<div class="m-topo">
   <div>
     <h1>Auditoria</h1>
-    <p class="texto-secundario">Registro das ações administrativas do painel-mestre. Só leitura — nada aqui é editável ou apagável pelo app.</p>
+    <p class="cv-texto-apoio">Registro das ações administrativas do painel-mestre. Só leitura — nada aqui é editável ou apagável pelo app.</p>
   </div>
-  <a href="/mestre" class="btn btn-secundario btn-sm">← Voltar</a>
+  <a href="/mestre" class="cv-btn cv-btn--2 cv-btn--p">← Voltar</a>
 </div>
 
-<div class="card">
+<div class="cv-cartao m-bloco">
   <h2>Ações (<%= total %>)</h2>
   <% if (logs.length === 0) { %>
-    <p class="texto-secundario mt-16">Nenhuma ação registrada ainda.</p>
+    <p class="cv-texto-apoio m-mt">Nenhuma ação registrada ainda.</p>
   <% } else { %>
-    <div class="tabela-rolagem">
-      <table class="tabela mt-16">
+    <div class="m-rolagem">
+      <table class="m-tab m-mt">
         <thead>
           <tr>
             <th>Quando</th>
@@ -25,11 +25,11 @@
         <tbody>
           <% logs.forEach(function (log) { %>
             <tr>
-              <td><span class="texto-sutil"><%= new Date(log.criadoEm).toLocaleString('pt-BR') %></span></td>
+              <td><span class="m-sutil"><%= new Date(log.criadoEm).toLocaleString('pt-BR') %></span></td>
               <td><%= log.adminNome %></td>
-              <td><span class="badge-papel"><%= log.acao %></span></td>
+              <td><span class="cv-etq"><%= log.acao %></span></td>
               <td><%= log.detalhe || '' %></td>
-              <td><span class="texto-sutil"><%= log.ip || '—' %></span></td>
+              <td><span class="m-sutil"><%= log.ip || '—' %></span></td>
             </tr>
           <% }) %>
         </tbody>
@@ -37,13 +37,13 @@
     </div>
 
     <% if (paginacao.totalPaginas > 1) { %>
-      <div class="flex gap-8 mt-16" style="align-items:center;justify-content:center">
+      <div class="m-flex m-mt" style="align-items:center;justify-content:center">
         <% if (paginacao.pagina > 1) { %>
-          <a href="/mestre/auditoria?pagina=<%= paginacao.pagina - 1 %>" class="btn btn-secundario btn-sm">← Anterior</a>
+          <a href="/mestre/auditoria?pagina=<%= paginacao.pagina - 1 %>" class="cv-btn cv-btn--2 cv-btn--p">← Anterior</a>
         <% } %>
-        <span class="texto-sutil">Página <%= paginacao.pagina %> de <%= paginacao.totalPaginas %></span>
+        <span class="m-sutil">Página <%= paginacao.pagina %> de <%= paginacao.totalPaginas %></span>
         <% if (paginacao.pagina < paginacao.totalPaginas) { %>
-          <a href="/mestre/auditoria?pagina=<%= paginacao.pagina + 1 %>" class="btn btn-secundario btn-sm">Próxima →</a>
+          <a href="/mestre/auditoria?pagina=<%= paginacao.pagina + 1 %>" class="cv-btn cv-btn--2 cv-btn--p">Próxima →</a>
         <% } %>
       </div>
     <% } %>

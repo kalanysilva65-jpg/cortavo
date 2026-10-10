@@ -1,27 +1,27 @@
-<div class="cabecalho-pagina">
+<div class="m-topo">
   <h1>Nova barbearia</h1>
-  <p class="texto-secundario">Cria a barbearia e o primeiro acesso de admin dela.</p>
+  <p class="cv-texto-apoio">Cria a barbearia e o primeiro acesso de admin dela.</p>
 </div>
 
 <% if (erro) { %>
-  <div class="alerta alerta-erro mb-16"><%= erro %></div>
+  <div class="m-alerta m-alerta--erro m-mb"><%= erro %></div>
 <% } %>
 
-<form method="POST" action="/mestre/barbearias" class="card form">
+<form method="POST" action="/mestre/barbearias" class="cv-cartao m-bloco m-form">
   <h2>Barbearia</h2>
-  <div class="grid-2 mt-16">
-    <div class="campo">
+  <div class="cv-dupla m-mt">
+    <div class="cv-campo">
       <label for="nome">Nome</label>
       <input id="nome" name="nome" value="<%= valores ? valores.nome : '' %>" required autofocus />
     </div>
-    <div class="campo">
+    <div class="cv-campo">
       <label for="slug">Subdomínio</label>
       <input id="slug" name="slug" placeholder="ex.: andrade" value="<%= valores ? valores.slug : '' %>" />
-      <span class="texto-sutil">Vira &lt;subdomínio&gt;.seuapp.com. Se vazio, é gerado a partir do nome.</span>
+      <span class="m-sutil">Vira &lt;subdomínio&gt;.seuapp.com. Se vazio, é gerado a partir do nome.</span>
     </div>
   </div>
 
-  <div class="campo mt-16">
+  <div class="cv-campo m-mt">
     <label for="plano">Plano da Cortavo</label>
     <% var planoEscolhido = valores ? valores.plano : ''; %>
     <select id="plano" name="plano" required>
@@ -30,35 +30,35 @@
         <option value="<%= p.chave %>" <%= p.chave === planoEscolhido ? 'selected' : '' %>><%= p.nome %><%= p.precoCentavos ? ' · R$ ' + (p.precoCentavos / 100) : ' · tudo liberado' %></option>
       <% }) %>
     </select>
-    <span class="texto-sutil">Dá para trocar depois no detalhe da barbearia.</span>
+    <span class="m-sutil">Dá para trocar depois no detalhe da barbearia.</span>
   </div>
 
   <% var emTesteMarcado = !valores || valores.emTeste === '1' || valores.emTeste === 'on'; %>
-  <div class="campo mt-16">
+  <div class="cv-campo m-mt">
     <label><input type="checkbox" name="emTeste" value="1" <%= emTesteMarcado ? 'checked' : '' %> /> Em teste grátis (14 dias, sem cartão)</label>
     <% if (typeof vagasFundador !== 'undefined' && vagasFundador) { %>
-      <span class="texto-sutil">Vagas de fundador: <%= vagasFundador.usadas %> de <%= vagasFundador.total %>.
+      <span class="m-sutil">Vagas de fundador: <%= vagasFundador.usadas %> de <%= vagasFundador.total %>.
         <%= vagasFundador.livres > 0 ? 'Ao começar o teste, uma vaga fica reservada.' : 'As 5 vagas estão reservadas: esta barbearia fica sem desconto de fundador.' %></span>
     <% } %>
   </div>
 
-  <h2 class="mt-16">Admin da barbearia</h2>
-  <div class="grid-2 mt-16">
-    <div class="campo">
+  <h2 class="m-mt">Admin da barbearia</h2>
+  <div class="cv-dupla m-mt">
+    <div class="cv-campo">
       <label for="adminNome">Nome</label>
       <input id="adminNome" name="adminNome" value="<%= valores ? valores.adminNome : '' %>" required />
     </div>
-    <div class="campo">
+    <div class="cv-campo">
       <label for="adminEmail">E-mail</label>
       <input id="adminEmail" type="email" name="adminEmail" value="<%= valores ? valores.adminEmail : '' %>" required />
     </div>
   </div>
   <%/* Spec 13: sem campo de senha. O dono recebe um e-mail para criar a
        PRÓPRIA senha; ninguém mais conhece. */%>
-  <p class="texto-secundario">O dono recebe um e-mail para criar a própria senha. Confira o e-mail antes de salvar.</p>
+  <p class="cv-texto-apoio">O dono recebe um e-mail para criar a própria senha. Confira o e-mail antes de salvar.</p>
 
-  <div class="flex gap-8 mt-16">
-    <button class="btn btn-primario btn-sm" type="submit">Criar barbearia</button>
-    <a href="/mestre" class="btn btn-secundario btn-sm">Cancelar</a>
+  <div class="m-flex m-mt">
+    <button class="cv-btn cv-btn--p" type="submit">Criar barbearia</button>
+    <a href="/mestre" class="cv-btn cv-btn--2 cv-btn--p">Cancelar</a>
   </div>
 </form>

@@ -444,3 +444,17 @@ test('F10 mestre: Visão geral com os números do visaoGeralMestre, atenção co
   assert.match(lay, /class="cv-navbar m-nav-cel"/);
   assert.doesNotMatch(lay, />CORTAVO</);
 });
+
+test('F10 mestre: ficha em abas com Zona de risco, popover E/P na lista e nada da pilha antiga', async () => {
+  const det = fs.readFileSync(path.join(VIEWS, 'mestre/barbearia-detalhe.ejs'), 'utf8');
+  for (const a of ['resumo', 'dados', 'marca', 'equipe', 'risco']) assert.match(det, new RegExp('id="aba-' + a + '"'), a);
+  assert.match(det, /\/ativa"/);
+  assert.match(det, /\/remover"/);
+  const lista = fs.readFileSync(path.join(VIEWS, 'mestre/painel.ejs'), 'utf8');
+  assert.match(lista, /Entrar como dono<kbd>E<\/kbd>/);
+  assert.match(lista, /Trocar plano<kbd>P<\/kbd>/);
+  for (const f of fs.readdirSync(path.join(VIEWS, 'mestre'))) {
+    assert.doesNotMatch(fs.readFileSync(path.join(VIEWS, 'mestre', f), 'utf8'), /class="(card|btn |tabela|campo)\b/, f);
+  }
+  assert.doesNotMatch(fs.readFileSync(path.join(VIEWS, 'layouts/mestre.ejs'), 'utf8'), /sv-mestre/);
+});

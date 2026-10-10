@@ -1,15 +1,15 @@
-<div class="cabecalho-pagina">
+<div class="m-topo">
   <h1>Editar barbeiro</h1>
-  <p class="texto-secundario"><%= barbearia.nome %> · <%= membro.nome %></p>
+  <p class="cv-texto-apoio"><%= barbearia.nome %> · <%= membro.nome %></p>
 </div>
 
-<form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= membro.id %>" class="card form">
-  <div class="grid-2">
-    <div class="campo">
+<form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= membro.id %>" class="cv-cartao m-bloco m-form">
+  <div class="cv-dupla">
+    <div class="cv-campo">
       <label for="nome">Nome</label>
       <input id="nome" name="nome" value="<%= membro.nome %>" required autofocus />
     </div>
-    <div class="campo">
+    <div class="cv-campo">
       <label for="email">E-mail</label>
       <input id="email" type="email" name="email" value="<%= membro.email %>" required />
     </div>
@@ -17,9 +17,9 @@
   <%/* Spec 13: a senha não passa mais pelo mestre. Para uma senha nova, use
        "Enviar link para nova senha" na equipe. Trocar o e-mail revoga o link
        aberto (use "Reenviar link" depois). */%>
-  <p class="texto-secundario">Trocar o e-mail faz o link de acesso anterior deixar de valer. Para uma senha nova, use “Enviar link para nova senha” na equipe.</p>
-  <div class="grid-2">
-    <div class="campo">
+  <p class="cv-texto-apoio">Trocar o e-mail faz o link de acesso anterior deixar de valer. Para uma senha nova, use “Enviar link para nova senha” na equipe.</p>
+  <div class="cv-dupla">
+    <div class="cv-campo">
       <label for="papel">Papel</label>
       <select id="papel" name="papel">
         <option value="funcionario" <%= membro.papel === 'funcionario' ? 'selected' : '' %>>Barbeiro</option>
@@ -27,8 +27,8 @@
       </select>
     </div>
   </div>
-  <div class="flex gap-8 mt-16">
-    <button class="btn btn-primario btn-sm" type="submit">Salvar</button>
-    <a href="/mestre/barbearias/<%= barbearia.id %>" class="btn btn-secundario btn-sm">Cancelar</a>
+  <div class="m-flex m-mt">
+    <button class="cv-btn cv-btn--p" type="submit">Salvar</button>
+    <a href="/mestre/barbearias/<%= barbearia.id %>" class="cv-btn cv-btn--2 cv-btn--p">Cancelar</a>
   </div>
 </form>

@@ -140,7 +140,15 @@
             <td class="num esc"><%= barb._count.agendamentos %></td>
             <td class="acoes-td">
               <div class="acoes">
-                <form method="POST" action="/mestre/entrar/<%= barb.id %>"><button class="cv-btn cv-btn--2 cv-btn--p" type="submit" aria-label="Entrar como dono em <%= barb.nome %>"><%- include('../partials/icone', { cvIc: 'entrar', cvCls: 'cv-ic--18' }) %>Entrar</button></form>
+                <form method="POST" action="/mestre/entrar/<%= barb.id %>" id="m-entrar-<%= barb.id %>"><button class="cv-btn cv-btn--2 cv-btn--p m-entrar-btn" type="submit" aria-label="Entrar como dono em <%= barb.nome %>"><%- include('../partials/icone', { cvIc: 'entrar', cvCls: 'cv-ic--18' }) %>Entrar</button></form>
+                <button class="m-mais" type="button" aria-label="Ações de <%= barb.nome %>" aria-haspopup="menu" aria-expanded="false" data-acoes="<%= barb.id %>"><%- include('../partials/icone', { cvIc: 'reticencias', cvCls: 'cv-ic--20' }) %></button>
+                <div class="m-pop" role="menu" id="m-pop-<%= barb.id %>" hidden>
+                  <button type="submit" form="m-entrar-<%= barb.id %>" role="menuitem"><%- include('../partials/icone', { cvIc: 'entrar' }) %>Entrar como dono<kbd>E</kbd></button>
+                  <a href="/mestre/barbearias/<%= barb.id %>#plano" role="menuitem"><%- include('../partials/icone', { cvIc: 'plano' }) %>Trocar plano<kbd>P</kbd></a>
+                  <a href="/mestre/barbearias/<%= barb.id %>" role="menuitem"><%- include('../partials/icone', { cvIc: 'olho' }) %>Ver ficha<kbd>↵</kbd></a>
+                  <hr>
+                  <a href="/mestre/barbearias/<%= barb.id %>#aba-risco" role="menuitem" class="perigo"><%- include('../partials/icone', { cvIc: 'pausa' }) %>Zona de risco</a>
+                </div>
               </div>
             </td>
           </tr>
@@ -162,6 +170,27 @@
 <form method="POST" action="/logout" class="m-so-cel m-sair-cel"><button class="cv-btn cv-btn--2 cv-btn--largo" type="submit"><%- include('../partials/icone', { cvIc: 'sair', cvCls: 'cv-ic--20' }) %>Sair</button></form>
 
 <script>
+  // Popover de ações em vidro (o único vidro do mestre no PC). Teclado sem
+  // animação: E entra como dono, P troca o plano, Enter abre a ficha, Esc fecha.
+  (function () {
+    var aberto = null;
+    function fechar() { if (!aberto) return; aberto.pop.hidden = true; aberto.btn.setAttribute('aria-expanded', 'false'); aberto.btn.focus(); aberto = null; }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-acoes]');
+      if (b) { e.stopPropagation(); var pop = document.getElementById('m-pop-' + b.getAttribute('data-acoes')); var era = aberto && aberto.pop === pop; fechar(); if (era) return;
+        pop.hidden = false; b.setAttribute('aria-expanded', 'true'); aberto = { pop: pop, btn: b }; var f = pop.querySelector('[role="menuitem"]'); if (f) f.focus(); return; }
+      if (aberto && !aberto.pop.contains(e.target)) fechar();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!aberto) return;
+      var k = e.key.toLowerCase(), itens = aberto.pop.querySelectorAll('[role="menuitem"]');
+      if (k === 'escape') { e.preventDefault(); fechar(); }
+      else if (k === 'e') { e.preventDefault(); itens[0].click(); }
+      else if (k === 'p') { e.preventDefault(); itens[1].click(); }
+      else if (k === 'arrowdown' || k === 'arrowup') { e.preventDefault(); var l = Array.prototype.slice.call(itens), i = l.indexOf(document.activeElement); i = k === 'arrowdown' ? (i + 1) % l.length : (i - 1 + l.length) % l.length; l[i].focus(); }
+    });
+  })();
+
   // Teclado (sem animação): "/" foca a busca.
   document.addEventListener('keydown', function (e) {
     var a = document.activeElement;

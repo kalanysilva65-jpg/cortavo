@@ -1,35 +1,35 @@
 <%/* Uso & custos de IA por barbearia (painel-mestre). Tabela + atualização em
-     tempo real (polling em /mestre/uso.json). Estilos no sv-mestre.css. */%>
-<div class="cabecalho-pagina agenda-cabecalho">
+     tempo real (polling em /mestre/uso.json). Estilos no cv-mestre.css. */%>
+<div class="m-topo">
   <div>
     <h1>Uso &amp; custos</h1>
-    <p class="texto-secundario">Consumo de IA por barbearia — <strong id="uso-mes"><%= competencia %></strong>. Atualiza sozinho. <span class="texto-secundario">(estimativa; a fatura oficial fica na Anthropic/Meta)</span></p>
+    <p class="cv-texto-apoio">Consumo de IA por barbearia — <strong id="uso-mes"><%= competencia %></strong>. Atualiza sozinho. <span class="cv-texto-apoio">(estimativa; a fatura oficial fica na Anthropic/Meta)</span></p>
   </div>
-  <div class="flex gap-8">
-    <form method="GET" action="/mestre/uso" class="flex gap-8" style="align-items:flex-end;margin:0">
-      <div class="campo" style="margin:0">
+  <div class="m-flex">
+    <form method="GET" action="/mestre/uso" class="m-flex" style="align-items:flex-end;margin:0">
+      <div class="cv-campo" style="margin:0">
         <label for="competencia">Mês</label>
         <input id="competencia" type="month" name="competencia" value="<%= competencia %>" />
       </div>
-      <button class="btn btn-secundario btn-sm" type="submit">Ver</button>
+      <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Ver</button>
     </form>
-    <a href="/mestre" class="btn btn-secundario btn-sm">Voltar</a>
+    <a href="/mestre" class="cv-btn cv-btn--2 cv-btn--p">Voltar</a>
   </div>
 </div>
 
-<div class="card">
-  <p class="texto-secundario" style="margin-top:0">
+<div class="cv-cartao m-bloco">
+  <p class="cv-texto-apoio" style="margin-top:0">
     Modelos: WhatsApp <strong><%= modelos.whatsapp %></strong> · Copiloto <strong><%= modelos.copiloto %></strong>.
     Custo <strong>real</strong> da IA (cache já contado a 10%), convertido a <strong>R$ <%= cotacao.toFixed(2) %></strong>/US$.
     É só a parte da <strong>IA</strong> — a conversa do WhatsApp (Meta) é grátis quando o cliente inicia.
     <br>Margem estimada assumindo plano de <strong>R$ <%= precoPlanoRef.toFixed(2) %></strong>/mês por barbearia ativa (ajuste em <code>PLANO_PRECO_REF</code>).
     <br><strong>Tokens</strong> (formato <em>entrada / saída</em>): separados por canal — WhatsApp (secretária) e Copiloto (assistente do painel). Já ponderados pelo cache (é o valor que gera o custo). A coluna <strong>Entrada crua</strong> mostra os tokens de entrada REAIS, sem a ponderação do cache (a saída já é crua) — medida só a partir de 20/09/2026 (meses anteriores aparecem como —).
     <br><strong>WhatsApp (Meta)</strong>: mensagens enviadas no mês pela IA + equipe. Desde 01/10/2026 a Meta cobra a partir da <%= (typeof wppGratisMes !== 'undefined' ? wppGratisMes : 1000).toLocaleString('pt-BR') %>ª por número (~<%= (typeof wppPrecoMsgBRL !== 'undefined' ? wppPrecoMsgBRL : 0.035).toLocaleString('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits: 3 }) %> cada) e cada lembrete (template) desde o 1º — tudo no cartão da Cortavo, então esse custo já entra em <em>Custo</em> e <em>Margem</em>. Linha em <span style="color:#b45309;font-weight:700">laranja</span> = passou de 80% da franquia grátis.
-    <br><span class="texto-secundario">Obs.: o custo é <strong>estimado com o modelo ATUAL</strong> (WhatsApp <%= modelos.whatsapp %>). Se você trocou de modelo no meio do mês (ex.: Haiku → Sonnet), os tokens antigos são reprecificados pelo novo modelo e a estimativa pode ficar <strong>acima</strong> do valor real da Anthropic — que é a fatura oficial. No mês seguinte (modelo estável) os números se aproximam.</span>
+    <br><span class="cv-texto-apoio">Obs.: o custo é <strong>estimado com o modelo ATUAL</strong> (WhatsApp <%= modelos.whatsapp %>). Se você trocou de modelo no meio do mês (ex.: Haiku → Sonnet), os tokens antigos são reprecificados pelo novo modelo e a estimativa pode ficar <strong>acima</strong> do valor real da Anthropic — que é a fatura oficial. No mês seguinte (modelo estável) os números se aproximam.</span>
   </p>
 
-  <div class="tabela-rolagem">
-    <table class="tabela">
+  <div class="m-rolagem">
+    <table class="m-tab">
       <thead>
         <tr>
           <th>Barbearia</th>
@@ -67,7 +67,7 @@
           </tr>
         <% }) %>
         <% if (linhas.length === 0) { %>
-          <tr><td colspan="11" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
+          <tr><td colspan="11" class="cv-texto-apoio">Nenhum uso registrado neste mês.</td></tr>
         <% } %>
       </tbody>
       <tfoot>
@@ -121,7 +121,7 @@
                 '<td style="text-align:right">' + brl(l.custoPorConversaBRL) + '</td>' +
                 '<td style="text-align:right">' + (l.ativa ? brl(l.margemBRL) + (l.margemPct != null ? ' (' + l.margemPct + '%)' : '') : '—') + '</td></tr>';
             }).join('')
-          : '<tr><td colspan="11" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
+          : '<tr><td colspan="11" class="cv-texto-apoio">Nenhum uso registrado neste mês.</td></tr>';
         document.getElementById('uso-tot-conversas').textContent = n(d.totais.conversas);
         document.getElementById('uso-tot-respostas').textContent = n(d.totais.respostas);
         document.getElementById('uso-tot-copiloto').textContent = n(d.totais.copiloto);
