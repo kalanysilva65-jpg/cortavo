@@ -1,144 +1,170 @@
-<div class="cabecalho-pagina agenda-cabecalho">
-  <div>
-    <h1>Barbearias</h1>
-    <p class="texto-secundario">Todas as barbearias assinantes. Clique no nome para gerenciar ou em “Entrar” para operar.</p>
-  </div>
-  <div class="flex gap-8">
-    <a href="/mestre/uso" class="btn btn-secundario btn-sm">Uso &amp; custos</a>
-    <a href="/mestre/canais" class="btn btn-secundario btn-sm">Canais &amp; mensagens</a>
-    <a href="/mestre/auditoria" class="btn btn-secundario btn-sm">Auditoria</a>
-    <a href="/mestre/nova" class="btn btn-primario btn-sm">+ Nova barbearia</a>
+<%
+  // Painel-mestre v3 (fatia F10): Visão geral (4 números, Precisa de atenção,
+  // Testes ativos, Vagas de fundador) e a lista de barbearias com busca e
+  // filtro. Números do services/visaoGeralMestre (o mesmo de
+  // /mestre/visao-geral.json); são ESTIMATIVAS (preço de tabela, cotação do
+  // dólar do mês), e a tela diz isso.
+  var V = (typeof visao !== 'undefined' && visao) ? visao : null;
+  var N = V ? V.numeros : null;
+  function partes(c) {
+    var v = Math.abs(Math.round(c || 0)) / 100, int = Math.floor(v);
+    return { int: int.toLocaleString('pt-BR'), cent: ',' + String(Math.round((v - int) * 100)).padStart(2, '0'), neg: (c || 0) < 0 };
+  }
+  function num(c, tam) { var p = partes(c); return '<span class="cv-num cv-num--' + tam + '">' + (p.neg ? '−' : '') + '<span class="moeda">R$</span><span class="int">' + p.int + '</span><span class="cent">' + p.cent + '</span></span>'; }
+  var IC_ALERTA = { pausada_atraso: 'cartao', pausada_teste: 'relogio', teste_vencido: 'relogio', teste_terminando: 'relogio', margem_negativa: 'comissao', secretaria_perto_do_teto: 'secretaria', assistente_perto_do_teto: 'assistente', whatsapp_franquia: 'conversa', barbeiros_acima: 'equipe', sem_movimento: 'agenda', backup: 'alerta' };
+  var hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  hoje = hoje.charAt(0).toUpperCase() + hoje.slice(1);
+  var bk = backup, fmtBk = function (d) { return new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); };
+  var DIAS_TESTE = 14;
+  var STATUS = [['todas', 'Todas'], ['ativa', 'Ativas'], ['inativa', 'Inativas']];
+  var qsStatus = function (st) { return '/mestre?' + (filtros.q ? 'q=' + encodeURIComponent(filtros.q) + '&' : '') + 'status=' + st + '#barbearias'; };
+  var ini = function (n) { var p = String(n || '').trim().split(/\s+/); return ((p[0] || '?').charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase(); };
+  var SITUACAO = { ativa: 'Ativa', teste: 'Em teste', pausada_teste: 'Pausada', pausada_atraso: 'Pausada', cancelada: 'Cancelada' };
+%>
+<div class="m-topo">
+  <div><p><%= hoje %></p><h1>Visão geral</h1></div>
+  <div style="display:flex;gap:8px">
+    <a class="cv-btn" href="/mestre/nova"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--20' }) %>Nova barbearia</a>
   </div>
 </div>
 
-<%/* Backup semanal (scripts/backup-semanal.js). Vermelho se falhou/atrasou. */%>
-<% var bk = backup, fmtBk = function (d) { return new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); }; %>
-<div class="card" style="border-left:4px solid <%= bk.situacao === 'ok' ? '#2e9e5b' : '#d93025' %>">
-  <strong>Backup (diário):</strong>
-  <% if (bk.situacao === 'ok') { %>
-    ✅ último em <%= fmtBk(bk.ultimoOk.quando) %> — <%= (bk.ultimoOk.bytes / 1048576).toFixed(1) %> MB, conferido no Supabase.
-  <% } else if (bk.situacao === 'nunca') { %>
-    ⚠️ nenhum backup registrado ainda.
-  <% } else if (bk.situacao === 'falhou') { %>
-    ❌ o último (<%= fmtBk(bk.ultimo.quando) %>) FALHOU: <%= bk.ultimo.erro %>
-  <% } else { %>
-    ⚠️ atrasado — o último que deu certo foi em <%= fmtBk(bk.ultimoOk.quando) %>. Confira o cron no VPS.
-  <% } %>
-  <% if (bk.teste) { %><span class="texto-secundario"> · teste de restauração OK em <%= fmtBk(bk.teste.quando) %></span><% } %>
-</div>
+<%/* Backup diário (scripts/backup-semanal.js): uma linha discreta quando está
+     tudo certo; quando falha ou atrasa, vira item de "Precisa de atenção". */%>
+<p class="m-backup<%= bk.situacao === 'ok' ? '' : ' ruim' %>" role="status"><i aria-hidden="true"></i>
+  <% if (bk.situacao === 'ok') { %>Backup em dia: último em <%= fmtBk(bk.ultimoOk.quando) %>, <%= (bk.ultimoOk.bytes / 1048576).toFixed(1) %> MB<% if (bk.teste) { %>, restauração testada em <%= fmtBk(bk.teste.quando) %><% } %>.
+  <% } else if (bk.situacao === 'nunca') { %>Nenhum backup registrado ainda.
+  <% } else if (bk.situacao === 'falhou') { %>O último backup (<%= fmtBk(bk.ultimo.quando) %>) falhou: <%= bk.ultimo.erro %>
+  <% } else { %>Backup atrasado: o último que deu certo foi em <%= fmtBk(bk.ultimoOk.quando) %>.<% } %>
+</p>
 
-<!-- Fase 2.7: testes ativos e vagas de fundador (spec 05). -->
-<div class="card">
-  <div class="flex gap-8" style="justify-content:space-between;flex-wrap:wrap;align-items:baseline">
-    <h2>Testes ativos (<%= testesAtivos.length %>)</h2>
-    <span class="selo-plano<%= vagasFundador.livres <= 0 ? ' selo-plano--aviso' : '' %>">Vagas de fundador: <%= vagasFundador.usadas %> de <%= vagasFundador.total %></span>
-  </div>
-  <% if (vagasFundador.livres <= 0) { %><p class="texto-sutil">As 5 vagas estão reservadas: novos testes entram sem desconto de fundador.</p><% } %>
-  <% if (!testesAtivos.length) { %>
-    <p class="texto-secundario mt-16">Nenhuma barbearia em teste.</p>
-  <% } else { %>
-    <div class="tabela-rolagem">
-      <table class="tabela mt-16">
-        <thead><tr><th>Barbearia</th><th>Plano</th><th class="col-valor">Dias restantes</th><th>Fundador</th><th></th></tr></thead>
-        <tbody>
-          <% testesAtivos.forEach(function (t) { %>
-            <tr>
-              <td><a href="/mestre/barbearias/<%= t.id %>#teste" class="link-cliente"><%= t.nome %></a></td>
-              <td><span class="selo-plano"><%= planoDe(t.planoCortavo).nome %></span></td>
-              <td class="col-valor"><strong><%= t.diasRestantes >= 0 ? t.diasRestantes : 'acabou' %></strong></td>
-              <td><span class="texto-sutil"><%= t.fundador ? 'vaga reservada' : '-' %></span></td>
-              <td><span class="texto-sutil"><%= t.testeSegurarPausa ? 'pausa segurada' : (t.diasRestantes < 0 ? 'Pausa amanhã' : t.diasRestantes <= 2 ? 'avisar o dono' : '') %></span></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-  <% } %>
+<% if (N) { var totalB = N.ativas + N.emTeste + N.pausadas + N.inativas; %>
+<div class="m-kpis">
+  <section class="cv-objeto cv-gravada m-kpi m-objeto">
+    <span class="rot" style="color:var(--c-sobre-objeto-2)">Receita mensal estimada</span>
+    <div><%- num(N.receitaEstimada, 'g') %></div>
+    <span class="cv-delta"><%= N.semPrecoDefinido ? N.semPrecoDefinido + (N.semPrecoDefinido === 1 ? ' pagante sem preço definido' : ' pagantes sem preço definido') : 'Preço de tabela, com desconto de fundador' %></span>
+  </section>
+  <section class="cv-cartao m-kpi">
+    <span class="rot">Barbearias ativas</span>
+    <div><span class="cv-num cv-num--m"><span class="int"><%= N.ativas %></span><span class="de">&nbsp;de <%= totalB %></span></span></div>
+    <span class="cv-delta"><%= N.emTeste %> em teste · <%= N.pausadas %> <%= N.pausadas === 1 ? 'pausada' : 'pausadas' %></span>
+  </section>
+  <section class="cv-cartao m-kpi">
+    <span class="rot">Custo de IA e WhatsApp</span>
+    <div><%- num(N.custoTotal, 'm') %></div>
+    <span class="cv-delta"><%= N.receitaEstimada > 0 ? (N.custoTotal / N.receitaEstimada * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% da receita' : 'no mês' %></span>
+  </section>
+  <section class="cv-cartao m-kpi">
+    <span class="rot">Margem</span>
+    <div><span class="cv-num cv-num--m"><span class="int"><%= N.margemPct == null ? '—' : N.margemPct %></span><% if (N.margemPct != null) { %><span class="de">%</span><% } %></span></div>
+    <span class="cv-delta"><%= N.margemPct == null ? 'Sem receita no mês' : 'das barbearias com preço' %></span>
+  </section>
 </div>
+<% } %>
 
-<!-- Busca + filtro de status (paginação server-side) -->
-<div class="card">
-  <form method="GET" action="/mestre" class="flex gap-8" style="flex-wrap:wrap;align-items:flex-end">
-    <div class="campo" style="flex:1;min-width:200px;margin:0">
-      <label for="q">Buscar</label>
-      <input id="q" name="q" value="<%= filtros.q %>" placeholder="nome ou subdomínio" />
-    </div>
-    <div class="campo" style="margin:0">
-      <label for="status">Status</label>
-      <select id="status" name="status">
-        <option value="todas" <%= filtros.status === 'todas' ? 'selected' : '' %>>Todas</option>
-        <option value="ativa" <%= filtros.status === 'ativa' ? 'selected' : '' %>>Ativas</option>
-        <option value="inativa" <%= filtros.status === 'inativa' ? 'selected' : '' %>>Inativas</option>
-      </select>
-    </div>
-    <button class="btn btn-primario btn-sm" type="submit">Filtrar</button>
-    <% if (filtros.q || filtros.status !== 'todas') { %>
-      <a href="/mestre" class="btn btn-secundario btn-sm">Limpar</a>
+<div class="m-cols">
+  <section class="cv-cartao" aria-labelledby="m-aten-tit">
+    <div class="m-cartao-cab"><h2 id="m-aten-tit">Precisa de atenção</h2><span><%= V ? V.precisaDeAtencao.length + (V.precisaDeAtencao.length === 1 ? ' item' : ' itens') : '' %></span></div>
+    <% if (!V) { %>
+      <p class="m-vazio">Não deu para calcular agora. A lista de barbearias abaixo continua valendo.</p>
+    <% } else if (!V.precisaDeAtencao.length) { %>
+      <p class="m-vazio">Nada pedindo atenção. Testes, pagamentos, consumo e backup em dia.</p>
+    <% } else { %>
+      <ul class="m-aten">
+        <% V.precisaDeAtencao.forEach(function (a) { var teste = /^teste|pausada_teste/.test(a.tipo); %>
+          <li>
+            <span class="q<%= a.gravidade === 'alta' ? ' preto' : '' %>"><%- include('../partials/icone', { cvIc: IC_ALERTA[a.tipo] || 'alerta' }) %></span>
+            <span style="min-width:0"><b><%= a.nome ? a.nome + ': ' : '' %><%= a.texto %></b><small><%= a.gravidade === 'alta' ? 'Urgente' : a.gravidade === 'media' ? 'Esta semana' : 'Quando der' %></small></span>
+            <% if (a.barbeariaId) { %><a class="cv-btn cv-btn--2 cv-btn--p" href="/mestre/barbearias/<%= a.barbeariaId %><%= teste ? '#teste' : '' %>">Ver ficha</a><% } else { %><span></span><% } %>
+          </li>
+        <% }) %>
+      </ul>
     <% } %>
-  </form>
+  </section>
 
-  <h2 class="mt-16">Assinantes (<%= total %>)</h2>
-  <% if (barbearias.length === 0) { %>
-    <p class="texto-secundario mt-16">Nenhuma barbearia encontrada com esse filtro.</p>
-  <% } else { %>
-    <div class="tabela-rolagem">
-      <table class="tabela mt-16">
-        <thead>
-          <tr>
-            <th>Barbearia</th>
-            <th>Subdomínio</th>
-            <th>Plano</th>
-            <th class="col-valor">Equipe</th>
-            <th class="col-valor">Clientes</th>
-            <th class="col-valor">Agend.</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% barbearias.forEach(function (barb) { %>
-            <tr>
-              <td><a href="/mestre/barbearias/<%= barb.id %>" class="link-cliente"><%= barb.nome %></a></td>
-              <td><span class="texto-sutil"><%= barb.slug %></span></td>
-              <% var pl = planoDe(barb.planoCortavo); var av = avisoBarbeiros(pl, barb.barbeirosAtivos, barb.nome); %>
-              <td>
-                <span class="selo-plano<%= av ? ' selo-plano--aviso' : '' %>"><%= pl.nome %></span>
-                <% if (av) { %><div class="texto-sutil" style="margin-top:4px"><%= av %></div><% } %>
-              </td>
-              <td class="col-valor"><%= barb._count.usuarios %></td>
-              <td class="col-valor"><%= barb._count.clientes %></td>
-              <td class="col-valor"><%= barb._count.agendamentos %></td>
-              <td>
-                <% if (barb.ativo) { %>
-                  <span class="badge-papel">Ativa</span>
-                <% } else { %>
-                  <span class="texto-sutil"><strong>Pausada</strong></span>
-                <% } %>
-              </td>
-              <td class="col-acao">
-                <form method="POST" action="/mestre/entrar/<%= barb.id %>" class="inline">
-                  <button class="btn btn-primario btn-sm" type="submit">Entrar →</button>
-                </form>
-              </td>
-            </tr>
+  <div style="display:grid;gap:12px">
+    <section class="cv-cartao" aria-labelledby="m-testes-tit">
+      <div class="m-cartao-cab"><h2 id="m-testes-tit">Testes ativos</h2><span><%= testesAtivos.length %></span></div>
+      <% if (!testesAtivos.length) { %>
+        <p class="m-vazio">Nenhuma barbearia em teste.</p>
+      <% } else { %>
+        <div class="m-testes">
+          <% testesAtivos.forEach(function (t) { var d = t.diasRestantes, usado = Math.max(0, Math.min(1, (DIAS_TESTE - Math.max(d, 0)) / DIAS_TESTE)); %>
+            <a class="m-teste" href="/mestre/barbearias/<%= t.id %>#teste" style="color:inherit">
+              <b><%= t.nome %></b>
+              <span><%= t.testeSegurarPausa ? 'pausa segurada' : d < 0 ? 'acabou · Pausa amanhã' : (d === 0 ? 'termina hoje' : 'faltam ' + d + (d === 1 ? ' dia' : ' dias')) + (d <= 2 ? ' · avisar o dono' : '') %><%= t.fundador ? ' · fundador' : '' %></span>
+              <span class="t" role="img" aria-label="<%= Math.round(usado * 100) %>% do teste usado"><i style="width:<%= (usado * 100).toFixed(0) %>%"></i></span>
+            </a>
           <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-    <% if (paginacao.totalPaginas > 1) { %>
-      <%
-        var base = '/mestre?q=' + encodeURIComponent(filtros.q) + '&status=' + filtros.status + '&pagina=';
-      %>
-      <div class="flex gap-8 mt-16" style="align-items:center;justify-content:center">
-        <% if (paginacao.pagina > 1) { %>
-          <a href="<%= base + (paginacao.pagina - 1) %>" class="btn btn-secundario btn-sm">← Anterior</a>
-        <% } %>
-        <span class="texto-sutil">Página <%= paginacao.pagina %> de <%= paginacao.totalPaginas %></span>
-        <% if (paginacao.pagina < paginacao.totalPaginas) { %>
-          <a href="<%= base + (paginacao.pagina + 1) %>" class="btn btn-secundario btn-sm">Próxima →</a>
-        <% } %>
+        </div>
+      <% } %>
+    </section>
+    <section class="cv-cartao" aria-labelledby="m-vagas-tit">
+      <div class="m-cartao-cab"><h2 id="m-vagas-tit">Vagas de fundador</h2><span><%= vagasFundador.usadas %> de <%= vagasFundador.total %> usadas</span></div>
+      <div class="m-vagas" role="img" aria-label="<%= vagasFundador.usadas %> de <%= vagasFundador.total %> vagas usadas">
+        <% for (var i = 0; i < vagasFundador.total; i++) { %><i class="<%= i < vagasFundador.usadas ? 'ok' : 'livre' %>"></i><% } %>
       </div>
-    <% } %>
+      <% if (vagasFundador.livres <= 0) { %><p class="m-vazio" style="font-size:13px">As <%= vagasFundador.total %> vagas estão reservadas: novos testes entram sem desconto de fundador.</p><% } %>
+    </section>
+  </div>
+</div>
+
+<h2 class="m-secao-tit" id="barbearias">Barbearias</h2>
+<div class="m-ferr">
+  <form method="GET" action="/mestre#barbearias" class="m-busca" role="search">
+    <%- include('../partials/icone', { cvIc: 'busca' }) %>
+    <input class="cv-entrada" id="q" name="q" value="<%= filtros.q %>" placeholder="Buscar por nome ou subdomínio…" aria-label="Buscar barbearia" autocomplete="off" />
+    <input type="hidden" name="status" value="<%= filtros.status %>" />
+    <kbd aria-hidden="true">/</kbd>
+  </form>
+  <nav class="m-chips" aria-label="Situação">
+    <% STATUS.forEach(function (s) { %><a href="<%= qsStatus(s[0]) %>"<% if (filtros.status === s[0]) { %> aria-current="page"<% } %>><%= s[1] %></a><% }) %>
+  </nav>
+  <% if (filtros.q) { %><a class="cv-btn cv-btn--texto cv-btn--p" href="/mestre?status=<%= filtros.status %>#barbearias">Limpar busca</a><% } %>
+</div>
+
+<div class="cv-cartao" style="padding:4px 0">
+  <% if (barbearias.length === 0) { %>
+    <p class="m-vazio" style="padding:20px 24px">Nenhuma barbearia encontrada com esse filtro.</p>
+  <% } else { %>
+    <table class="m-tab">
+      <thead><tr><th>Barbearia</th><th>Plano</th><th>Situação</th><th class="num esc">Equipe</th><th class="num esc">Clientes</th><th class="num esc">Agend.</th><th><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Ações</span></th></tr></thead>
+      <tbody>
+        <% barbearias.forEach(function (barb) { var pl = planoDe(barb.planoCortavo); var av = avisoBarbeiros(pl, barb.barbeirosAtivos, barb.nome); var sit = barb.ativo ? (SITUACAO[barb.situacaoCortavo] || 'Ativa') : 'Inativa'; %>
+          <tr class="m-linha">
+            <td><a class="m-nome" href="/mestre/barbearias/<%= barb.id %>"><span class="cv-avatar cv-avatar--claro" aria-hidden="true"><%= ini(barb.nome) %></span><span style="min-width:0"><b><%= barb.nome %></b><small><%= barb.slug %>.cortavo.com.br</small></span></a></td>
+            <td class="plano"><%= pl.nome %><% if (av) { %><small style="display:block;color:var(--c-apoio);white-space:normal;max-width:220px"><%= av %></small><% } %></td>
+            <td class="status"><span class="m-est<%= /Pausada|Inativa|Cancelada/.test(sit) ? ' pausada' : sit === 'Em teste' ? ' alerta' : '' %>"><%= sit %></span></td>
+            <td class="num esc"><%= barb._count.usuarios %></td>
+            <td class="num esc"><%= barb._count.clientes %></td>
+            <td class="num esc"><%= barb._count.agendamentos %></td>
+            <td class="acoes-td">
+              <div class="acoes">
+                <form method="POST" action="/mestre/entrar/<%= barb.id %>"><button class="cv-btn cv-btn--2 cv-btn--p" type="submit" aria-label="Entrar como dono em <%= barb.nome %>"><%- include('../partials/icone', { cvIc: 'entrar', cvCls: 'cv-ic--18' }) %>Entrar</button></form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
   <% } %>
 </div>
+
+<% if (paginacao.totalPaginas > 1) { var base = '/mestre?q=' + encodeURIComponent(filtros.q) + '&status=' + filtros.status + '&pagina='; %>
+  <nav class="m-paginas" aria-label="Páginas">
+    <% if (paginacao.pagina > 1) { %><a class="cv-btn cv-btn--2 cv-btn--p" href="<%= base + (paginacao.pagina - 1) %>#barbearias">Anterior</a><% } %>
+    <span>Página <%= paginacao.pagina %> de <%= paginacao.totalPaginas %></span>
+    <% if (paginacao.pagina < paginacao.totalPaginas) { %><a class="cv-btn cv-btn--2 cv-btn--p" href="<%= base + (paginacao.pagina + 1) %>#barbearias">Próxima</a><% } %>
+  </nav>
+<% } %>
+
+<%/* No celular não há menu lateral: o Sair mora no fim da Visão geral. */%>
+<form method="POST" action="/logout" class="m-so-cel m-sair-cel"><button class="cv-btn cv-btn--2 cv-btn--largo" type="submit"><%- include('../partials/icone', { cvIc: 'sair', cvCls: 'cv-ic--20' }) %>Sair</button></form>
+
+<script>
+  // Teclado (sem animação): "/" foca a busca.
+  document.addEventListener('keydown', function (e) {
+    var a = document.activeElement;
+    if (e.key === '/' && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) { e.preventDefault(); var q = document.getElementById('q'); if (q) q.focus(); }
+  });
+</script>

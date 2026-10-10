@@ -425,3 +425,22 @@ test('F8 Perfil: foto, jornada (campos do controller), avisos e backup com os ID
   assert.match(html, /action="\/logout"/);
   assert.match(html, /class="cv-linha cv-pf-hora folga" id="pf-hora-0"/);
 });
+
+// ---------- F10: painel-mestre ----------
+test('F10 mestre: Visão geral com os números do visaoGeralMestre, atenção com link para a ficha e endereço por subdomínio', async () => {
+  const body = await render('mestre/painel.ejs', {
+    backup: { situacao: 'nunca' }, filtros: { q: '', status: 'todas' }, total: 1, paginacao: { pagina: 1, totalPaginas: 1 },
+    planoDe: () => ({ nome: 'Barbearia' }), avisoBarbeiros: () => null, testesAtivos: [], vagasFundador: { usadas: 1, total: 5, livres: 4 },
+    barbearias: [{ id: 4, nome: 'Andrade', slug: 'andrade', ativo: true, situacaoCortavo: 'ativa', _count: { usuarios: 2, clientes: 3, agendamentos: 4 } }],
+    visao: { numeros: { ativas: 1, emTeste: 0, pausadas: 0, inativas: 0, receitaEstimada: 24900, semPrecoDefinido: 0, custoTotal: 1000, margemPct: 96 },
+      precisaDeAtencao: [{ barbeariaId: 4, nome: 'Andrade', tipo: 'teste_terminando', gravidade: 'media', texto: 'Teste termina hoje.' }] },
+  });
+  assert.match(body, /Receita mensal estimada[\s\S]*<span class="int">249<\/span><span class="cent">,00<\/span>/);
+  assert.match(body, /href="\/mestre\/barbearias\/4#teste">Ver ficha/);
+  assert.match(body, /andrade\.cortavo\.com\.br/);
+  assert.match(body, /action="\/mestre\/entrar\/4"/);
+  const lay = await ejs.renderFile(path.join(VIEWS, 'layouts/mestre.ejs'), { body, assetV: 'x', usuario: { nome: 'Kalany' }, currentPath: '/mestre/uso', flash: null });
+  assert.match(lay, /href="\/mestre\/uso" aria-current="page"/);
+  assert.match(lay, /class="cv-navbar m-nav-cel"/);
+  assert.doesNotMatch(lay, />CORTAVO</);
+});

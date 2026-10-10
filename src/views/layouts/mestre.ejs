@@ -1,3 +1,23 @@
+<%
+  // Painel-mestre v3 (fatia F10): menu lateral sólido no PC e navbar em
+  // pílula no celular (mockups/mestre.html). As telas internas antigas
+  // (ficha, uso, canais, auditoria, nova) entram nesta moldura com o
+  // sv-mestre.css de sempre.
+  var _cam = String(typeof currentPath !== 'undefined' && currentPath ? currentPath : '').replace(/\/+$/, '') || '/mestre';
+  var _rota = /^\/mestre\/(uso|canais|auditoria|nova)/.exec(_cam);
+  _rota = _rota ? _rota[1] : (/^\/mestre\/barbearias/.test(_cam) ? 'barbearias' : 'visao');
+  var M_ITENS = [
+    { r: 'visao', href: '/mestre', ic: 'grade', t: 'Visão geral' },
+    { r: 'barbearias', href: '/mestre#barbearias', ic: 'loja', t: 'Barbearias' },
+    { r: 'uso', href: '/mestre/uso', ic: 'gestao', t: 'Uso e custos' },
+    { r: 'canais', href: '/mestre/canais', ic: 'conversa', t: 'Canais e mensagens' },
+    { r: 'auditoria', href: '/mestre/auditoria', ic: 'olho', t: 'Auditoria' },
+    { r: 'nova', href: '/mestre/nova', ic: 'mais', t: 'Nova barbearia' },
+  ];
+  var M_CEL = [M_ITENS[0], M_ITENS[1], M_ITENS[2], M_ITENS[3]];
+  var LOGO_D = 'M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z';
+  var _nomeU = (typeof usuario !== 'undefined' && usuario && usuario.nome) || '';
+%>
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -8,31 +28,37 @@
     <link rel="stylesheet" href="/css/tokens.css?v=<%= assetV %>" />
     <link rel="stylesheet" href="/css/cv.css?v=<%= assetV %>" />
     <link rel="stylesheet" href="/css/sv-mestre.css?v=<%= assetV %>" />
+    <link rel="stylesheet" href="/css/cv-mestre.css?v=<%= assetV %>" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#f2f2f2" />
+    <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
-  <body>
-    <header class="topo">
-      <div class="container topo-inner">
-        <a href="/mestre" class="marca-mestre">CORTAVO</a>
-        <div class="topo-usuario">
-          <span class="usuario-nome"><%= usuario.nome %></span>
-          <span class="badge-papel">Dono</span>
-          <form method="POST" action="/logout" class="inline">
-            <button class="btn btn-secundario btn-sm" type="submit">Sair</button>
-          </form>
+  <body class="m-pagina">
+    <div class="m">
+      <nav class="m-menu" aria-label="Painel-mestre">
+        <div class="m-marca"><span class="tile"><svg viewBox="150 240 770 545" aria-hidden="true"><path fill="#fff" d="<%= LOGO_D %>"/></svg></span><span><b>Cortavo</b><small>Painel-mestre</small></span></div>
+        <% M_ITENS.forEach(function (m) { %>
+          <a class="m-item" href="<%= m.href %>"<% if (m.r === _rota) { %> aria-current="page"<% } %>><%- include('../partials/icone', { cvIc: m.ic }) %><%= m.t %><% if (m.r === 'barbearias' && typeof total !== 'undefined') { %><span class="n"><%= total %></span><% } %></a>
+        <% }) %>
+        <div class="rodape">
+          <span class="cv-avatar cv-avatar--p" aria-hidden="true"><%= _nomeU.charAt(0).toUpperCase() %></span><span><%= _nomeU.split(' ')[0] %><small style="display:block;font-size:12px;color:var(--c-apoio)">Dona</small></span>
+          <form method="POST" action="/logout"><button class="m-sair" type="submit">Sair</button></form>
         </div>
-      </div>
-    </header>
-
-    <main class="container conteudo">
-      <%- include('../partials/flash') %> <%- body %>
-    </main>
-  <script src="/js/aviso-conexao.js" defer></script>
-<script src="/js/foto-comprimir.js" defer></script>
-<script src="/js/folha-arrastar.js" defer></script>
-<script src="/js/cv-mola.js?v=<%= assetV %>" defer></script>
-<script src="/js/cv-movimento.js?v=<%= assetV %>" defer></script>
-</body>
+      </nav>
+      <main class="m-corpo" id="m-corpo">
+        <%- include('../partials/flash') %>
+        <%- body %>
+      </main>
+    </div>
+    <nav class="cv-navbar m-nav-cel" aria-label="Seções do painel-mestre">
+      <% M_CEL.forEach(function (m) { %>
+        <a class="cv-nav-item" href="<%= m.href %>"<% if (m.r === _rota) { %> aria-current="page"<% } %>><%- include('../partials/icone', { cvIc: m.ic }) %><span><%= m.t.split(' ')[0] %></span></a>
+      <% }) %>
+    </nav>
+    <script src="/js/aviso-conexao.js" defer></script>
+    <script src="/js/foto-comprimir.js" defer></script>
+    <script src="/js/folha-arrastar.js" defer></script>
+    <script src="/js/cv-mola.js?v=<%= assetV %>" defer></script>
+    <script src="/js/cv-movimento.js?v=<%= assetV %>" defer></script>
+  </body>
 </html>

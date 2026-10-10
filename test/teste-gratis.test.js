@@ -265,8 +265,9 @@ test('C5 painel-mestre mostra "Vagas de fundador: 5 de 5" e o aviso', async () =
     testesAtivos: [{ id: 3, nome: 'Em Teste', planoCortavo: 'barbearia', diasRestantes: 9, fundador: 'reservada' }],
     vagasFundador: { usadas: 5, total: 5, livres: 0 },
   });
-  assert.match(html, /Testes ativos \(1\)/);
-  assert.match(html, /Vagas de fundador: 5 de 5/);
+  // v3 (F10): contagem no cabeçalho do cartão e "5 de 5 usadas" nas vagas.
+  assert.match(html, /Testes ativos<\/h2><span>1<\/span>/);
+  assert.match(html, /Vagas de fundador<\/h2><span>5 de 5 usadas<\/span>/);
   assert.match(html, /As 5 vagas estão reservadas/);
   assert.match(html, /Em Teste/);
 });

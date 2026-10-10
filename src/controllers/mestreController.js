@@ -105,9 +105,20 @@ async function painel(req, res) {
   }
   for (const x of barbearias) x.barbeirosAtivos = ativosPorBarbearia.get(x.id) || 0;
 
+  // Redesign v3 (F10): Visão geral no topo, com os números do B (Beto):
+  // receita estimada, custo, margem e "Precisa de atenção". Se o cálculo
+  // falhar, a lista de barbearias continua de pé.
+  let visao = null;
+  try {
+    visao = await visaoGeralMestre.visaoGeral({ backup: statusBackup() });
+  } catch (e) {
+    visao = null;
+  }
+
   res.render('mestre/painel', {
     layout: 'layouts/mestre',
     titulo: 'Painel-mestre',
+    visao,
     barbearias,
     total,
     filtros: { q, status },
