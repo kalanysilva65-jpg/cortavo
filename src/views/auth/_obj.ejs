@@ -1,0 +1,17 @@
+<%/* Objeto de acesso (v3): o bloco preto do topo (celular) ou a coluna da
+     esquerda (PC). Ícone oficial (C branco com check sobre preto), o C de
+     listra parado ao fundo e o título da tela.
+     Parâmetros: obId, obTitulo, obSub (texto) ou obSubHtml (já escapado),
+     obVoltar (href, opcional), obExtraHtml (opcional, já escapado). */-%>
+<div class="ac-obj cv-objeto" data-obj>
+  <div class="ac-fantasma" aria-hidden="true"></div>
+  <div class="ac-marca">
+    <% if (typeof obVoltar !== 'undefined' && obVoltar) { %><a class="ac-voltar" href="<%= obVoltar %>" aria-label="Voltar para o login"><svg class="cv-ic cv-ic--20" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a><% } %>
+    <span class="ac-icone" data-icone><svg viewBox="0 0 1024 1024" aria-hidden="true"><path fill="#fff" d="M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z"/></svg></span><span class="ac-nome">Cortavo</span>
+  </div>
+  <div class="ac-cab">
+    <h1 id="<%= obId %>" tabindex="-1"><%= obTitulo %></h1>
+    <% if (typeof obSubHtml !== 'undefined' && obSubHtml) { %><%- obSubHtml %><% } else if (typeof obSub !== 'undefined' && obSub) { %><p class="ac-sub"><%= obSub %></p><% } %>
+    <% if (typeof obExtraHtml !== 'undefined' && obExtraHtml) { %><%- obExtraHtml %><% } %>
+  </div>
+</div>

@@ -1,55 +1,37 @@
-<%/* Login da equipe — desenho que o dono anexou (2026-08-01): alinhado à
-     esquerda, sem cartão, título grande e o formulário empurrado para a parte
-     baixa da tela, onde o polegar alcança.
-     Estilos em public/css/sv-login.css. */%>
-<div class="sv-lg">
-
-  <div class="sv-lg-topo">
-    <h1 class="sv-lg-titulo">Bem-vindo de volta</h1>
-    <p class="sv-lg-sub">Entre para acessar a agenda, o caixa e a equipe da sua barbearia.</p>
-  </div>
-
-  <form method="POST" action="/login" class="sv-lg-form">
-    <div class="sv-lg-campo">
-      <label class="sv-lg-rot" for="email">E-mail</label>
-      <input class="sv-lg-input" type="email" id="email" name="email" placeholder="voce@barbearia.com" autocomplete="username" inputmode="email" required autofocus />
-    </div>
-
-    <div class="sv-lg-campo">
-      <label class="sv-lg-rot" for="senha">Senha</label>
-      <div class="sv-lg-senha">
-        <input class="sv-lg-input" type="password" id="senha" name="senha" placeholder="••••••••" autocomplete="current-password" required />
-        <%/* "Mostrar" em texto, não ícone: é o que o desenho pede, e o rótulo
-             diz o que vai acontecer sem depender de reconhecer um olho. */%>
-        <button type="button" class="sv-lg-mostrar" id="btn-mostrar" onclick="alternarSenha()">Mostrar</button>
+<%/* Login da equipe (v3, redesign/v3/acesso, Dani). Formulário comum (POST
+     /login) que funciona sem JS; com JS (cv-acesso.js) ele envia com
+     Accept: application/json, mostra o erro sem recarregar e, no sucesso, o
+     M1 curto "Tudo certo" (decisão da Kalany). Abertura M8 uma vez por sessão. */%>
+<%
+  var _f = (typeof flash !== 'undefined' && flash) ? flash : null;
+  var _erro = _f && _f.tipo === 'erro' ? _f.texto : null;
+  var _ok = _f && _f.tipo !== 'erro' ? _f.texto : null;
+  var _email = (_f && _f.email) || '';
+%>
+<section class="ac-tela ac-tela--login" id="login" aria-labelledby="login-t">
+  <%- include('_obj', { obId: 'login-t', obTitulo: 'Bem-vindo de volta.', obSub: 'Entre para acessar a agenda, o caixa e a equipe da sua barbearia.' }) %>
+  <div class="ac-corpo">
+    <h2 class="ac-form-t" data-cascata>Entrar</h2>
+    <% if (_ok) { %><p class="ac-ok" role="status"><%= _ok %></p><% } %>
+    <div class="ac-erro" id="login-erro" role="alert"<% if (!_erro) { %> hidden<% } %>><svg class="cv-ic cv-ic--18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><span><%= _erro || 'E-mail ou senha inválidos.' %></span></div>
+    <form class="ac-form" id="f-login" action="/login" method="post" novalidate data-acesso="login">
+      <div class="cv-campo" data-cascata>
+        <label for="l-email">E-mail</label>
+        <input class="cv-entrada" id="l-email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="voce@barbearia.com" value="<%= _email %>" required<% if (_erro) { %> aria-invalid="true" aria-describedby="login-erro"<% } %>>
       </div>
-    </div>
-
-    <div class="sv-lg-linha">
-      <label class="sv-lg-check">
-        <input type="checkbox" name="manterConectado" value="1" />
-        <span class="sv-lg-check-caixa" aria-hidden="true">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-        </span>
-        <span class="sv-lg-check-rot">Manter conectado</span>
-      </label>
-    </div>
-
-    <button class="sv-lg-btn" type="submit">Entrar</button>
-    <%/* Spec 13 (F5): pede um link por e-mail para criar uma senha nova. */%>
-    <p style="text-align:center;margin:14px 0 0;">
-      <a href="/esqueci-senha" style="display:inline-block;min-height:44px;line-height:44px;padding:0 12px;color:var(--sv-ink, #111);font-weight:600;text-decoration:underline;text-underline-offset:3px;">Esqueci minha senha</a>
-    </p>
-  </form>
-
-</div>
-
-<script>
-  function alternarSenha() {
-    var campo = document.getElementById('senha');
-    var btn = document.getElementById('btn-mostrar');
-    var oculta = campo.type === 'password';
-    campo.type = oculta ? 'text' : 'password';
-    btn.textContent = oculta ? 'Ocultar' : 'Mostrar';
-  }
-</script>
+      <div class="cv-campo" data-cascata>
+        <label for="l-senha">Senha</label>
+        <div class="ac-senha">
+          <input class="cv-entrada" id="l-senha" name="senha" type="password" autocomplete="current-password" enterkeyhint="go" placeholder="Sua senha" required<% if (_erro) { %> aria-invalid="true" aria-describedby="login-erro" autofocus<% } %>>
+          <button class="ac-mostrar" type="button" data-mostrar aria-controls="l-senha" aria-pressed="false" hidden>Mostrar</button>
+        </div>
+      </div>
+      <div class="ac-linha" data-cascata>
+        <label class="ac-check"><input type="checkbox" name="manterConectado" value="1"><span class="caixa" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span><span>Manter conectado</span></label>
+        <a class="ac-link" href="/esqueci-senha">Esqueci minha senha</a>
+      </div>
+      <button class="cv-btn cv-btn--largo ac-btn" type="submit" id="btn-entrar" data-cascata data-ocupado="Entrando"><span class="ac-poste" aria-hidden="true"><i></i></span><span class="rot">Entrar</span></button>
+    </form>
+    <p class="ac-rodape" data-cascata><a href="/termos">Termos de uso</a><span aria-hidden="true">·</span><a href="/privacidade">Privacidade</a></p>
+  </div>
+</section>

@@ -1,28 +1,33 @@
+<%
+  var _v = typeof assetV !== 'undefined' ? '?v=' + assetV : '';
+%>
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <%/* Zoom travado (pinça e toque-duplo) pra a tela do app não sair do lugar
-         — igual ao painel. Vale no WKWebView do app; no Safari é ignorado. */%>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Cortavo' %></title>
-    <%/* Layout próprio do login da EQUIPE (pedido do dono, 2026-07-31). O
-         `blank` continua servindo as páginas de conta do cliente, que seguem
-         no visual antigo — convertê-lo levaria junto telas fora deste escopo. */%>
+    <%/* Zoom travado (decisão da Kalany, 2026-10-09), como no painel. Os campos
+         têm 16 px, então o iPhone não amplia ao focar. interactive-widget: no
+         Android o teclado encolhe a área útil (o botão não fica atrás dele). */%>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %>Cortavo</title>
+    <script>document.documentElement.classList.add('js');</script>
+    <%/* Telas de acesso v3 (Dani, redesign/v3/acesso). Sem o splash "CORTAVO":
+         a abertura M8 (cv-acesso.js) faz esse papel, uma vez por sessão. */%>
     <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/css/tokens.css<%= typeof assetV !== 'undefined' ? '?v=' + assetV : '' %>" />
-    <link rel="stylesheet" href="/css/cv.css<%= typeof assetV !== 'undefined' ? '?v=' + assetV : '' %>" />
-    <link rel="stylesheet" href="/css/suave.css" />
-    <link rel="stylesheet" href="/css/sv-login.css" />
+    <link rel="stylesheet" href="/css/tokens.css<%= _v %>" />
+    <link rel="stylesheet" href="/css/cv.css<%= _v %>" />
+    <link rel="stylesheet" href="/css/cv-acesso.css<%= _v %>" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#F2F2F2" />
+    <meta name="theme-color" content="#FFFFFF" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <script src="/js/cv-mola.js<%= _v %>" defer></script>
+    <script src="/js/cv-movimento.js<%= _v %>" defer></script>
+    <script src="/js/cv-acesso.js<%= _v %>" defer></script>
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <body class="pg-sv sv-login-body">
-    <%- include('../partials/flash') %>
+  <body class="ac">
     <%- body %>
   </body>
 </html>

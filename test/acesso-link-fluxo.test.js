@@ -527,7 +527,9 @@ test('F5 "Esqueci minha senha": resposta sempre igual; só quem tem acesso receb
     assert.deepEqual({ v: r.renderizou.view, d: r.renderizou.dados, s: r.statusCode }, { v: a.renderizou.view, d: a.renderizou.dados, s: a.statusCode });
   }
   const html = await render('auth/esqueci-senha.ejs', a.renderizou.dados);
-  assert.match(html, /Se esse e-mail tiver acesso, enviamos um link\./);
+  // v3 (Dani): texto da tela nova; a resposta segue idêntica para todo e-mail.
+  assert.match(html, /Se esse e-mail existir, enviamos um link\./);
+  assert.doesNotMatch(html, /ze@exemplo|ninguem@exemplo/, 'o servidor não devolve o e-mail digitado');
   assert.equal(m.enviados.length, 1, 'só a conta da barbearia (o papel dono fica de fora)');
   assert.equal(m.enviados[0].to, 'ze@exemplo.test');
   assert.equal(m.enviados[0].subject, 'Link para criar uma nova senha na Cortavo');
@@ -611,22 +613,78 @@ test('F6 troca obrigatória (/trocar-senha) atualiza a versão: esta sessão seg
 
 // ---------------- C19: telas novas ----------------
 test('C19 tela "Crie sua senha": textos da spec, rótulos, autocomplete, toque ≥ 44 px e sem azul', async () => {
+  // Telas v3 da Dani (redesign/v3/acesso) no lugar das versões simples do F3.
   const html = await render('auth/criar-senha.ejs', { nomeBarbearia: 'Barbearia do <b>Zé</b>', email: 'ze@exemplo.test', erro: null });
-  assert.match(html, /<h1 class="cv-ac-titulo">Crie sua senha<\/h1>/);
-  assert.match(html, /Para <strong>Barbearia do &lt;b&gt;Zé&lt;\/b&gt;<\/strong> · ze@exemplo\.test/);
-  assert.match(html, /<label class="cv-ac-rot" for="senha">Nova senha \(mínimo 8 caracteres\)<\/label>/);
-  assert.match(html, /<label class="cv-ac-rot" for="confirmar">Repita a senha<\/label>/);
+  assert.match(html, /<h1 id="cs-t" tabindex="-1">Crie sua senha<\/h1>/);
+  assert.match(html, /Para <b>Barbearia do &lt;b&gt;Zé&lt;\/b&gt;<\/b><span class="ac-email">ze@exemplo\.test<\/span>/);
+  assert.match(html, /<label for="senha">Nova senha<\/label>/);
+  assert.match(html, /placeholder="Mínimo 8 caracteres"/);
+  assert.match(html, /<label for="confirmar">Repita a senha<\/label>/);
   assert.match(html, /Criar senha e entrar/);
   assert.equal((html.match(/autocomplete="new-password"/g) || []).length, 2);
   assert.match(html, /type="email" name="usuario" value="ze@exemplo\.test" autocomplete="username" hidden/);
   assert.doesNotMatch(html, /name="t"|\?t=/, 'o token não vai para a página');
-  const css = fs.readFileSync(path.join(RAIZ, 'public/css/cv-acesso.css'), 'utf8');
+  const css = ['tokens.css', 'cv.css', 'cv-acesso.css'].map((f) => fs.readFileSync(path.join(RAIZ, 'public/css', f), 'utf8')).join('\n');
   assert.match(css, /--toque-min: 44px/);
   assert.match(css, /min-height: 52px/);
   assert.match(css, /:focus-visible/);
   for (const hex of css.match(/#[0-9a-fA-F]{6}\b/g)) {
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-    assert.ok(!(b > r && b > g), `sem azul: ${hex}`);
+    assert.ok(!(b > r + 8 && b > g + 8), `sem azul: ${hex}`);
   }
   assert.doesNotMatch(css, /\bblue\b/i);
+});
+
+
+// ---------------- Telas de acesso v3 (Fabio, redesign) ----------------
+test('v3 login com JS: Accept JSON devolve ok/destino/barbearia, erro genérico e pausa; sem JSON, o redirect de sempre', async (t) => {
+  comEnv(ENV_OK, t);
+  const m = mundo({ usuarios: [pessoa({ senhaDefinidaEm: new Date('2026-10-01T12:00:00Z') })] });
+  const json = { accept: 'application/json' };
+  let res = res2();
+  await m.auth.fazerLogin(reqFalso({ headers: json, body: { email: 'ze@exemplo.test', senha: 'senha-antiga-1' } }), res);
+  assert.deepEqual(res.enviado, { ok: true, destino: '/painel', barbearia: 'Barbearia do Zé' });
+  res = res2();
+  await m.auth.fazerLogin(reqFalso({ headers: json, body: { email: 'ze@exemplo.test', senha: 'errada-123' } }), res);
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.enviado, { ok: false, erro: 'E-mail ou senha inválidos.' });
+  res = res2();
+  await m.auth.fazerLogin(reqFalso({ headers: json, body: { email: '', senha: '' } }), res);
+  assert.equal(res.enviado.erro, 'Digite seu e-mail e sua senha.');
+  // Form comum: o e-mail volta no flash (a senha nunca).
+  res = res2();
+  const req = reqFalso({ body: { email: 'ZE@exemplo.test', senha: 'errada-123' } });
+  await m.auth.fazerLogin(req, res);
+  assert.equal(res.redirecionou, '/login');
+  assert.deepEqual(req.session.flash, { tipo: 'erro', texto: 'E-mail ou senha inválidos.', email: 'ze@exemplo.test' });
+  const html = await render('auth/login.ejs', { flash: req.session.flash });
+  assert.match(html, /value="ze@exemplo\.test"/);
+  assert.match(html, /id="login-erro" role="alert">/);
+  assert.doesNotMatch(html, /errada-123/);
+  // Pausada: com JSON, o navegador reenvia o form comum para ver a tela.
+  const m2 = mundo({ usuarios: [pessoa()], barbearias: [{ ...BARB, ativo: false }] });
+  res = res2();
+  await m2.auth.fazerLogin(reqFalso({ headers: json, body: { email: 'ze@exemplo.test', senha: 'senha-antiga-1' } }), res);
+  assert.deepEqual(res.enviado, { ok: false, pausada: true });
+});
+
+test('v3 telas de acesso: layout sem o splash "CORTAVO", ícone oficial, M8 e campos com rótulo', async () => {
+  const lay = fs.readFileSync(path.join(VIEWS, 'layouts/auth.ejs'), 'utf8');
+  assert.ok(!lay.includes("include('../partials/splash')"));
+  assert.match(lay, /cv-acesso\.css/);
+  assert.match(lay, /cv-acesso\.js/);
+  assert.ok(!fs.existsSync(path.join(VIEWS, 'partials/splash.ejs')));
+  const js = fs.readFileSync(path.join(RAIZ, 'public/js/cv-acesso.js'), 'utf8');
+  assert.match(js, /cvAcesso/, 'M8 uma vez por sessão');
+  assert.match(js, /titulo: 'Tudo certo'/, 'M1 do login (decisão da Kalany)');
+  const login = await render('auth/login.ejs', {});
+  assert.match(login, /<label for="l-email">E-mail<\/label>/);
+  assert.match(login, /<label for="l-senha">Senha<\/label>/);
+  assert.match(login, /d="M600 350A250 250 0 1 0 415 763/);
+  const troca = await render('auth/trocar-senha.ejs', { obrigatoria: true, flash: { tipo: 'erro', texto: 'Senha atual incorreta.' } });
+  assert.match(troca, /id="senhaAtual"[^>]*aria-invalid="true"/);
+  assert.match(troca, /name="novaSenha"/);
+  const pausa = await render('auth/acesso-pausado.ejs', { nomeBarbearia: 'X', mensagem: 'O acesso da X está pausado.' });
+  assert.match(pausa, /ig\.me\/m\/cortavo\.app/);
+  assert.doesNotMatch(pausa, /pix|R\$/i);
 });

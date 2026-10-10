@@ -1,10 +1,13 @@
-<%/* Tela de "acesso pausado" (spec 01). Simples de propósito: sem valor, sem
-     chave Pix e sem link de pagamento (regra da Apple, spec 06). Mesmo visual
-     do login (public/css/sv-login.css). */%>
-<div class="sv-lg">
-  <div class="sv-lg-topo">
-    <h1 class="sv-lg-titulo">Acesso pausado</h1>
-    <p class="sv-lg-sub"><%= mensagem %></p>
+<%/* Acesso pausado (spec 01; v3 da Dani). Sem valor, sem chave Pix e sem link
+     de pagamento (regra da Apple, spec 06). O texto vem de
+     pausa.mensagemPausa(nome); o contato é o direct da Cortavo. */%>
+<% var _nome = (typeof nomeBarbearia !== 'undefined' && nomeBarbearia) ? nomeBarbearia : 'barbearia'; %>
+<section class="ac-tela" id="pausado" aria-labelledby="pa-t">
+  <%- include('_obj', { obId: 'pa-t', obTitulo: 'Acesso pausado', obSub: mensagem }) %>
+  <div class="ac-corpo">
+    <div class="ac-parado" data-cascata aria-hidden="true"><span class="etq"><svg class="cv-ic cv-ic--16" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pausada</span></div>
+    <p class="ac-texto" data-cascata>Enquanto estiver pausado, ninguém da equipe entra no app. Para voltar, é só falar com a gente.</p>
+    <a class="cv-btn cv-btn--largo" href="https://ig.me/m/cortavo.app" target="_blank" rel="noopener" data-cascata>Falar com a Cortavo</a>
+    <a class="cv-btn cv-btn--texto cv-btn--largo" href="/login" data-cascata>Voltar ao login</a>
   </div>
-  <a href="/login" class="btn btn-secundario btn-bloco">Voltar ao login</a>
-</div>
+</section>

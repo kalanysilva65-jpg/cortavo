@@ -1,31 +1,38 @@
-<%/* Spec 13 (F5): "Esqueci minha senha". A resposta é SEMPRE a mesma, exista o
-     e-mail ou não (não revela quem tem conta). */%>
-<main class="cv-ac">
-  <div class="cv-ac-wrap">
-    <%- include('_acesso-marca') %>
-    <h1 class="cv-ac-titulo">Esqueci minha senha</h1>
-    <% if (pedido) { %>
-      <div class="cv-ac-cartao">
-        <p class="cv-ac-ok" role="status">Se esse e-mail tiver acesso, enviamos um link.</p>
-        <p class="cv-ac-ajuda" style="margin:12px 0 0">O link vale por 1 hora. Olhe também no spam ou em Promoções.</p>
-      </div>
-      <div class="cv-ac-acoes">
-        <a href="/login" class="cv-ac-btn">Ir para o login</a>
-      </div>
-    <% } else { %>
-      <p class="cv-ac-sub">Digite o e-mail que você usa para entrar. Se ele tiver acesso, mandamos um link para você criar uma senha nova.</p>
-      <div class="cv-ac-cartao">
-        <form method="POST" action="/esqueci-senha" class="cv-ac-form">
-          <div class="cv-ac-campo">
-            <label class="cv-ac-rot" for="email">E-mail</label>
-            <input class="cv-ac-entrada" type="email" id="email" name="email" autocomplete="username" inputmode="email" required autofocus />
-          </div>
-          <button class="cv-ac-btn" type="submit">Enviar link</button>
-        </form>
-      </div>
-      <div class="cv-ac-acoes">
-        <a href="/login" class="cv-ac-btn cv-ac-btn--texto">Voltar ao login</a>
-      </div>
-    <% } %>
+<%/* Esqueci minha senha (v3). A resposta do servidor é SEMPRE a mesma, exista
+     o e-mail ou não (spec 13, S6): a confirmação não recebe o e-mail do
+     servidor. O e-mail digitado aparece só porque o próprio navegador o
+     guardou (sessionStorage, cv-acesso.js); sem JS, a linha "Para" some. */%>
+<% if (pedido) { %>
+<section class="ac-tela" id="esqueci-enviado" aria-labelledby="env-t">
+  <%- include('_obj', { obId: 'env-t', obTitulo: 'Confira seu e-mail', obVoltar: '/login', obExtraHtml: '<p class="ac-validade"><span class="rot">O link vale por</span><span class="cv-num cv-num--heroi">1<span class="de">hora</span></span></p>' }) %>
+  <div class="ac-corpo">
+    <div class="ac-aviso-env" data-cascata role="status">
+      <p class="forte">Se esse e-mail existir, enviamos um link.</p>
+      <p class="para" data-email-digitado hidden>Para <b class="ac-email"></b></p>
+      <p>O link funciona uma vez só. Olhe também no spam e em Promoções.</p>
+    </div>
+    <a class="cv-btn cv-btn--largo" href="/login" data-cascata>Voltar para o login</a>
+    <form method="post" action="/esqueci-senha" id="f-reenviar" style="display:contents">
+      <input type="hidden" name="email" value="" />
+      <button class="cv-btn cv-btn--texto cv-btn--largo" type="submit" id="btn-reenviar" data-cascata hidden>Reenviar link</button>
+    </form>
+    <a class="ac-link ac-centro" href="/esqueci-senha" data-cascata>Digitei o e-mail errado</a>
   </div>
-</main>
+</section>
+<% } else { %>
+<section class="ac-tela" id="esqueci" aria-labelledby="esq-t">
+  <%- include('_obj', { obId: 'esq-t', obTitulo: 'Esqueci minha senha', obVoltar: '/login', obSub: 'Digite o e-mail que você usa para entrar. Enviamos um link para você criar uma senha nova.' }) %>
+  <div class="ac-corpo">
+    <h2 class="ac-form-t" data-cascata>Criar uma senha nova</h2>
+    <form class="ac-form" id="f-esqueci" action="/esqueci-senha" method="post" novalidate data-acesso="esqueci">
+      <div class="cv-campo" id="c-esq-email" data-cascata>
+        <label for="e-email">E-mail</label>
+        <input class="cv-entrada" id="e-email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="voce@barbearia.com" required autofocus aria-describedby="e-email-erro">
+        <p class="cv-erro" id="e-email-erro" hidden>Digite um e-mail válido.</p>
+      </div>
+      <button class="cv-btn cv-btn--largo ac-btn" type="submit" id="btn-esqueci" data-cascata data-ocupado="Enviando"><span class="ac-poste" aria-hidden="true"><i></i></span><span class="rot">Enviar link</span></button>
+      <a class="cv-btn cv-btn--texto cv-btn--largo" href="/login" data-cascata>Voltar para o login</a>
+    </form>
+  </div>
+</section>
+<% } %>

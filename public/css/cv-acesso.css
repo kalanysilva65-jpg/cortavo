@@ -1,94 +1,227 @@
 /* =========================================================================
-   Telas do acesso por link (spec 13): "Crie sua senha", "Este link não vale
-   mais" e "Esqueci minha senha". Visual v3 simples (tokens da Dani,
-   squads/app-cortavo/output/redesign/v3/tokens.css). Sem azul.
-   Os tokens usados ficam ESCOPADOS em .cv-ac (mesmos nomes e valores do v3):
-   assim esta folha funciona sozinha hoje e não briga com o tokens.css global
-   quando o redesign entrar.
+   Cortavo v3 · telas de acesso (Dani Design, 2026-10-09)
+   Depende de tokens.css + cv.css. No app: public/css/cv-acesso.css (F9/acesso),
+   copiado do mockup sem o que era só do protótipo; adaptações no fim.
+   Prefixo ac-. Nenhuma cor, curva ou duração fora dos tokens, exceto as
+   derivadas marcadas abaixo.
    ========================================================================= */
-@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-600-normal.woff2') format('woff2'); font-weight: 500 600; font-display: swap; }
-@font-face { font-family: 'Plus Jakarta Sans'; src: url('/fonts/plus-jakarta-sans-latin-800-normal.woff2') format('woff2'); font-weight: 700 800; font-display: swap; }
-
-.cv-ac {
-  --c-pagina: #F2F2F2; --c-superficie: #FFFFFF; --c-bloco: #F2F2F2; --c-objeto: #111111;
-  --c-tinta: #111111; --c-tinta-2: #3D3D3D; --c-apoio: #666666; --c-fio-forte: rgba(17,17,17,.14);
-  --c-perigo: #B42318; --c-perigo-fundo: #FBEDEB;
-  --vidro-preto: rgba(17,17,17,.92);
-  --vidro-aro-preto: inset 0 1px 0 rgba(255,255,255,.24), inset 0 0 0 .5px rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4);
-  --s-cartao: 0 1px 2px rgba(17,17,17,.04);
-  --s-preto: 0 8px 24px -4px rgba(17,17,17,.45), 0 2px 4px rgba(17,17,17,.2);
-  --fonte: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --r-pilula: 999px; --r-cartao: 24px; --r-campo: 14px;
-  --margem: 20px; --toque-min: 44px; --press: 0.97;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --d-press-out: 160ms; --d-curta: 180ms;
-
-  position: relative; z-index: 1;
-  min-height: 100vh; min-height: 100dvh;
-  background: var(--c-pagina); color: var(--c-tinta);
-  font-family: var(--fonte); font-size: 16px; line-height: 1.45; letter-spacing: -0.006em;
-  -webkit-font-smoothing: antialiased;
-}
-@media (prefers-contrast: more) { .cv-ac { --c-apoio: #3D3D3D; --c-tinta-2: #111111; --c-fio-forte: rgba(17,17,17,.6); --vidro-preto: #000; } }
-
-.cv-ac *, .cv-ac *::before, .cv-ac *::after { box-sizing: border-box; }
-.cv-ac-wrap {
-  max-width: 420px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
-  display: flex; flex-direction: column;
-  padding: calc(40px + env(safe-area-inset-top, 0px)) var(--margem) calc(28px + env(safe-area-inset-bottom, 0px));
+:root {
+  --r-acesso: 32px;                 /* derivado: o objeto de acesso encosta nos cantos da tela (8 px) */
+  --ac-obj-alto: 47dvh;             /* altura do objeto no login */
+  --vvh: 100dvh;                    /* área visível; o JS troca pela do visualViewport (teclado) */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
-/* Ícone oficial: o C com o check (traçado de movimento.js, LOGO_D) num disco preto. */
-.cv-ac-marca { width: 56px; height: 56px; border-radius: 50%; background: var(--c-objeto); display: grid; place-items: center; box-shadow: var(--s-preto); }
-.cv-ac-marca svg { width: 34px; height: auto; display: block; }
+body.ac { background: var(--c-superficie); min-height: 100dvh; }
+.ac-tela { min-height: var(--vvh); display: flex; flex-direction: column; }
+.ac-tela--app { background: var(--c-pagina); padding-bottom: var(--area-nav); }
 
-.cv-ac-titulo { font-size: 34px; line-height: 1.1; letter-spacing: -0.035em; font-weight: 800; margin: 28px 0 0; }
-.cv-ac-sub { font-size: 14px; line-height: 1.4; color: var(--c-tinta-2); margin: 10px 0 0; overflow-wrap: anywhere; }
-.cv-ac-sub strong { font-weight: 600; color: var(--c-tinta); }
 
-.cv-ac-cartao { background: var(--c-superficie); border-radius: var(--r-cartao); padding: 20px; box-shadow: var(--s-cartao); margin-top: 28px; }
-.cv-ac-form { display: grid; gap: 16px; }
-.cv-ac-campo { display: grid; gap: 6px; }
-.cv-ac-rot { font-size: 13px; font-weight: 600; color: var(--c-tinta-2); }
-.cv-ac-senha { position: relative; }
-.cv-ac-entrada {
-  width: 100%; min-height: 52px; padding: 0 16px; border-radius: var(--r-campo); border: 0;
-  background: var(--c-bloco); color: var(--c-tinta); font: inherit; font-size: 16px;
-  box-shadow: inset 0 0 0 1px transparent; outline: none;
-  transition: box-shadow var(--d-curta) var(--ease-out);
+/* ---- Objeto de acesso: o objeto preto da tela --------------------------- */
+.ac-obj { margin: 8px 8px 0; border-radius: var(--r-acesso); padding: calc(var(--sat) + 16px) 24px 28px; display: flex; flex-direction: column; gap: 28px; min-height: 0; view-transition-name: ac-obj; }
+.ac-tela--login .ac-obj { min-height: var(--ac-obj-alto); justify-content: space-between; }
+/* O C com check gigante, preenchido pela listra a 45° (o ângulo do check). Parado, sutil, nunca atrás de número */
+.ac-fantasma { position: absolute; z-index: -1; top: calc(var(--sat) + 4px); right: -64px; width: 300px; aspect-ratio: 770 / 545; pointer-events: none;
+  background: repeating-linear-gradient(-45deg, rgba(255,255,255,.15) 0 2px, transparent 2px 9px);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='150 240 770 545'%3E%3Cpath d='M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='150 240 770 545'%3E%3Cpath d='M600 350A250 250 0 1 0 415 763L550 765L897 385L760 385L483 686L450 662L430 652A139.8 139.8 0 1 1 522 427Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.ac-tela:not(.ac-tela--login) .ac-fantasma { width: 150px; right: -36px; top: calc(var(--sat) + 2px); }
+.ac-tela:not(.ac-tela--login) .ac-sub { max-width: 27ch; }
+
+.ac-marca { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+/* Ícone oficial: C branco com check sobre PRETO. Nunca invertido. O aro claro só separa o preto do ícone do preto do objeto */
+.ac-icone { position: relative; width: 44px; height: 44px; border-radius: 22.37%; background: #000; display: grid; place-items: center; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); overflow: hidden; }
+.ac-icone > svg { width: 100%; height: 100%; display: block; }
+.ac-icone > svg.logo { width: 75%; height: auto; }
+.ac-nome { font-size: 19px; font-weight: 800; letter-spacing: -.025em; }
+.ac-voltar { width: 44px; height: 44px; margin: 0 -6px 0 -12px; border-radius: 50%; display: grid; place-items: center; color: #fff; transition: transform var(--d-press-out) var(--ease-out); }
+.ac-voltar:active { transform: scale(.94); transition-duration: var(--d-press-in); }
+.ac-cab h1 { margin: 0; font-size: var(--t-num-g); line-height: 1.02; letter-spacing: var(--k-num-g); font-weight: 800; text-wrap: balance; overflow-wrap: anywhere; }
+.ac-tela:not(.ac-tela--login) .ac-cab h1 { font-size: var(--t-titulo); line-height: var(--a-titulo); letter-spacing: var(--k-titulo); }
+.ac-sub { margin: 12px 0 0; font-size: 15px; line-height: 1.45; color: var(--c-sobre-objeto-2); max-width: 34ch; }
+.ac-para b { color: #fff; font-weight: 600; display: block; overflow-wrap: anywhere; }
+.ac-email { display: block; overflow-wrap: anywhere; word-break: break-word; }
+.ac-validade { margin: 18px 0 0; display: grid; gap: 4px; }
+.ac-validade .rot { font-size: var(--t-legenda); font-weight: 600; color: var(--c-sobre-objeto-2); }
+.ac-validade .de { color: var(--c-sobre-objeto-2); font-size: .3em; margin-left: 8px; }
+
+/* ---- Corpo: formulário no alcance do polegar ---------------------------- */
+.ac-corpo { flex: 1; display: flex; flex-direction: column; padding: 24px var(--margem) calc(20px + var(--sab)); gap: 0; }
+.ac-form { display: flex; flex-direction: column; }
+.ac-form-t { display: none; }
+.ac-form > .cv-btn, .ac-corpo > .cv-btn { margin-top: 16px; }
+.ac-corpo > .cv-btn--texto, .ac-form > .cv-btn--texto { margin-top: 4px; }
+
+.ac-senha { position: relative; }
+.ac-senha .cv-entrada { padding-right: 92px; }
+.ac-mostrar { position: absolute; right: 4px; top: 4px; height: 44px; min-width: 76px; padding: 0 12px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--c-tinta-2); }
+.ac-mostrar:active { opacity: .6; }
+
+.ac-linha { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-top: 10px; }
+.ac-check { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; color: var(--c-tinta-2); cursor: pointer; }
+.ac-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.ac-check .caixa { width: 22px; height: 22px; border-radius: 7px; box-shadow: inset 0 0 0 1.5px var(--c-fio-forte); background: var(--c-superficie); display: grid; place-items: center; transition: background-color var(--d-curta) var(--ease-out); }
+.ac-check .caixa svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.ac-check input:checked + .caixa { background: var(--c-tinta); box-shadow: none; }
+.ac-check input:checked + .caixa svg { opacity: 1; }
+.ac-check input:focus-visible + .caixa { outline: 2.5px solid var(--c-tinta); outline-offset: 2px; }
+.ac-link { display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 600; color: var(--c-tinta); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.ac-centro { align-self: center; }
+.ac-rodape { margin: auto 0 0; padding-top: 20px; display: flex; justify-content: center; gap: 4px; font-size: 13px; color: var(--c-apoio); }
+.ac-rodape a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 6px; }
+.ac-rodape span { display: inline-flex; align-items: center; }
+
+/* Erro genérico: nunca diz se o e-mail existe */
+.ac-erro { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 16px; border-radius: var(--r-interno); background: var(--c-perigo-fundo); color: var(--c-perigo); font-size: 15px; font-weight: 600; line-height: 1.35; }
+.ac-erro .cv-ic { stroke-width: 2; }
+.cv-campo .cv-erro[hidden] { display: none; }
+
+/* Botão principal carregando: a listra do poste anda por dentro (M3) */
+.ac-btn { overflow: hidden; }
+.ac-poste { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; opacity: 0; pointer-events: none; transition: opacity var(--d-curta) var(--ease-out); }
+.ac-poste i { position: absolute; inset: -40px; background: repeating-linear-gradient(-45deg, rgba(255,255,255,.22) 0 5px, transparent 5px 12px); animation: acPoste 600ms linear infinite; }
+@keyframes acPoste { to { transform: translateX(16.97px); } }
+.ac-btn.carregando .ac-poste { opacity: 1; }
+.ac-btn[aria-busy="true"] { pointer-events: none; }
+
+/* Força e requisitos da senha nova */
+.ac-forca { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 4px; align-items: center; margin-top: 2px; }
+.ac-forca .seg { height: 4px; border-radius: 2px; background: var(--c-bloco-2); overflow: hidden; }
+.ac-forca .seg b { display: block; height: 100%; background: var(--c-tinta); transform: scaleX(0); transform-origin: left; transition: transform var(--d-curta) var(--ease-out); }
+.ac-forca .seg.on b { transform: scaleX(1); }
+.ac-forca .txt { min-width: 64px; text-align: right; font-size: var(--t-legenda); font-weight: 600; color: var(--c-tinta-2); }
+.ac-req { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.ac-req li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 15px; color: var(--c-tinta-2); }
+.ac-req .m { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--c-fio-forte); display: grid; place-items: center; transition: background-color var(--d-curta) var(--ease-out); }
+.ac-req .m svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.ac-req .m path { stroke-dasharray: 1 1; stroke-dashoffset: 1; transition: stroke-dashoffset 260ms var(--ease-out) 60ms; }
+.ac-req li.ok .m { background: var(--c-tinta); box-shadow: none; }
+.ac-req li.ok .m path { stroke-dashoffset: 0; }
+.ac-req li.ok .t { color: var(--c-tinta); }
+.ac-req .n { font-size: var(--t-legenda); font-weight: 600; color: var(--c-apoio); }
+
+/* Confirmação do "esqueci" */
+.ac-aviso-env { display: grid; gap: 8px; }
+.ac-aviso-env p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--c-tinta-2); }
+.ac-aviso-env .forte { font-size: var(--t-titulo-2); line-height: var(--a-titulo-2); letter-spacing: var(--k-titulo-2); font-weight: 800; color: var(--c-tinta); }
+.ac-aviso-env .para b { color: var(--c-tinta); font-weight: 600; overflow-wrap: anywhere; }
+#btn-reenviar[aria-disabled="true"] { color: var(--c-apoio); pointer-events: none; }
+#btn-reenviar .cv-num { font-weight: 600; margin-left: 0; }
+
+/* Link sem validade: listra PARADA = estado (assinatura §2), texto sempre numa etiqueta sólida */
+.ac-parado { height: 56px; border-radius: var(--r-interno); background: var(--listra-bloqueado); display: grid; place-items: center; margin-bottom: 16px; }
+.ac-parado .etq { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-pilula); background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); font-size: var(--t-legenda); font-weight: 600; color: var(--c-tinta-2); }
+.ac-texto { margin: 0; font-size: 16px; line-height: 1.5; color: var(--c-tinta-2); }
+
+/* ---- Primeiro acesso ---------------------------------------------------- */
+.ac-frase { margin: 16px 2px 0; font-size: 17px; line-height: 1.45; color: var(--c-tinta-2); }
+.ac-pp-num { display: flex; align-items: baseline; justify-content: space-between; margin: 2px 0 10px; }
+.ac-pp-num .de { font-size: 15px; letter-spacing: -.005em; margin-left: .35em; }
+.ac-pp-num .pct { font-size: 15px; font-weight: 600; color: var(--c-apoio); }
+.ac-proximo { align-items: start; }
+.ac-proximo .marca { background: var(--c-tinta); color: #fff; box-shadow: none; }
+.ac-proximo .t { font-size: 17px; }
+.ac-pp-btn { margin-top: 12px; }
+.ac-pp-plano { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; padding: 14px 16px; border-radius: var(--r-interno); background: var(--c-bloco); font-size: 13px; color: var(--c-apoio); line-height: 1.4; }
+.ac-pp-plano b { display: block; font-size: 15px; color: var(--c-tinta); font-weight: 600; }
+.ac-tela--app .cv-cab { padding-top: calc(var(--sat) + 10px); }
+
+/* Boas-vindas: diálogo de tela cheia no celular, cartão centrado no PC */
+.ac-tela--bv { background: var(--c-superficie); }
+.ac-tela--bv { position: fixed; inset: 0; z-index: 90; overflow-y: auto; }
+.ac-bv-fundo { display: none; }
+.ac-bv { flex: 1; display: flex; flex-direction: column; padding: calc(var(--sat) + 40px) 28px calc(28px + var(--sab)); max-width: 520px; width: 100%; margin: 0 auto; }
+.ac-bv-icone { width: 92px; height: 92px; border-radius: 22.37%; background: #000; display: grid; place-items: center; box-shadow: var(--s-objeto); overflow: hidden; view-transition-name: cv-selo; }
+.ac-bv-icone > svg { width: 100%; height: 100%; display: block; }
+.ac-bv-icone > svg.logo { width: 75%; height: auto; }
+.ac-bv h1 { font-size: var(--t-titulo); line-height: var(--a-titulo); letter-spacing: var(--k-titulo); font-weight: 800; margin: 32px 0 12px; text-wrap: balance; overflow-wrap: anywhere; outline: none; }
+.ac-bv > p { margin: 0; font-size: 17px; line-height: 1.5; color: var(--c-tinta-2); max-width: 34ch; }
+.ac-bv > p b { color: var(--c-tinta); font-weight: 600; overflow-wrap: anywhere; }
+.ac-bv-passos { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 16px; }
+.ac-bv-passos li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; align-items: start; font-size: 15px; line-height: 1.4; color: var(--c-tinta-2); }
+.ac-bv-passos b { display: block; font-size: 16px; color: var(--c-tinta); font-weight: 600; }
+.ac-bv-passos .n { width: 32px; height: 32px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--c-fio-forte); display: grid; place-items: center; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--c-tinta-2); }
+.ac-bv-passos li:first-child .n { background: var(--c-tinta); color: #fff; box-shadow: none; }
+.ac-bv-mais { margin: 20px 0 0 !important; font-size: 15px !important; color: var(--c-apoio) !important; }
+.ac-bv-mais .cv-num { color: var(--c-tinta); margin-right: 4px; vertical-align: -1px; }
+.ac-bv-acoes { margin-top: auto; padding-top: 28px; display: grid; gap: 4px; }
+
+/* ---- Teclado aberto (celular): o objeto encolhe, o botão fica à vista --- */
+body.teclado .ac-tela { height: var(--vvh); min-height: 0; overflow-y: auto; }
+body.teclado .ac-obj { min-height: 0 !important; gap: 12px; justify-content: flex-start; padding-top: calc(var(--sat) + 10px); padding-bottom: 18px; flex-direction: row; align-items: center; }
+body.teclado .ac-marca { gap: 0; }
+body.teclado .ac-nome, body.teclado .ac-sub, body.teclado .ac-fantasma, body.teclado .ac-rodape, body.teclado .ac-validade { display: none; }
+body.teclado .ac-icone { width: 36px; height: 36px; }
+body.teclado .ac-cab h1 { font-size: 24px; line-height: 1.15; letter-spacing: -.025em; }
+body.teclado .ac-corpo { padding-top: 16px; padding-bottom: 12px; }
+
+/* ---- PC e tablet: duas colunas (objeto de marca + formulário) ------------ */
+@media (min-width: 900px) {
+  .ac-tela:not(.ac-tela--app):not(.ac-tela--bv) { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); min-height: 100vh; padding: 16px; }
+  .ac-obj { margin: 0; min-height: calc(100vh - 32px) !important; padding: 40px 48px 48px; justify-content: space-between; position: sticky; top: 16px; }
+  .ac-fantasma, .ac-tela:not(.ac-tela--login) .ac-fantasma { width: 620px; top: 50%; bottom: auto; right: -150px; translate: 0 -58%; }
+  .ac-cab h1, .ac-tela:not(.ac-tela--login) .ac-cab h1 { font-size: 64px; line-height: 1; letter-spacing: var(--k-heroi); max-width: 11ch; }
+  .ac-sub { font-size: 17px; margin-top: 16px; }
+  .ac-corpo { align-self: center; justify-self: center; width: min(400px, 100%); padding: 48px 0; flex: none; }
+  .ac-form-t { display: block; margin: 0 0 24px; font-size: var(--t-titulo-2); letter-spacing: var(--k-titulo-2); font-weight: 800; }
+  .ac-rodape { margin-top: 32px; }
+  /* boas-vindas: cartão sobre o painel do PC esmaecido */
+  .ac-tela--bv { background: var(--c-pagina); align-items: center; justify-content: center; }
+  .ac-bv-fundo { display: block; position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; filter: blur(6px) saturate(.6); transform: scale(1.02); opacity: .55; }
+  .ac-bv { position: relative; flex: none; margin: 40px auto; padding: 40px; border-radius: var(--r-objeto); background: var(--c-superficie); box-shadow: var(--s-folha), 0 0 0 .5px var(--c-fio-forte); }
+  .ac-bv-acoes { padding-top: 32px; }
 }
-.cv-ac-senha .cv-ac-entrada { padding-right: 96px; }
-.cv-ac-entrada:focus-visible { box-shadow: inset 0 0 0 2px var(--c-tinta); }
-.cv-ac-entrada[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--c-perigo); }
-.cv-ac-mostrar {
-  position: absolute; right: 4px; top: 4px; min-height: var(--toque-min); min-width: 80px; padding: 0 12px;
-  border: 0; border-radius: var(--r-pilula); background: none; color: var(--c-tinta);
-  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-}
-.cv-ac-mostrar:focus-visible { outline: 2px solid var(--c-tinta); outline-offset: 2px; }
-.cv-ac-ajuda { font-size: 13px; color: var(--c-apoio); }
+@media (min-width: 1200px) { .ac-obj { padding: 48px 64px 56px; } }
 
-.cv-ac-erro {
-  display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-campo);
-  background: var(--c-perigo-fundo); color: var(--c-perigo); font-size: 14px; font-weight: 600; line-height: 1.4;
+/* ---- Preferências do sistema ------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .ac-poste i { animation: none; }
+  .ac-forca .seg b, .ac-req .m path { transition: none; }
+  .ac-voltar:active { transform: none; opacity: .7; }
 }
-.cv-ac-ok { padding: 14px 16px; border-radius: var(--r-campo); background: var(--c-bloco); color: var(--c-tinta); font-size: 15px; line-height: 1.45; }
-
-.cv-ac-acoes { margin-top: auto; padding-top: 32px; display: grid; gap: 8px; }
-.cv-ac-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
-  min-height: 52px; padding: 0 24px; border: 0; border-radius: var(--r-pilula);
-  font: inherit; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer;
-  color: #fff; background: var(--vidro-preto); box-shadow: var(--vidro-aro-preto), var(--s-preto);
-  transition: transform var(--d-press-out) var(--ease-out);
+@media (prefers-contrast: more) {
+  .ac-fantasma { display: none; }
+  .ac-sub, .ac-validade .rot { color: #D0D0D0; }
+  .cv-entrada { box-shadow: inset 0 0 0 1px var(--c-fio-forte); }
 }
-.cv-ac-btn:active { transform: scale(var(--press)); }
-.cv-ac-btn:focus-visible { outline: 2px solid var(--c-tinta); outline-offset: 3px; }
-.cv-ac-btn--texto { background: none; color: var(--c-tinta); box-shadow: none; min-height: var(--toque-min); }
-.cv-ac-link { color: var(--c-tinta); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-.cv-ac-form .cv-ac-btn { margin-top: 8px; }
+/* Transição entre telas de acesso (mesmo documento ou navegação entre páginas): o objeto preto muda de altura (M7) */
+::view-transition-group(ac-obj) { animation-duration: var(--d-cartao); animation-timing-function: var(--ease-in-out); }
+::view-transition-old(root) { animation: 160ms var(--ease-out) both acSai; }
+::view-transition-new(root) { animation: 240ms var(--ease-out) 80ms both acEntra; }
+@keyframes acSai { to { opacity: 0; } }
+@keyframes acEntra { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
 
-@media (prefers-reduced-motion: reduce) { .cv-ac-btn, .cv-ac-entrada { transition: none; } }
-/* Links com cara de botão: o suave.css pinta todo <a>; aqui a cor do botão vence. */
-.cv-ac a.cv-ac-btn, .cv-ac a.cv-ac-btn:visited { color: #fff; text-decoration: none; }
-.cv-ac a.cv-ac-btn--texto, .cv-ac a.cv-ac-btn--texto:visited { color: var(--c-tinta); }
+/* break-ui: em 360 px ou menos, o botão do passo desce para baixo do texto (o texto não vira coluna estreita) */
+@media (max-width: 360px) {
+  .ac-pp .cv-passo { grid-template-columns: 28px minmax(0, 1fr); }
+  .ac-pp .cv-passo > .cv-btn { grid-column: 2; justify-self: start; margin-top: -2px; }
+  .ac-pp .cv-passo > span:empty { display: none; }
+}
+html:not(.js) .ac-forca, html:not(.js) .ac-req .n { display: none; }
+.ac-sub .ac-bn { color: #fff; font-weight: 600; overflow-wrap: anywhere; }
+
+/* ==== Adaptações para o app ==============================================
+   Cada tela de acesso é uma página: a transição entre elas usa View
+   Transitions entre documentos (o objeto preto muda de altura). */
+@view-transition { navigation: auto; }
+body.ac { margin: 0; font-family: var(--fonte); color: var(--c-tinta); -webkit-font-smoothing: antialiased; }
+body.ac a { color: inherit; }
+body.ac .ac-obj a, body.ac .ac-obj { color: #fff; }
+body.ac a.cv-btn { text-decoration: none; }
+body.ac .cv-btn:not(.cv-btn--2):not(.cv-btn--texto) { color: #fff; }
+.ac-obj { position: relative; isolation: isolate; overflow: hidden; }
+.ac-mostrar { background: none; border: 0; font-family: inherit; cursor: pointer; }
+.ac-erro[hidden] { display: none; }
+.ac-erro .acao { display: block; margin-top: 4px; }
+.ac-ok { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 16px; border-radius: var(--r-interno); background: var(--c-bloco); font-size: 15px; font-weight: 600; }
+#btn-reenviar { background: none; border: 0; font-family: inherit; cursor: pointer; }
+.ac-form button.cv-btn { border: 0; font-family: inherit; cursor: pointer; }
+/* Boas-vindas no app: diálogo sobre a Início (que já está atrás, no painel) */
+.ac-tela--bv { position: fixed; inset: 0; z-index: 90; overflow-y: auto; min-height: 0; }
+.ac-tela--bv[hidden] { display: none; }
+@media (min-width: 900px) {
+  .ac-tela--bv { background: rgba(242,242,242,.72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); display: flex; }
+}
+@media (prefers-reduced-transparency: reduce) { .ac-tela--bv { background: var(--c-pagina); -webkit-backdrop-filter: none; backdrop-filter: none; } }

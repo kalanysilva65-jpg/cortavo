@@ -1,49 +1,41 @@
-<%/* Troca obrigatória de senha provisória (padrão de fábrica / criada pelo
-     admin). Reaproveita o visual do login (public/css/sv-login.css). Enquanto a
-     senha for provisória, o guard global (server.js) prende o usuário aqui. */%>
-<div class="sv-lg">
-
-  <div class="sv-lg-topo">
-    <h1 class="sv-lg-titulo">Defina sua senha</h1>
-    <p class="sv-lg-sub">
-      <% if (obrigatoria) { %>
-        Por segurança, troque a senha provisória por uma sua antes de continuar.
-      <% } else { %>
-        Escolha uma nova senha para a sua conta.
-      <% } %>
-    </p>
-  </div>
-
-  <form method="POST" action="/trocar-senha" class="sv-lg-form">
-    <div class="sv-lg-campo">
-      <label class="sv-lg-rot" for="senhaAtual">Senha atual</label>
-      <input class="sv-lg-input" type="password" id="senhaAtual" name="senhaAtual" placeholder="••••••••" autocomplete="current-password" required autofocus />
-    </div>
-
-    <div class="sv-lg-campo">
-      <label class="sv-lg-rot" for="novaSenha">Nova senha</label>
-      <div class="sv-lg-senha">
-        <input class="sv-lg-input" type="password" id="novaSenha" name="novaSenha" placeholder="ao menos 8 caracteres" autocomplete="new-password" minlength="8" required />
-        <button type="button" class="sv-lg-mostrar" id="btn-mostrar" onclick="alternarSenha()">Mostrar</button>
+<%/* Trocar senha (v3): para quem ainda tem senha provisória (o guard de
+     server.js prende a pessoa aqui) e para a troca voluntária. Quem entra pelo
+     link nunca vê esta tela (spec 13). Erros vêm do servidor por flash. */%>
+<%
+  var _f = (typeof flash !== 'undefined' && flash && flash.tipo === 'erro') ? flash.texto : null;
+  var _campo = !_f ? null : /atual/i.test(_f) ? 'atual' : /iguais|confirma/i.test(_f) ? 'conf' : 'nova';
+%>
+<section class="ac-tela" id="trocar-senha" aria-labelledby="ts-t">
+  <%- include('_obj', { obId: 'ts-t', obTitulo: 'Defina sua senha', obSub: obrigatoria ? 'Por segurança, troque a senha provisória por uma sua antes de continuar.' : 'Escolha uma nova senha para a sua conta.' }) %>
+  <div class="ac-corpo">
+    <h2 class="ac-form-t" data-cascata>Trocar a senha</h2>
+    <% if (_f) { %><div class="ac-erro" role="alert" id="ts-erro"><svg class="cv-ic cv-ic--18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><span><%= _f %></span></div><% } %>
+    <form class="ac-form" id="f-trocar" action="/trocar-senha" method="post" novalidate data-acesso="trocar">
+      <div class="cv-campo<%= _campo === 'atual' ? ' invalido' : '' %>" id="c-atual" data-cascata>
+        <label for="senhaAtual">Senha atual</label>
+        <input class="cv-entrada" id="senhaAtual" name="senhaAtual" type="password" autocomplete="current-password" enterkeyhint="next" placeholder="A senha que você recebeu" required autofocus<% if (_campo === 'atual') { %> aria-invalid="true" aria-describedby="ts-erro"<% } %>>
+        <p class="cv-erro" hidden></p>
       </div>
-    </div>
-
-    <div class="sv-lg-campo">
-      <label class="sv-lg-rot" for="confirmar">Confirmar nova senha</label>
-      <input class="sv-lg-input" type="password" id="confirmar" name="confirmar" placeholder="repita a nova senha" autocomplete="new-password" minlength="8" required />
-    </div>
-
-    <button class="sv-lg-btn" type="submit">Salvar senha</button>
-  </form>
-
-</div>
-
-<script>
-  function alternarSenha() {
-    var nova = document.getElementById('novaSenha');
-    var btn = document.getElementById('btn-mostrar');
-    var oculta = nova.type === 'password';
-    nova.type = oculta ? 'text' : 'password';
-    btn.textContent = oculta ? 'Ocultar' : 'Mostrar';
-  }
-</script>
+      <div class="cv-campo<%= _campo === 'nova' ? ' invalido' : '' %>" id="c-tnova" data-cascata>
+        <label for="novaSenha">Nova senha</label>
+        <div class="ac-senha">
+          <input class="cv-entrada" id="novaSenha" name="novaSenha" type="password" autocomplete="new-password" enterkeyhint="next" placeholder="Mínimo 8 caracteres" minlength="8" required aria-describedby="ts-req"<% if (_campo === 'nova') { %> aria-invalid="true"<% } %>>
+          <button class="ac-mostrar" type="button" data-mostrar aria-controls="novaSenha confirmar" aria-pressed="false" hidden>Mostrar</button>
+        </div>
+        <div class="ac-forca" aria-hidden="true"><span class="seg"><b></b></span><span class="seg"><b></b></span><span class="seg"><b></b></span><span class="seg"><b></b></span><span class="txt"></span></div>
+        <p class="cv-erro" hidden></p>
+      </div>
+      <div class="cv-campo<%= _campo === 'conf' ? ' invalido' : '' %>" id="c-tconf" data-cascata>
+        <label for="confirmar">Repita a nova senha</label>
+        <input class="cv-entrada" id="confirmar" name="confirmar" type="password" autocomplete="new-password" enterkeyhint="go" placeholder="A mesma senha" required<% if (_campo === 'conf') { %> aria-invalid="true"<% } %>>
+        <p class="cv-erro" hidden></p>
+      </div>
+      <ul class="ac-req" id="ts-req" data-cascata aria-live="polite">
+        <li data-req="tam"><span class="m" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" pathLength="1"/></svg></span><span class="t">8 caracteres ou mais</span><span class="n cv-num">0/8</span></li>
+        <li data-req="dif"><span class="m" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" pathLength="1"/></svg></span><span class="t">Diferente da senha atual</span></li>
+        <li data-req="igual"><span class="m" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" pathLength="1"/></svg></span><span class="t">As duas senhas iguais</span></li>
+      </ul>
+      <button class="cv-btn cv-btn--largo ac-btn" type="submit" id="btn-trocar" data-cascata data-ocupado="Salvando"><span class="ac-poste" aria-hidden="true"><i></i></span><span class="rot">Salvar senha</span></button>
+    </form>
+  </div>
+</section>

@@ -1,19 +1,17 @@
-<%/* Spec 13: link inválido, usado, revogado, vencido ou de pessoa inativa.
-     A MESMA tela para todos os motivos (não diz qual). Também serve para o
-     aviso de "muitas tentativas" (titulo/texto vindos do limite). */%>
-<main class="cv-ac">
-  <div class="cv-ac-wrap">
-    <%- include('_acesso-marca') %>
-    <% if (typeof aviso !== 'undefined' && aviso) { %>
-      <h1 class="cv-ac-titulo">Muitas tentativas</h1>
-      <p class="cv-ac-sub" role="alert">Muitas tentativas, aguarde alguns minutos.</p>
+<%/* Link inválido, usado, revogado, vencido ou de pessoa inativa (spec 13):
+     a MESMA tela para todos os motivos. Também serve para o aviso de
+     "muitas tentativas" (aviso=true, vindo do limite). Listra PARADA = estado. */%>
+<% var _aviso = typeof aviso !== 'undefined' && aviso; %>
+<section class="ac-tela" id="link-invalido" aria-labelledby="li-t">
+  <%- include('_obj', _aviso ? { obId: 'li-t', obTitulo: 'Muitas tentativas', obSub: 'Muitas tentativas, aguarde alguns minutos.' } : { obId: 'li-t', obTitulo: 'Este link não vale mais', obSub: 'Ele pode ter vencido ou já ter sido usado.' }) %>
+  <div class="ac-corpo">
+    <div class="ac-parado" data-cascata aria-hidden="true"><span class="etq"><svg class="cv-ic cv-ic--16" viewBox="0 0 24 24"><path d="m18.84 12.25 1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m5.17 11.75-1.71 1.71a5 5 0 0 0 7.07 7.07l1.71-1.71"/><path d="m8 2v3"/><path d="M2 8h3"/><path d="M16 22v-3"/><path d="M22 16h-3"/></svg><%= _aviso ? 'Aguarde' : 'Link sem validade' %></span></div>
+    <% if (_aviso) { %>
+      <p class="ac-texto" data-cascata role="alert">Por segurança, seguramos novos pedidos por alguns minutos. Depois é só tentar de novo.</p>
     <% } else { %>
-      <h1 class="cv-ac-titulo">Este link não vale mais</h1>
-      <p class="cv-ac-sub">Ele pode ter vencido ou já ter sido usado. Peça um novo link abaixo, responda o e-mail que você recebeu ou escreva para <%= suporte %>.</p>
+      <p class="ac-texto" data-cascata>Peça um novo link com o seu e-mail. Ele chega em poucos minutos. Se preferir, responda o e-mail que você recebeu ou escreva para <%= typeof suporte !== 'undefined' && suporte ? suporte : 'cortavo.app@gmail.com' %>.</p>
     <% } %>
-    <div class="cv-ac-acoes">
-      <a href="/esqueci-senha" class="cv-ac-btn">Pedir novo link</a>
-      <a href="/login" class="cv-ac-btn cv-ac-btn--texto">Ir para o login</a>
-    </div>
+    <a class="cv-btn cv-btn--largo" href="/esqueci-senha" data-cascata>Pedir novo link</a>
+    <a class="cv-btn cv-btn--texto cv-btn--largo" href="/login" data-cascata>Ir para o login</a>
   </div>
-</main>
+</section>

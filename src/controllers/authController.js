@@ -105,6 +105,12 @@ async function localizarUsuario(email, req) {
   return candidatos.length === 1 ? candidatos[0] : null;
 }
 
+// O login com JS pede JSON (cv-acesso.js); o formulário comum, não.
+function querJson(req) {
+  const a = (req.headers && req.headers.accept) || '';
+  return a.indexOf('application/json') !== -1;
+}
+
 // Processa o login.
 async function fazerLogin(req, res) {
   const email = (req.body.email || '').trim().toLowerCase();
@@ -119,20 +125,32 @@ async function fazerLogin(req, res) {
   // (o || curto-circuita antes), mantendo a mensagem de erro genérica.
   const invalido = !usuario || !usuario.ativo || !(await bcrypt.compare(senha, usuario.senhaHash));
   if (invalido) {
-    req.session.flash = { tipo: 'erro', texto: 'E-mail ou senha inválidos.' };
+    const texto = (!email || !senha) ? 'Digite seu e-mail e sua senha.' : 'E-mail ou senha inválidos.';
+    if (querJson(req)) return res.status(401).json({ ok: false, erro: texto });
+    // O e-mail volta preenchido (redesign v3); a senha, nunca.
+    req.session.flash = { tipo: 'erro', texto, email };
     return res.redirect('/login');
   }
 
   // Pausa de verdade (spec 01): só DEPOIS de conferir a senha (quem erra a
   // senha continua vendo a mensagem genérica, sem saber que está pausada) e
   // ANTES de criar a sessão. O dono do sistema não tem barbearia: nunca cai aqui.
+  let nomeBarbearia = null;
   if (usuario.papel !== 'dono' && usuario.barbeariaId) {
     const b = await prisma.barbearia.findUnique({ where: { id: usuario.barbeariaId }, select: { ativo: true, nome: true } });
-    if (!b || b.ativo === false) return pausa.renderTelaPausa(res, b && b.nome);
+    if (!b || b.ativo === false) {
+      // Com JS, o navegador reenvia o formulário comum para abrir a tela.
+      if (querJson(req)) return res.status(403).json({ ok: false, pausada: true });
+      return pausa.renderTelaPausa(res, b && b.nome);
+    }
+    nomeBarbearia = b.nome;
   }
 
   await abrirSessao(req, usuario, { manterConectado: !!req.body.manterConectado });
   await salvarSessao(req);
+  // Contrato do login com JS (redesign v3, M1 "Tudo certo"): sem o cabeçalho
+  // Accept: application/json, o redirect de sempre.
+  if (querJson(req)) return res.json({ ok: true, destino: destino(usuario), barbearia: nomeBarbearia });
   res.redirect(destino(usuario));
 }
 
@@ -169,9 +187,11 @@ async function trocarSenha(req, res) {
   const usuario = await prisma.usuario.findUnique({ where: { id: req.session.usuario.id } });
   if (!usuario) return req.session.destroy(() => res.redirect('/login'));
 
+  if (!atual) return erro('Digite a senha atual.');
   if (!(await bcrypt.compare(atual, usuario.senhaHash))) return erro('Senha atual incorreta.');
   if (nova.length < 8) return erro('A nova senha precisa ter ao menos 8 caracteres.');
-  if (nova !== conf) return erro('A confirmação não bate com a nova senha.');
+  if (Buffer.byteLength(nova, 'utf8') > 72) return erro('Use no máximo 72 caracteres.');
+  if (nova !== conf) return erro('As duas senhas não são iguais.');
   if (await bcrypt.compare(nova, usuario.senhaHash)) return erro('A nova senha precisa ser diferente da atual.');
 
   // senhaDefinidaEm muda junto: as OUTRAS sessões abertas com a senha antiga
@@ -183,7 +203,7 @@ async function trocarSenha(req, res) {
   });
   req.session.senhaVersao = agora.getTime();
   req.session.trocarSenha = false;
-  req.session.flash = { tipo: 'sucesso', texto: 'Senha atualizada com sucesso.' };
+  req.session.flash = { tipo: 'sucesso', texto: 'Senha atualizada. Use a nova senha da próxima vez.' };
   res.redirect(destino(usuario));
 }
 

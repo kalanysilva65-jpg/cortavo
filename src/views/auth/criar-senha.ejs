@@ -1,51 +1,35 @@
-<%/* Spec 13: "Crie sua senha" (link do e-mail). O token NÃO aparece aqui: a
-     sessão guarda só o hash, e a URL já foi limpa no GET. */%>
-<main class="cv-ac">
-  <div class="cv-ac-wrap">
-    <%- include('_acesso-marca') %>
-    <h1 class="cv-ac-titulo">Crie sua senha</h1>
-    <p class="cv-ac-sub">Para <strong><%= nomeBarbearia %></strong> · <%= email %></p>
-
-    <div class="cv-ac-cartao">
-      <form method="POST" action="/criar-senha" class="cv-ac-form" novalidate>
-        <%/* Para o gerenciador de senhas salvar a senha no e-mail certo. */%>
-        <input type="email" name="usuario" value="<%= email %>" autocomplete="username" hidden readonly />
-
-        <% if (erro) { %>
-          <div class="cv-ac-erro" role="alert" id="erro-senha"><%= erro %></div>
-        <% } %>
-
-        <div class="cv-ac-campo">
-          <label class="cv-ac-rot" for="senha">Nova senha (mínimo 8 caracteres)</label>
-          <div class="cv-ac-senha">
-            <input class="cv-ac-entrada" type="password" id="senha" name="senha" autocomplete="new-password" minlength="8" required autofocus
-                   <%- erro ? 'aria-invalid="true" aria-describedby="erro-senha"' : '' %> />
-            <button type="button" class="cv-ac-mostrar" data-alvo="senha" aria-pressed="false">Mostrar</button>
-          </div>
+<%/* Crie sua senha (link do e-mail, spec 13; visual v3 da Dani). O token NÃO
+     aparece aqui: a sessão guarda só o hash, e a URL já foi limpa no GET.
+     Força e requisitos ao vivo com JS; sem JS, os requisitos ficam como texto
+     e o servidor valida igual (8 a 72 bytes, as duas iguais). */%>
+<% var _erro = typeof erro !== 'undefined' && erro ? erro : null; var _eConf = _erro === 'As duas senhas não são iguais.'; %>
+<section class="ac-tela" id="criar-senha" aria-labelledby="cs-t">
+  <%- include('_obj', { obId: 'cs-t', obTitulo: 'Crie sua senha', obSubHtml: '<p class="ac-sub ac-para">Para <b>' + String(nomeBarbearia).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') + '</b><span class="ac-email">' + String(email).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span></p>' }) %>
+  <div class="ac-corpo">
+    <h2 class="ac-form-t" data-cascata>Sua senha de acesso</h2>
+    <% if (_erro) { %><div class="ac-erro" role="alert" id="erro-senha"><svg class="cv-ic cv-ic--18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><span><%= _erro %></span></div><% } %>
+    <form class="ac-form" id="f-criar" action="/criar-senha" method="post" novalidate data-acesso="criar">
+      <%/* O gerenciador de senhas salva a senha no e-mail certo. */%>
+      <input type="email" name="usuario" value="<%= email %>" autocomplete="username" hidden readonly />
+      <div class="cv-campo<%= _erro && !_eConf ? ' invalido' : '' %>" id="c-nova" data-cascata>
+        <label for="senha">Nova senha</label>
+        <div class="ac-senha">
+          <input class="cv-entrada" id="senha" name="senha" type="password" autocomplete="new-password" enterkeyhint="next" placeholder="Mínimo 8 caracteres" minlength="8" required autofocus aria-describedby="cs-req<%= _erro ? ' erro-senha' : '' %>"<% if (_erro && !_eConf) { %> aria-invalid="true"<% } %>>
+          <button class="ac-mostrar" type="button" data-mostrar aria-controls="senha confirmar" aria-pressed="false" hidden>Mostrar</button>
         </div>
-
-        <div class="cv-ac-campo">
-          <label class="cv-ac-rot" for="confirmar">Repita a senha</label>
-          <div class="cv-ac-senha">
-            <input class="cv-ac-entrada" type="password" id="confirmar" name="confirmar" autocomplete="new-password" minlength="8" required
-                   <%- erro ? 'aria-invalid="true" aria-describedby="erro-senha"' : '' %> />
-            <button type="button" class="cv-ac-mostrar" data-alvo="confirmar" aria-pressed="false">Mostrar</button>
-          </div>
-        </div>
-
-        <button class="cv-ac-btn" type="submit">Criar senha e entrar</button>
-      </form>
-    </div>
+        <div class="ac-forca" aria-hidden="true"><span class="seg"><b></b></span><span class="seg"><b></b></span><span class="seg"><b></b></span><span class="seg"><b></b></span><span class="txt"></span></div>
+        <p class="cv-erro" hidden></p>
+      </div>
+      <div class="cv-campo<%= _eConf ? ' invalido' : '' %>" id="c-conf" data-cascata>
+        <label for="confirmar">Repita a senha</label>
+        <input class="cv-entrada" id="confirmar" name="confirmar" type="password" autocomplete="new-password" enterkeyhint="go" placeholder="A mesma senha" required<% if (_eConf) { %> aria-invalid="true" aria-describedby="erro-senha"<% } %>>
+        <p class="cv-erro" hidden></p>
+      </div>
+      <ul class="ac-req" id="cs-req" data-cascata aria-live="polite">
+        <li data-req="tam"><span class="m" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" pathLength="1"/></svg></span><span class="t">8 caracteres ou mais</span><span class="n cv-num">0/8</span></li>
+        <li data-req="igual"><span class="m" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" pathLength="1"/></svg></span><span class="t">As duas senhas iguais</span></li>
+      </ul>
+      <button class="cv-btn cv-btn--largo ac-btn" type="submit" id="btn-criar" data-cascata data-ocupado="Criando"><span class="ac-poste" aria-hidden="true"><i></i></span><span class="rot">Criar senha e entrar</span></button>
+    </form>
   </div>
-</main>
-<script>
-  document.querySelectorAll('.cv-ac-mostrar').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var c = document.getElementById(b.getAttribute('data-alvo'));
-      var oculta = c.type === 'password';
-      c.type = oculta ? 'text' : 'password';
-      b.textContent = oculta ? 'Ocultar' : 'Mostrar';
-      b.setAttribute('aria-pressed', oculta ? 'true' : 'false');
-    });
-  });
-</script>
+</section>
