@@ -259,8 +259,10 @@ async function ver(req, res) {
   if (ehAdmin) {
     try {
       const bb = res.locals.barbeariaAtual;
-      primeirosPassos = await require('../services/primeirosPassos').montar({ barbeariaId: b, planoChave: bb && bb.planoCortavo });
-      if (primeirosPassos.completo) primeirosPassos = null;
+      // Spec 11: estado por usuário no banco (vale em qualquer aparelho).
+      const ob = await require('../services/onboarding').doUsuario(usuarioId);
+      primeirosPassos = ob.ocultoEm ? null : await require('../services/primeirosPassos').montar({ barbeariaId: b, planoChave: bb && bb.planoCortavo, estado: ob.estado });
+      if (primeirosPassos && primeirosPassos.completo) primeirosPassos = null;
     } catch (e) {
       primeirosPassos = null;
     }

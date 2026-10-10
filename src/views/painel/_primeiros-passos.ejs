@@ -1,7 +1,8 @@
 <%/* Primeiros passos (F9; Dani, acesso.html#passos). Só para quem cuida da
      barbearia e só enquanto falta algum passo. O passo atual tem o número em
      disco preto e o botão de vidro preto; os outros, botão cinza. "Esconder"
-     guarda a escolha neste aparelho. */%>
+     guarda a escolha no banco (POST /painel/primeiros-passos, spec 11), então
+     vale em qualquer aparelho. */%>
 <% var PP = primeirosPassos; %>
 <link rel="stylesheet" href="/css/cv-acesso.css?v=<%= typeof assetV !== 'undefined' ? assetV : '' %>" />
 <section class="cv-secao" style="margin-top:16px" aria-labelledby="pp-t" id="primeiros-passos-secao" data-barbearia="<%= barbeariaAtual ? barbeariaAtual.id : '' %>">
@@ -24,9 +25,13 @@
 <script>
   (function () {
     var sec = document.getElementById('primeiros-passos-secao'), k = 'cvPassosEscondido:' + sec.dataset.barbearia;
-    try { if (localStorage.getItem(k) === '1') sec.hidden = true; } catch (e) {}
+    function esconderNoServidor() {
+      return fetch('/painel/primeiros-passos', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'esconder' }) }).catch(function () {});
+    }
+    /* Quem escondeu no aparelho antes do campo no banco: sobe a escolha uma vez. */
+    try { if (localStorage.getItem(k) === '1') { sec.hidden = true; esconderNoServidor(); localStorage.removeItem(k); } } catch (e) {}
     document.getElementById('pp-esconder').addEventListener('click', function () {
-      try { localStorage.setItem(k, '1'); } catch (e) {}
+      esconderNoServidor();
       sec.hidden = true;
       if (window.Cortavo && Cortavo.aviso) Cortavo.aviso({ titulo: 'Primeiros passos escondidos' });
     });

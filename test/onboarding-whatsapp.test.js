@@ -208,3 +208,13 @@ test('textos: tela da secretária e ONBOARDING com o fluxo novo; contato numa co
   assert.match(onb, /WhatsApp pela conta da Cortavo/);
   assert.match(onb, /Se a barbearia sair da Cortavo/);
 });
+
+test('Vera: pareceJaLiberado aceita só o código 133010 (o texto da mensagem não basta)', () => {
+  const w = carregar('src/services/whatsappOnboard.js');
+  assert.equal(w.pareceJaLiberado({ code: 133010, message: 'Account not registered' }), true);
+  assert.equal(w.pareceJaLiberado({ code: '133010' }), true);
+  assert.equal(w.pareceJaLiberado({ code: 100, message: 'Phone number not registered for this app' }), false);
+  assert.equal(w.pareceJaLiberado({ message: 'already deregistered' }), false);
+  assert.equal(w.pareceJaLiberado({ code: 131000, error_user_msg: 'não está registrado' }), false);
+  assert.equal(w.pareceJaLiberado(null), false);
+});

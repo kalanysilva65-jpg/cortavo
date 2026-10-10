@@ -34,6 +34,9 @@ model Barbearia {
   longitude Float?
   capaUrl   String?  @map("capa_url") // foto de capa do hero da Home (em /uploads)
   notasInternas String? @map("notas_internas") // anotações do dono do SaaS sobre a barbearia (só o painel-mestre vê)
+  // Texto da mensagem do WhatsApp na tela "Link de agendamento" (redesign v3).
+  // Nulo = usa o texto padrão (services/linkAgendamento.textoPadrao).
+  textoLink String? @map("texto_link")
   // Plano da Cortavo (assinatura da barbearia com a Cortavo). NÃO confundir com
   // o model `Plano` (pacotes que a barbearia vende aos clientes dela).
   // Valores: "personalizado" | "essencial" | "barbearia" | "barbearia_ia".
@@ -112,6 +115,10 @@ model Usuario {
   // do e-mail). Nulo = ainda não criou (conta nova aguardando). Também serve de
   // "versão" da senha: as sessões abertas antes da troca deixam de valer (F6).
   senhaDefinidaEm DateTime? @map("senha_definida_em")
+  // Spec 11 (primeiros passos), por usuário: o que não dá para deduzir do banco
+  // (JSON {"vistos":[...],"link":true}) e quando escondeu o cartão.
+  onboardingEstado   String?   @map("onboarding_estado")
+  onboardingOcultoEm DateTime? @map("onboarding_oculto_em")
   criadoEm  DateTime @default(now()) @map("criado_em")
 
   barbearia        Barbearia? @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)

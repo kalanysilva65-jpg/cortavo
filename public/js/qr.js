@@ -129,11 +129,15 @@
     return { tamanho: tam, versao: v, escuro: function (x, y) { return x >= 0 && y >= 0 && x < tam && y < tam && m[y][x]; } };
   }
 
+  /* Escape de atributo (revisão do Beto): o rótulo e a cor entram no SVG que
+     vai inline na página; sem isso, um rótulo com aspas quebraria o atributo. */
+  function attr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
   function svg(texto, o) {
     o = o || {}; var q = gerar(texto), b = o.borda == null ? 4 : o.borda, t = q.tamanho + b * 2, d = '';
     for (var y = 0; y < q.tamanho; y++) for (var x = 0; x < q.tamanho; x++) if (q.escuro(x, y)) d += 'M' + (x + b) + ' ' + (y + b) + 'h1v1h-1z';
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + t + ' ' + t + '" shape-rendering="crispEdges"' + (o.rotulo ? ' role="img" aria-label="' + o.rotulo + '"' : ' aria-hidden="true"') + '>' +
-      (o.fundo === false ? '' : '<rect width="' + t + '" height="' + t + '" fill="#fff"/>') + '<path fill="' + (o.cor || '#111') + '" d="' + d + '"/></svg>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + t + ' ' + t + '" shape-rendering="crispEdges"' + (o.rotulo ? ' role="img" aria-label="' + attr(o.rotulo) + '"' : ' aria-hidden="true"') + '>' +
+      (o.fundo === false ? '' : '<rect width="' + t + '" height="' + t + '" fill="#fff"/>') + '<path fill="' + attr(o.cor || '#111') + '" d="' + d + '"/></svg>';
   }
 
   function canvas(ctx, texto, x0, y0, lado, cor) {

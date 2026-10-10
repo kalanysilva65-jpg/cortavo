@@ -143,96 +143,96 @@ function primeiroNome(nome) {
 const LINK_APP_IOS = 'https://apps.apple.com/br/app/cortavo/id6804311130';
 const SITE = 'https://cortavo.com.br';
 
-// HTML simples: sem imagem, sem pixel, sem link encurtado. Botão + o endereço
-// completo escrito embaixo (para a pessoa conferir que é cortavo.com.br).
-function moldeHtml(paragrafos) {
-  const corpo = paragrafos.join('\n');
-  return `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F2F2F2;">
-<div style="max-width:520px;margin:0 auto;padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:16px;line-height:1.5;color:#111111;">
-<div style="background:#FFFFFF;border-radius:24px;padding:24px;">
-${corpo}
-</div>
-</div>
-</body></html>`;
+// HTML da Dani (redesign/v3/acesso/emails/modelo.html), copiado para
+// src/views/email/acesso-modelo.html. Tabelas e estilos inline (Gmail, Apple
+// Mail, Outlook), uma imagem só (o ícone oficial, servido pelo próprio app em
+// /email/icone-cortavo-192.png), botão de tabela que funciona sem imagens.
+// Os {{campos}} passam por escape de HTML; só blocoExtra e duvidas são HTML
+// montado aqui (com os dados já escapados).
+const fs = require('fs');
+const path = require('path');
+let modeloCache = null;
+function modeloHtml() {
+  if (!modeloCache) modeloCache = fs.readFileSync(path.join(__dirname, '..', 'views', 'email', 'acesso-modelo.html'), 'utf8');
+  return modeloCache;
 }
-const p = (html) => `<p style="margin:0 0 16px;">${html}</p>`;
-const botao = (link, rotulo) =>
-  `<p style="margin:8px 0 8px;"><a href="${escapeHtml(link)}" style="display:inline-block;background:#111111;color:#FFFFFF;text-decoration:none;font-weight:600;padding:14px 24px;border-radius:999px;">${escapeHtml(rotulo)}</a></p>` +
-  `<p style="margin:0 0 16px;font-size:13px;color:#3D3D3D;word-break:break-all;">${escapeHtml(link)}</p>`;
+
+// Endereço do ícone: do APP_DOMAIN (como o link), nunca do Host do pedido.
+function urlIcone(env = process.env) {
+  const dominio = String(env.APP_DOMAIN || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  const base = dominio && /^[a-z0-9.-]+(:\d+)?$/.test(dominio) ? `https://${dominio}` : SITE;
+  return `${base}/email/icone-cortavo-192.png`;
+}
+
+const FONTE = "font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;";
+function blocoComoEntrar(email) {
+  return '<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:24px 0 0;"><tr><td style="' + FONTE + 'font-size:15px;line-height:23px;color:#3D3D3D;">' +
+    `<p style="margin:0 0 10px;color:#111111;font-weight:bold;">Depois de criar a senha, entre com este e-mail (<span style="word-break:break-all;">${escapeHtml(email)}</span>) e a senha que escolheu:</p>` +
+    `<p style="margin:0 0 6px;">No iPhone, pelo app Cortavo da App Store:<br><a href="${LINK_APP_IOS}" style="color:#111111;">apps.apple.com/br/app/cortavo</a></p>` +
+    `<p style="margin:0;">No Android ou no computador, pelo navegador:<br><a href="${SITE}" style="color:#111111;">cortavo.com.br</a></p>` +
+    '</td></tr></table>';
+}
+const DUVIDAS = '<p style="margin:16px 0 0;font-size:14px;line-height:21px;color:#666666;">Dúvidas? É só responder este e-mail.</p>';
+
+function montarHtml(campos, brutos) {
+  // Tira o comentário de instruções da Dani (não vai no e-mail).
+  let s = modeloHtml()
+    .replace(/<!--\s*Cortavo · e-mail de acesso[\s\S]*?-->\r?\n?/, '')
+    .replace('<!-- rodapé: listra a 45° (o poste de barbeiro) feita de cor sólida, compatível -->', '<!-- rodapé -->');
+  for (const [k, v] of Object.entries(campos)) s = s.split('{{' + k + '}}').join(escapeHtml(v));
+  for (const [k, v] of Object.entries(brutos)) s = s.split('{{' + k + '}}').join(v);
+  return s;
+}
+
+// Versão em texto (a da Dani, redesign/v3/acesso/emails/*.txt, sem as linhas
+// "Assunto:" e "De:", que vão no cabeçalho).
+function montarTexto(d) {
+  const linhas = [`Olá, ${d.primeiroNome}.`, '', d.abertura, '', d.botao + ':', d.link, '', `O link vale por ${d.validade} ${d.validadeUnidade} e funciona uma vez só.`];
+  if (d.email) {
+    linhas.push('', `Depois de criar a senha, você entra com este e-mail (${d.email}) e a senha que escolheu:`,
+      `- no iPhone, pelo app Cortavo da App Store: ${LINK_APP_IOS}`,
+      `- no Android ou no computador, pelo navegador, em ${SITE}`);
+  }
+  linhas.push('', d.aviso, '', 'A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.');
+  if (d.duvidas) linhas.push('', 'Dúvidas? É só responder este e-mail.');
+  linhas.push('', 'Equipe Cortavo');
+  return linhas.join('\n') + '\n';
+}
+
+function montar(d, env) {
+  const campos = {
+    assunto: d.assunto, preheader: d.preheader, titulo: d.titulo, nomeBarbearia: d.nomeBarbearia,
+    primeiroNome: d.primeiroNome, abertura: d.abertura, link: d.link, botao: d.botao,
+    validade: d.validade, validadeUnidade: d.validadeUnidade, aviso: d.aviso, urlIcone: urlIcone(env),
+  };
+  const html = montarHtml(campos, { blocoExtra: d.email ? blocoComoEntrar(d.email) : '', duvidas: d.duvidas ? DUVIDAS : '' });
+  return { assunto: d.assunto, texto: montarTexto(d), html };
+}
 
 // 6.1 Primeiro acesso
-function modeloPrimeiroAcesso({ nome, nomeBarbearia, email, link }) {
-  const n = primeiroNome(nome);
-  const assunto = 'Crie sua senha de acesso à Cortavo';
-  const texto = [
-    `Olá, ${n}.`,
-    '',
-    `A conta da ${nomeBarbearia} na Cortavo foi criada. Para entrar, crie a sua senha pelo link abaixo:`,
-    '',
-    'Criar minha senha:',
-    link,
-    '',
-    'O link vale por 72 horas e funciona uma vez só.',
-    '',
-    `Depois de criar a senha, você entra com este e-mail (${email}) e a senha que escolheu:`,
-    `- no iPhone, pelo app Cortavo da App Store: ${LINK_APP_IOS}`,
-    `- no Android ou no computador, pelo navegador, em ${SITE}`,
-    '',
-    'Se você não esperava este e-mail, pode ignorar. Sem criar a senha, ninguém entra na conta.',
-    '',
-    'A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.',
-    '',
-    'Dúvidas? É só responder este e-mail.',
-    '',
-    'Equipe Cortavo',
-  ].join('\n');
-  const html = moldeHtml([
-    p(`Olá, ${escapeHtml(n)}.`),
-    p(`A conta da ${escapeHtml(nomeBarbearia)} na Cortavo foi criada. Para entrar, crie a sua senha pelo link abaixo:`),
-    botao(link, 'Criar minha senha'),
-    p('O link vale por 72 horas e funciona uma vez só.'),
-    p(`Depois de criar a senha, você entra com este e-mail (${escapeHtml(email)}) e a senha que escolheu:`),
-    `<ul style="margin:0 0 16px;padding-left:20px;"><li>no iPhone, pelo app Cortavo da App Store: <a href="${LINK_APP_IOS}" style="color:#111111;">${LINK_APP_IOS}</a></li><li>no Android ou no computador, pelo navegador, em <a href="${SITE}" style="color:#111111;">${SITE}</a></li></ul>`,
-    p('Se você não esperava este e-mail, pode ignorar. Sem criar a senha, ninguém entra na conta.'),
-    p('A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.'),
-    p('Dúvidas? É só responder este e-mail.'),
-    p('Equipe Cortavo'),
-  ]);
-  return { assunto, texto, html };
+function modeloPrimeiroAcesso({ nome, nomeBarbearia, email, link }, env) {
+  return montar({
+    assunto: 'Crie sua senha de acesso à Cortavo', titulo: 'Crie sua senha',
+    preheader: 'O link vale por 72 horas. Depois, é só entrar com este e-mail e a senha que você criar.',
+    primeiroNome: primeiroNome(nome), nomeBarbearia, email, link,
+    abertura: `A conta da ${nomeBarbearia} na Cortavo foi criada. Para entrar, crie a sua senha pelo link abaixo:`,
+    botao: 'Criar minha senha', validade: '72', validadeUnidade: 'horas',
+    aviso: 'Se você não esperava este e-mail, pode ignorar. Sem criar a senha, ninguém entra na conta.',
+    duvidas: true,
+  }, env);
 }
 
 // 6.2 Nova senha (pedida pela Kalany ou "esqueci minha senha")
-function modeloNovaSenha({ nome, nomeBarbearia, link }) {
-  const n = primeiroNome(nome);
-  const assunto = 'Link para criar uma nova senha na Cortavo';
-  const texto = [
-    `Olá, ${n}.`,
-    '',
-    `Recebemos um pedido para criar uma nova senha para o seu acesso à ${nomeBarbearia} na Cortavo. Para continuar, use o link abaixo:`,
-    '',
-    'Criar nova senha:',
-    link,
-    '',
-    'O link vale por 1 hora e funciona uma vez só. Enquanto você não criar a nova senha, a atual continua valendo.',
-    '',
-    'Se não foi você que pediu, pode ignorar este e-mail. Sua senha não muda.',
-    '',
-    'A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.',
-    '',
-    'Equipe Cortavo',
-  ].join('\n');
-  const html = moldeHtml([
-    p(`Olá, ${escapeHtml(n)}.`),
-    p(`Recebemos um pedido para criar uma nova senha para o seu acesso à ${escapeHtml(nomeBarbearia)} na Cortavo. Para continuar, use o link abaixo:`),
-    botao(link, 'Criar nova senha'),
-    p('O link vale por 1 hora e funciona uma vez só. Enquanto você não criar a nova senha, a atual continua valendo.'),
-    p('Se não foi você que pediu, pode ignorar este e-mail. Sua senha não muda.'),
-    p('A Cortavo nunca pede a sua senha por e-mail, WhatsApp ou Instagram.'),
-    p('Equipe Cortavo'),
-  ]);
-  return { assunto, texto, html };
+function modeloNovaSenha({ nome, nomeBarbearia, link }, env) {
+  return montar({
+    assunto: 'Link para criar uma nova senha na Cortavo', titulo: 'Criar uma nova senha',
+    preheader: 'O link vale por 1 hora. Enquanto você não criar a nova senha, a atual continua valendo.',
+    primeiroNome: primeiroNome(nome), nomeBarbearia, email: null, link,
+    abertura: `Recebemos um pedido para criar uma nova senha para o seu acesso à ${nomeBarbearia} na Cortavo. Para continuar, use o link abaixo:`,
+    botao: 'Criar nova senha', validade: '1', validadeUnidade: 'hora',
+    aviso: 'Enquanto você não criar a nova senha, a atual continua valendo. Se não foi você que pediu, pode ignorar este e-mail. Sua senha não muda.',
+    duvidas: false,
+  }, env);
 }
 
 module.exports = {
@@ -246,4 +246,5 @@ module.exports = {
   escapeHtml,
   modeloPrimeiroAcesso,
   modeloNovaSenha,
+  urlIcone,
 };

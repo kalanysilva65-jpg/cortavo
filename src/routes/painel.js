@@ -206,6 +206,9 @@ router.get('/logo', exigeAdmin, logoController.ver);
 router.get('/link', exigeAdmin, linkController.ver);
 router.get('/link/cartaz', exigeAdmin, linkController.cartaz);
 router.get('/link/qr.svg', exigeAdmin, linkController.qrSvg);
+router.post('/link/texto', exigeAdmin, linkController.salvarTexto);
+// Primeiros passos (spec 11): estado do próprio usuário (esconder, link, visto).
+router.post('/primeiros-passos', require('../controllers/primeirosPassosController').registrar);
 router.post('/logo', exigeAdmin, uploadLogo, logoController.salvar);
 router.post('/logo/remover', exigeAdmin, logoController.remover);
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);
@@ -311,6 +314,9 @@ router.post('/notificacoes/testar', notificacaoController.testar);
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
+// Agenda do PC (F13): dia em colunas por barbeiro e visão de semana (JSON).
+router.get('/agenda/dia.json', agendaController.diaColunasJson);
+router.get('/agenda/semana.json', agendaController.semanaJson);
 router.get('/agenda/horarios', agendaController.horariosJson); // JSON p/ o pop-up "Novo agendamento"
 router.get('/agenda/planos', agendaController.planosJson); // JSON: planos ativos do cliente (marcar pelo plano)
 router.get('/agenda/novo', agendaController.formNovo); // agendamento manual
