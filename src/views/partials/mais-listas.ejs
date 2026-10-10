@@ -62,8 +62,15 @@
       semAssistente ? null : { href: '/painel/ia', t: 'Assistente', s: 'Pergunte sobre a agenda e os números', ic: 'assistente', cadeado: tetos.assistente === 0 ? 'Barbearia' : null },
       { href: '/painel/fidelidade', t: 'Fidelidade', s: 'Selos e cupons dos clientes', ic: 'fidelidade', admin: true },
     ].filter(Boolean)) },
-    { t: 'Caixa e cadastros', itens: lista([
+    // Dinheiro (Kalany, 2026-10-10): o que era a seção da Gestão, agora no
+    // Mais. Cada item com a mesma permissão de antes.
+    { t: 'Dinheiro', itens: lista([
       { href: '/painel/caixa', t: 'Caixa', s: 'Entradas, saídas e saldo do dia', ic: 'caixa', chave: 'caixa_ver' },
+      { href: '/painel/relatorios', t: 'Relatórios', s: 'Faturamento, equipe e clientes por período', ic: 'gestao', admin: true },
+      { href: '/painel/comissoes', t: 'Comissões', s: 'Quanto cada barbeiro fez', ic: 'comissao' },
+      { href: '/painel/metas', t: 'Metas', s: 'Metas do mês e o quanto falta', ic: 'meta', admin: true },
+    ]) },
+    { t: 'Cadastros', itens: lista([
       { href: '/painel/clientes', t: 'Clientes', s: 'Contatos e histórico', ic: 'cliente' },
       { href: '/painel/servicos', t: 'Serviços', s: 'Preço, tempo e foto opcional', ic: 'tesoura' },
       { href: '/painel/produtos', t: 'Produtos', s: 'O que a barbearia vende', ic: 'loja' },
@@ -74,12 +81,14 @@
     { t: 'Seu dia a dia', itens: lista([
       { href: '/painel/perfil#pf-jornada', t: 'Minha jornada', s: 'Dias e horários em que você atende', ic: 'relogio' },
       { href: '/painel/horarios', t: 'Bloqueios', s: 'Folgas e horários fechados', ic: 'bloqueio' },
-      { href: '/painel/comissoes', t: 'Minha comissão', s: 'Quanto você fez no mês', ic: 'comissao' },
       { href: '/painel/conversas', t: 'Conversas', s: 'O WhatsApp da barbearia', ic: 'conversa' },
       (semAssistente || tetos.assistente === 0) ? null : { href: '/painel/ia', t: 'Assistente', s: 'Pergunte sobre a sua agenda', ic: 'assistente' },
     ].filter(Boolean)) },
-    { t: 'Caixa e cadastros', itens: lista([
+    { t: 'Dinheiro', itens: lista([
       { href: '/painel/caixa', t: 'Caixa', s: 'Entradas, saídas e saldo do dia', ic: 'caixa', chave: 'caixa_ver' },
+      { href: '/painel/comissoes', t: 'Minha comissão', s: 'Quanto você fez no mês', ic: 'comissao' },
+    ]) },
+    { t: 'Cadastros', itens: lista([
       { href: '/painel/clientes', t: 'Clientes', s: 'Contatos e histórico', ic: 'cliente' },
       { href: '/painel/servicos', t: 'Serviços', s: 'Preço e tempo de cada um', ic: 'tesoura' },
       { href: '/painel/produtos', t: 'Produtos', s: 'O que a barbearia vende', ic: 'loja' },

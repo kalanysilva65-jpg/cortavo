@@ -297,7 +297,7 @@ test('Gestão em produção: período rola junto, datas cabem, sem órfão, Caix
   assert.match(ler('public', 'css', 'cv-pc.css'), /cv-g-inteiro/);
   for (const f of fs.readdirSync(path.join(__dirname, '..', 'public', 'css'))) assert.doesNotMatch(ler('public', 'css', f), /grid-template-columns: 1fr 1fr/, f);
   const g = ler('src', 'views', 'painel', 'gestao.ejs');
-  assert.doesNotMatch(g, /href: '\/painel\/caixa'/); assert.doesNotMatch(g, /'Dinheiro'/);
+  assert.doesNotMatch(g, /href: '\/painel\/(caixa|relatorios|comissoes|metas|clientes)'/);
   const m = ler('src', 'views', 'partials', 'mais-listas.ejs');
   assert.equal((m.match(/href: '\/painel\/caixa', t: 'Caixa'[^}]*chave: 'caixa_ver'/g) || []).length, 2);
   assert.doesNotMatch(m, /href: '\/painel\/caixa'[^}]*admin: true/);
