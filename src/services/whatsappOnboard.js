@@ -151,12 +151,13 @@ function erroMeta(tecnico, mensagemTela, jaLiberado = false) {
 }
 
 // "Número já não está registrado" conta como sucesso (correção Sergio M1).
-// Código 133010 = "Account not registered" na Cloud API; o texto cobre variações.
-// A confirmar com um teste real da Kalany (registrado no relatório).
+// Só o código 133010 ("Account not registered" na Cloud API) vale (ajuste da
+// Vera): procurar no TEXTO da mensagem tratava como "já liberado" erros que só
+// citavam "not registered" por outro motivo. A confirmar com um teste real da
+// Kalany (registrado no relatório).
 function pareceJaLiberado(err) {
   if (!err) return false;
-  if (Number(err.code) === 133010) return true;
-  return /not registered|already deregistered|não está registrado/i.test(String(err.message || '') + ' ' + String(err.error_user_msg || ''));
+  return Number(err.code) === 133010;
 }
 
 async function desregistrarNumero(phoneNumberId, token) {
