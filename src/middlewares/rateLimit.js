@@ -101,10 +101,21 @@ function criarLimiteCriarSenhaGet() {
 // POST /criar-senha: 10 / 15 min por IP. Volta ao formulário com o aviso
 // (padrão do limiteLogin). Redireciona para a própria rota: o Referer não vem
 // (helmet manda Referrer-Policy: no-referrer).
+// Revisão da Vera: a conta é por IP E por link (o hash do link guardado na
+// sessão no GET). Numa barbearia, todo mundo sai pelo mesmo wifi; contar só por
+// IP deixaria um barbeiro que errou a senha travar a criação de senha dos
+// colegas. Sem link na sessão o POST já cai em "link não vale mais" antes de
+// qualquer bcrypt, então separar por link não abre força bruta.
+function chaveCriarSenha(req) {
+  const h = req.session && req.session.acessoLink && req.session.acessoLink.hash;
+  return (req.ip || '') + '|' + (typeof h === 'string' ? h.slice(0, 16) : '-');
+}
+
 function criarLimiteCriarSenhaPost() {
   return rateLimit({
     windowMs: QUINZE_MIN,
     max: 10,
+    keyGenerator: chaveCriarSenha,
     standardHeaders: true,
     legacyHeaders: false,
     handler(req, res) {
@@ -136,5 +147,5 @@ const limiteEsqueci = criarLimiteEsqueci();
 module.exports = {
   limiteLogin, limiteAdmin, limiteIA, limiteAgendar,
   limiteCriarSenhaGet, limiteCriarSenhaPost, limiteEsqueci,
-  criarLimiteCriarSenhaGet, criarLimiteCriarSenhaPost, criarLimiteEsqueci,
+  criarLimiteCriarSenhaGet, criarLimiteCriarSenhaPost, criarLimiteEsqueci, chaveCriarSenha,
 };
