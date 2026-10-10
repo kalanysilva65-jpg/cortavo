@@ -202,8 +202,16 @@ const FERRAMENTAS = [
 ];
 
 // ---------- execução das ferramentas ----------
+// Ferramentas que devolvem dinheiro ou números de desempenho (achado M4 do
+// Sergio): o barbeiro só usa com a chave `meus_numeros` (spec 12), como na
+// Gestão. O escopo continua sendo só o dele (usuarioId).
+const FERRAMENTAS_NUMEROS = new Set(['resumo_mes', 'faturamento_periodo', 'top_clientes', 'horarios_movimento']);
+
 async function execFerramenta(nome, args, ctx) {
   args = args || {};
+  if (FERRAMENTAS_NUMEROS.has(nome) && ctx && ctx.usuarioId && typeof ctx.pode === 'function' && !ctx.pode('meus_numeros')) {
+    return { erro: 'Sem acesso aos números. Quem cuida da barbearia libera em Equipe > Acessos.' };
+  }
   switch (nome) {
     case 'resumo_mes': {
       const h = new Date();
