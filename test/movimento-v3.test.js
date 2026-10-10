@@ -41,7 +41,7 @@ test('#5 carregando (M3): poste depois de 300 ms em fetch e troca de página; es
   const js = ler('public', 'js', 'cv-vida.js');
   assert.match(js, /var ESPERA = 300/);
   assert.match(js, /g\.fetch = function/);
-  assert.match(js, /FUNDO = \/\\/novas\\?\|\\/notificacoes\\/\//);
+  assert.match(js, /var FUNDO = .*novas.*notificacoes/); // buscas de fundo não acendem o poste
   assert.match(js, /addEventListener\('pageshow', esconderPoste\)/);
   assert.match(js, /function esqueleto\(el, opc\)/);
   assert.match(ler('public', 'js', 'cv-agenda-grade.js'), /CortavoVida\.esqueleto\(raiz/);
