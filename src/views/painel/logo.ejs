@@ -1,73 +1,56 @@
-<%/* Logo do agendamento público — só admin (dono da barbearia). */%>
-<div class="sv-tela sv-logo">
-  <div class="sv-pf-topo sv-reveal">
-    <div class="sv-titulo">Logo do agendamento</div>
-    <a href="/painel/mais" class="sv-pf-fechar" title="Voltar" aria-label="Voltar">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </a>
+<%/* Logo e aparência (redesign v3; Dani, link.html#aparencia). Prévia do
+     topo do agendamento, Trocar ou Adicionar logo, Posição (segmento), Tamanho
+     (80 a 240 px), Salvar e Excluir logo com confirmação. Só admin.
+     Mesmas rotas e campos (/painel/logo, multipart). */%>
+<%
+  var nome = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Sua barbearia';
+  var ini = nome.replace(/^Barbearia\s+(d[aeo]s?\s+|e\s+)?/i, '').charAt(0).toUpperCase();
+%>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup"><a href="/painel/link" style="color:inherit">Link de agendamento</a></p><h1>Logo e aparência</h1></div>
+</header>
+
+<form class="lk-ap" method="POST" action="/painel/logo" enctype="multipart/form-data" id="lk-ap-form">
+  <div class="cv-cartao">
+    <p class="cv-rotulo" style="margin:0 0 10px">Prévia do topo do agendamento</p>
+    <div class="lk-ap-previa" id="lk-ap-previa" data-alinh="<%= marca.logoAlinhamento %>" style="--tam:<%= marca.logoTamanho %>">
+      <span class="lk-logo lk-logo--ap"><img id="lk-ap-img" src="<%= marca.logoUrl || '' %>" alt=""<% if (!marca.logoUrl) { %> hidden<% } %> /><span id="lk-ap-ini" aria-hidden="true"<% if (marca.logoUrl) { %> hidden<% } %>><%= ini %></span></span>
+      <span class="lk-ap-nome"><b><%= nome %></b><small><%= (typeof horarioHoje !== 'undefined' && horarioHoje) ? horarioHoje.texto : 'Aberto hoje' %></small></span>
+    </div>
+    <p class="cv-ajuda lk-sem" id="lk-ap-sem"<% if (marca.logoUrl) { %> hidden<% } %>>Sem logo, o cliente vê a inicial e o nome da barbearia.</p>
+    <label class="cv-btn cv-btn--2 cv-btn--largo lk-arquivo"><span><%= marca.logoUrl ? 'Trocar logo' : 'Adicionar logo' %></span><input type="file" name="logo" id="lk-ap-arquivo" accept="image/*" class="cv-oculto" /></label>
   </div>
-
-  <form method="POST" action="/painel/logo" enctype="multipart/form-data" class="sv-cartao sv-logo-form sv-reveal" id="svLogoForm">
-    <div class="sv-logo-previa" id="svLogoPrevia">
-      <div class="sv-logo-linha" id="svLogoLinha" data-alinh="<%= marca.logoAlinhamento %>">
-        <img id="svLogoImg" src="<%= marca.logoUrl || '' %>" alt="Logo" style="height:<%= marca.logoTamanho %>px;max-width:100%" <%- marca.logoUrl ? '' : 'hidden' %> />
-        <span class="sv-logo-vazio" id="svLogoVazio" <%- marca.logoUrl ? 'hidden' : '' %>>Sem logo — o cliente vê a inicial e o nome da barbearia</span>
+  <div class="cv-cartao">
+    <div class="cv-campo"><span class="cv-rotulo" id="ap-pos">Posição</span>
+      <input type="hidden" name="alinhamento" id="lk-ap-alinh" value="<%= marca.logoAlinhamento %>" />
+      <div class="cv-seg lk-seg" role="radiogroup" aria-labelledby="ap-pos" style="margin-top:6px">
+        <% [['esquerda','Esquerda'],['centro','Centro'],['direita','Direita']].forEach(function (o) { %><button type="button" role="radio" aria-checked="<%= marca.logoAlinhamento === o[0] %>" aria-pressed="<%= marca.logoAlinhamento === o[0] %>" data-alinh="<%= o[0] %>"><%= o[1] %></button><% }) %>
       </div>
     </div>
-    <div class="sv-pf-dica">Prévia do topo do agendamento online</div>
-
-    <label class="sv-btn sv-btn--claro sv-logo-escolher">
-      <%= marca.logoUrl ? 'Trocar logo' : 'Adicionar logo' %>
-      <input type="file" name="logo" id="svLogoArquivo" accept="image/*" hidden />
-    </label>
-
-    <div class="sv-campo">
-      <span class="sv-campo-rot">Posição</span>
-      <input type="hidden" name="alinhamento" id="svLogoAlinh" value="<%= marca.logoAlinhamento %>" />
-      <div class="pill-group">
-        <% [['esquerda','Esquerda'],['centro','Centro'],['direita','Direita']].forEach(function (o) { %>
-          <button type="button" class="pill-opcao <%= marca.logoAlinhamento === o[0] ? 'ativo' : '' %>" data-alinh="<%= o[0] %>"><%= o[1] %></button>
-        <% }) %>
-      </div>
-    </div>
-
-    <div class="sv-campo">
-      <label class="sv-campo-rot" for="svLogoTam">Tamanho: <strong id="svLogoTamTxt"><%= marca.logoTamanho %></strong> px</label>
-      <input type="range" name="tamanho" id="svLogoTam" min="80" max="240" step="4" value="<%= marca.logoTamanho %>" />
-    </div>
-
-    <button class="sv-btn sv-pl-cta" type="submit">Salvar</button>
+    <div class="cv-campo"><label for="lk-ap-tam">Tamanho <b class="cv-num" id="lk-ap-tam-t"><%= marca.logoTamanho %></b> px</label><input type="range" id="lk-ap-tam" name="tamanho" min="80" max="240" step="4" value="<%= marca.logoTamanho %>" class="lk-faixa" /></div>
+  </div>
+  <button class="cv-btn cv-btn--largo" type="submit">Salvar</button>
+</form>
+<% if (marca.logoUrl) { %>
+  <form method="POST" action="/painel/logo/remover" data-confirmar="Excluir a logo? O cliente passa a ver a inicial e o nome da barbearia." style="padding:0 var(--margem)">
+    <button type="submit" class="cv-btn cv-btn--texto cv-btn--largo lk-excluir">Excluir logo</button>
   </form>
-
-  <% if (marca.logoUrl) { %>
-    <form method="POST" action="/painel/logo/remover" class="sv-pf-remover">
-      <button type="submit" class="sv-foto-rem" onclick="return confirm('Excluir a logo? O cliente passa a ver a inicial e o nome da barbearia.')">Excluir logo</button>
-    </form>
-  <% } %>
-</div>
+<% } %>
 
 <script>
   (function () {
-    var img = document.getElementById('svLogoImg'), linha = document.getElementById('svLogoLinha');
-    var vazio = document.getElementById('svLogoVazio'), tam = document.getElementById('svLogoTam');
-    function aplicar() {
-      var t = tam.value; document.getElementById('svLogoTamTxt').textContent = t;
-      img.style.height = t + 'px';
-      linha.setAttribute('data-alinh', document.getElementById('svLogoAlinh').value);
-    }
-    tam.addEventListener('input', aplicar);
-    document.querySelectorAll('[data-alinh].pill-opcao').forEach(function (b) {
+    var prev = document.getElementById('lk-ap-previa'), tam = document.getElementById('lk-ap-tam'), alinh = document.getElementById('lk-ap-alinh');
+    tam.addEventListener('input', function () { document.getElementById('lk-ap-tam-t').textContent = tam.value; prev.style.setProperty('--tam', tam.value); });
+    Array.prototype.forEach.call(document.querySelectorAll('.lk-seg [data-alinh]'), function (b) {
       b.addEventListener('click', function () {
-        document.querySelectorAll('[data-alinh].pill-opcao').forEach(function (x) { x.classList.remove('ativo'); });
-        b.classList.add('ativo');
-        document.getElementById('svLogoAlinh').value = b.getAttribute('data-alinh');
-        aplicar();
+        Array.prototype.forEach.call(document.querySelectorAll('.lk-seg [data-alinh]'), function (x) { var on = x === b; x.setAttribute('aria-checked', String(on)); x.setAttribute('aria-pressed', String(on)); });
+        alinh.value = b.getAttribute('data-alinh'); prev.setAttribute('data-alinh', alinh.value);
       });
     });
-    document.getElementById('svLogoArquivo').addEventListener('change', function () {
-      var f = this.files && this.files[0];
-      if (f) { img.src = URL.createObjectURL(f); img.hidden = false; vazio.hidden = true; }
+    document.getElementById('lk-ap-arquivo').addEventListener('change', function () {
+      var f = this.files && this.files[0]; if (!f) return;
+      var img = document.getElementById('lk-ap-img'); img.src = URL.createObjectURL(f); img.hidden = false;
+      document.getElementById('lk-ap-ini').hidden = true; document.getElementById('lk-ap-sem').hidden = true;
     });
-    aplicar();
   })();
 </script>

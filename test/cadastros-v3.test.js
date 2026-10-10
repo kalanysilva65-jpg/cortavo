@@ -117,3 +117,14 @@ test('Metas v3: a primeira no objeto com anel, as outras com barra, nova em folh
   assert.match(html, /<form method="POST" action="\/painel\/metas">/);
   assert.match(html, /action="\/painel\/metas\/2\/remover" data-confirmar/);
 });
+
+test('Logo e aparência v3 (Dani, link.html#aparencia): prévia, posição, tamanho e excluir com confirmação', async () => {
+  v3('/painel/logo');
+  const html = await render('painel/logo.ejs', { ...comuns, barbeariaAtual: { nome: 'Barbearia Vila Rosa' }, marca: { logoUrl: '/u/l.png', logoAlinhamento: 'direita', logoTamanho: 140 } });
+  assert.doesNotMatch(html, SEM_ANTIGO);
+  assert.match(html, /<form class="lk-ap" method="POST" action="\/painel\/logo" enctype="multipart\/form-data"/);
+  assert.match(html, /name="alinhamento" id="lk-ap-alinh" value="direita"/);
+  assert.match(html, /name="tamanho" min="80" max="240" step="4" value="140"/);
+  assert.match(html, /action="\/painel\/logo\/remover" data-confirmar="Excluir a logo\?/);
+  assert.ok(!/semNav = \[[^\]]*'\/painel\/logo'/.test(layout), 'navbar fixa também em Logo');
+});

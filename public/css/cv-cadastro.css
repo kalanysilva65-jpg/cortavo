@@ -195,3 +195,27 @@ div.cv-pl-card { cursor: default; }
 .cv-mt-card .nums { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .cv-mt-card .nums span:last-child { font-size: 13px; color: var(--c-apoio); }
 .cv-mt-obj .corpo { padding-right: 40px; }
+
+/* ---- Logo e aparência (Dani, link.html#aparencia) ---------------------- */
+.lk-ap { padding: 16px var(--margem) 0; display: grid; gap: var(--entre-blocos); }
+.lk-ap > .cv-btn { margin-top: 4px; }
+.lk-ap-previa { display: flex; align-items: center; gap: 12px; padding: 18px 16px; border-radius: var(--r-interno); background: var(--c-pagina); min-height: 96px; }
+.lk-ap-previa[data-alinh="centro"] { flex-direction: column; text-align: center; }
+.lk-ap-previa[data-alinh="direita"] { flex-direction: row-reverse; text-align: right; }
+.lk-logo--ap { width: calc(var(--tam, 120) * .5px); height: calc(var(--tam, 120) * .5px); border-radius: 16px; box-shadow: var(--s-objeto); font-size: calc(var(--tam, 120) * .2px); }
+.lk-ap-nome { min-width: 0; }
+.lk-ap-nome b { display: block; font-size: 17px; font-weight: 800; letter-spacing: -.015em; overflow-wrap: anywhere; }
+.lk-ap-nome small { font-size: 13px; color: var(--c-apoio); }
+.lk-sem { margin: 10px 2px 0; }
+.lk-arquivo { margin-top: 14px; cursor: pointer; }
+.lk-arquivo:focus-within { outline: 2.5px solid var(--c-tinta); outline-offset: 2px; }
+.lk-seg { height: 44px; }
+.lk-seg button[aria-checked="true"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
+.lk-faixa { width: 100%; height: 44px; accent-color: var(--c-tinta); }
+.lk-excluir { color: var(--c-perigo); }
+
+.lk-logo { width: 44px; height: 44px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; background: var(--c-objeto); color: #fff; flex-shrink: 0; font-weight: 800; }
+.lk-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.lk-ap-previa[data-alinh="esquerda"] { flex-direction: row; }
+.lk-arquivo { width: 100%; }
+.lk-ap .cv-cartao .cv-campo + .cv-campo { margin-top: 14px; }
