@@ -125,6 +125,9 @@ app.use(resolverBarbearia);
 // Senha trocada ou pessoa desativada: as sessões abertas antes caem.
 app.use(require('./middlewares/sessaoValida').sessaoValida);
 
+// --- Origem dos pedidos que mudam dados (achado M5 do Sergio) ---------------
+app.use(require('./middlewares/origemMesmoSite').origemMesmoSite);
+
 // --- Variáveis disponíveis em todas as views ------------------------------
 app.use((req, res, next) => {
   res.locals.usuario = req.session.usuario || null;
