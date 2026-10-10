@@ -1,31 +1,17 @@
-<%
-  var lista = aba === 'passados' ? passados : proximos;
-%>
-<div class="ac-screen ac-screen--dark">
-  <div class="ac-pad" style="padding-top:24px;">
-    <div class="ac-wordmark" style="color:#fff;">CORTAVO</div>
-    <div class="ac-display" style="color:#fff;margin-top:20px;margin-bottom:18px;">Agendamentos</div>
-    <div class="ac-tabs" style="border-bottom-color:var(--line-dark);">
-      <a class="ac-tab <%= aba === 'proximos' ? 'ativo' : '' %>" href="/conta/agendamentos" style="<%= aba === 'proximos' ? 'color:#fff' : '' %>">Próximos</a>
-      <a class="ac-tab <%= aba === 'passados' ? 'ativo' : '' %>" href="/conta/agendamentos?aba=passados" style="<%= aba === 'passados' ? 'color:#fff' : '' %>">Anteriores</a>
-    </div>
-  </div>
-
-  <div class="ac-pad" style="padding-top:6px;">
-    <% if (lista.length === 0) { %>
-      <p class="ac-body-text" style="padding-top:26px;"><%= aba === 'passados' ? 'Nenhum agendamento anterior.' : 'Você não tem agendamentos próximos.' %></p>
-    <% } %>
-    <% lista.forEach(function (ag) { %>
-      <a href="/conta/agendamento/<%= ag.id %>" style="display:flex;justify-content:space-between;align-items:flex-start;padding:18px 0;border-bottom:1px solid var(--line-dark);text-decoration:none;color:inherit;">
-        <div>
-          <div style="font:400 18px var(--font-display);color:#fff;"><%= ag.barbearia.nome %></div>
-          <div style="font:400 12.5px var(--font-ui);color:var(--ink-soft-dark);margin-top:6px;"><%= ag.servicosLabel %></div>
-          <div class="ac-meta" style="margin-top:8px;"><%= ag.quando %></div>
-        </div>
-        <% if (ag.concluido) { %>
-          <span class="ac-meta" style="border:1px solid var(--line-dark);padding:6px 10px;color:#fff;">Concluído</span>
-        <% } %>
-      </a>
-    <% }) %>
-  </div>
+<% var lista = aba === 'passados' ? passados : proximos; %>
+<%/* App do cliente: agendamentos (v3). */%>
+<header class="cv-cab"><div class="cv-cab-txt"><h1>Agendamentos</h1></div><div class="cv-cab-acoes"><%- include('../partials/logo-c', { cvTam: 40 }) %></div></header>
+<div class="cv-secao" style="margin-top:16px">
+  <nav class="cv-seg cc-seg" aria-label="Agendamentos"><a href="/conta/agendamentos" aria-pressed="<%= aba !== 'passados' %>"<% if (aba !== 'passados') { %> aria-current="page"<% } %>>Próximos</a><a href="/conta/agendamentos?aba=passados" aria-pressed="<%= aba === 'passados' %>"<% if (aba === 'passados') { %> aria-current="page"<% } %>>Anteriores</a></nav>
 </div>
+<section class="cv-secao" style="margin-top:14px" aria-label="Lista">
+  <% if (lista.length === 0) { %>
+    <div class="cv-cartao cv-vazio" role="status"><h2><%= aba === 'passados' ? 'Nada por aqui' : 'Sem horários marcados' %></h2><p><%= aba === 'passados' ? 'Nenhum agendamento anterior.' : 'Você não tem agendamentos próximos.' %></p></div>
+  <% } else { %>
+    <ul class="cv-lista cv-lista--sem-ic">
+      <% lista.forEach(function (ag) { %>
+        <li><a class="cv-linha" href="/conta/agendamento/<%= ag.id %>"><span class="corpo"><span class="t"><%= ag.barbearia.nome %></span><span class="s"><%= ag.servicosLabel %> · <%= ag.quando %></span></span><% if (ag.concluido) { %><span class="cv-etq">Concluído</span><% } %><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>

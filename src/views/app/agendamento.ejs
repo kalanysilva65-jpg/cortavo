@@ -1,25 +1,17 @@
-<div class="ac-screen">
-  <div class="ac-pad" style="padding-top:20px;">
-    <a class="ac-icon-btn" href="/conta/agendamentos" aria-label="Voltar">←</a>
+<%/* App do cliente: agendamento confirmado (v3). Sem pagamento no app. */%>
+<header class="cv-cab"><div class="cv-cab-txt"><p class="cv-cab-sup"><a href="/conta/agendamentos" style="color:inherit">Voltar</a></p><h1>Agendamento confirmado</h1></div></header>
+<div class="cv-secao" style="margin-top:16px">
+  <section class="cv-objeto cv-gravada" aria-label="Agendamento">
+    <span style="display:block;font-size:14px;font-weight:600;color:var(--c-sobre-objeto-2)"><%= dataExtenso %> · <%= ag.horaInicio %></span>
+    <b style="display:block;margin-top:6px;font-size:22px;font-weight:800;letter-spacing:-.02em"><%= ag.itens.map(function (i) { return i.servico.nome; }).join(' + ') %></b>
+  </section>
+  <div class="cv-cartao" style="margin-top:12px">
+    <ul class="cc-linhas">
+      <li><span>Barbearia</span><b><%= ag.barbearia.nome %></b></li>
+      <li><span>Profissional</span><b><%= ag.usuario.nome %></b></li>
+      <li><span>Pagamento</span><b>Na barbearia</b></li>
+      <li><span>Total</span><b><%= fmtBRL(ag.valorTotal) %></b></li>
+    </ul>
   </div>
-
-  <div class="ac-pad" style="padding-top:44px;">
-    <div class="ac-live ac-live--on" style="margin-bottom:18px;">
-      <span class="ac-live-dot"></span>
-      <span class="ac-live-label">Agendamento confirmado</span>
-    </div>
-    <div class="ac-page-title"><%= ag.itens.map(function (i) { return i.servico.nome; }).join(' + ') %></div>
-  </div>
-
-  <div class="ac-pad" style="padding-top:30px;">
-    <div class="ac-list-row"><span class="ac-meta">Barbearia</span><span style="font:400 14px var(--font-ui);"><%= ag.barbearia.nome %></span></div>
-    <div class="ac-list-row"><span class="ac-meta">Profissional</span><span style="font:400 14px var(--font-ui);"><%= ag.usuario.nome %></span></div>
-    <div class="ac-list-row"><span class="ac-meta">Quando</span><span style="font:400 14px var(--font-ui);"><%= dataExtenso %> · <%= ag.horaInicio %></span></div>
-    <div class="ac-list-row"><span class="ac-meta">Pagamento</span><span style="font:400 14px var(--font-ui);">Na barbearia</span></div>
-    <div class="ac-list-row" style="border-bottom:none;"><span class="ac-meta">Total</span><span style="font:400 17px var(--font-ui);"><%= fmtBRL(ag.valorTotal) %></span></div>
-  </div>
-
-  <div class="ac-pad" style="padding-top:30px;">
-    <a href="/conta/agendamentos" class="ac-btn ac-btn--block">Ver meus agendamentos</a>
-  </div>
+  <a href="/conta/agendamentos" class="cv-btn cv-btn--2 cv-btn--largo" style="margin-top:14px">Ver meus agendamentos</a>
 </div>

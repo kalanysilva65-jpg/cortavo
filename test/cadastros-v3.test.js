@@ -201,3 +201,11 @@ test('Formulários avulsos no v3: serviço (com preço por barbeiro), plano, age
   assert.doesNotMatch(st, /class="sv-|💈|📍/u);
   assert.match(layout, /AVULSOS_V3 = .*servicos\|planos.*agenda.*secretaria/);
 });
+
+test('F11 limpeza: só tokens e cv* em public/css; layout sem pilha antiga', () => {
+  const fs = require('fs'); const path = require('path');
+  const css = fs.readdirSync(path.join(__dirname, '..', 'public', 'css')).filter((f) => f.endsWith('.css'));
+  for (const f of css) assert.ok(f === 'tokens.css' || f === 'componentes.css' || f.startsWith('cv'), 'CSS antigo sobrando: ' + f);
+  const lay = fs.readFileSync(path.join(__dirname, '..', 'src', 'views', 'layouts', 'painel.ejs'), 'utf8');
+  for (const k of ['/css/styles.css', '/css/suave', '/css/sv-', 'tema-minimal.css', 'painel-app.css', 'painel-novo.css', "partials/header-painel"]) assert.ok(!lay.includes(k), 'layout cita ' + k);
+});

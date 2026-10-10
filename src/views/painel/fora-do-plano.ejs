@@ -1,27 +1,15 @@
-<%/* Tela "fora do plano" (fase 2.2 servidor; visual 2.4, spec 04). Resposta do
-     SERVIDOR quando a rota não está no plano da Cortavo da barbearia. Sem botão
-     de pagar (regra da Apple). Estilo próprio e curto porque esta tela pode
-     abrir tanto em telas do design suave quanto nas da pilha antiga. Só preto,
-     branco e cinzas. */%>
-<style>
-  .fdp { max-width: 420px; margin: 32px auto; padding: 28px 22px; border-radius: 22px; background: #fff; text-align: center; box-shadow: 0 1px 2px rgba(25,25,25,.04), 0 4px 12px rgba(25,25,25,.05); color: #191919; }
-  .fdp-ic { width: 56px; height: 56px; border-radius: 50%; background: #191919; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
-  .fdp-tit { font-size: 20px; font-weight: 700; margin: 16px 0 6px; }
-  .fdp-txt { font-size: 14px; color: #6b6b6b; margin: 0 0 20px; }
-  .fdp-acoes { display: flex; flex-direction: column; gap: 8px; }
-  .fdp-btn { display: block; padding: 12px; border-radius: 14px; font-weight: 600; font-size: 14px; text-decoration: none; }
-  /* .fdp na frente vence '.pg-sv a { color: inherit }' (A1 da Vera). */
-  .fdp .fdp-btn--pri { background: #191919; color: #fff; }
-  .fdp .fdp-btn--sec { background: #f2f2f2; color: #191919; }
-</style>
-<div class="fdp" role="main">
-  <span class="fdp-ic" aria-hidden="true">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.5a4.8 4.8 0 0 0-4.8 4.8v2.4H6.4A2.4 2.4 0 0 0 4 12.1v7A2.4 2.4 0 0 0 6.4 21.5h11.2a2.4 2.4 0 0 0 2.4-2.4v-7a2.4 2.4 0 0 0-2.4-2.4h-.8V7.3A4.8 4.8 0 0 0 12 2.5zm2.6 7.2V7.3a2.6 2.6 0 1 0-5.2 0v2.4z"/></svg>
-  </span>
-  <h1 class="fdp-tit"><%= funcao.rotulo %></h1>
-  <p class="fdp-txt"><%= texto %></p>
-  <div class="fdp-acoes">
-    <% if (typeof ehAdmin !== 'undefined' && ehAdmin) { %><a class="fdp-btn fdp-btn--pri" href="/painel/meu-plano">Ver meu plano</a><% } %>
-    <a class="fdp-btn fdp-btn--sec" href="/painel">Voltar ao início</a>
+<%/* Fora do plano (fase 2.2; visual v3). Resposta do servidor quando a rota
+     não está no plano da Cortavo. Sem botão de pagar (regra da Apple). O
+     estado é a listra parada; só preto, branco e cinza. */%>
+<header class="cv-cab"><div class="cv-cab-txt"><p class="cv-cab-sup">Fora do plano</p><h1><%= funcao.rotulo %></h1></div></header>
+<div class="cv-secao" style="margin-top:16px">
+  <div class="cv-cartao cv-vazio" role="main">
+    <div class="marca" aria-hidden="true" style="width:64px;height:64px;border-radius:20px;margin:0 auto 14px;background:var(--listra-bloqueado);box-shadow:inset 0 0 0 .5px var(--c-fio-forte);display:grid;place-items:center"><%- include('../partials/icone', { cvIc: 'cadeado' }) %></div>
+    <h2><%= funcao.rotulo %></h2>
+    <p><%= texto %></p>
+    <div class="acoes" style="display:grid;gap:8px">
+      <% if (typeof ehAdmin !== 'undefined' && ehAdmin) { %><a class="cv-btn" href="/painel/meu-plano">Ver meu plano</a><% } %>
+      <a class="cv-btn cv-btn--2" href="/painel">Voltar ao início</a>
+    </div>
   </div>
 </div>

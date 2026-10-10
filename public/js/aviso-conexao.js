@@ -9,7 +9,7 @@
     'display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#1a1a1a;color:#fff;' +
     'font:500 13px/1.35 system-ui,-apple-system,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25);' +
     'transform:translateY(-140%);transition:transform .25s ease;max-width:520px;margin:0 auto}' +
-    '.aviso-cx.on{transform:none}.aviso-cx--ok{background:#2e9e5b}' +
+    '.aviso-cx.on{transform:none}.aviso-cx--ok{background:#111}' +
     '.aviso-cx span{flex:1}.aviso-cx button{border:0;border-radius:10px;padding:7px 11px;background:#fff;color:#1a1a1a;font:600 12px system-ui,sans-serif;cursor:pointer}';
   var st = document.createElement('style');
   st.textContent = css;

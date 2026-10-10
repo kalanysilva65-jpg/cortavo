@@ -1,18 +1,11 @@
-<div class="ac-screen">
-  <div class="ac-pad" style="padding-top:44px;text-align:center;">
-    <div style="width:84px;height:84px;border-radius:50%;background:var(--dn-gray-200);margin:0 auto;display:flex;align-items:center;justify-content:center;font:400 30px var(--font-display);color:var(--ink-light);">
-      <%= conta.nome.charAt(0).toUpperCase() %>
-    </div>
-    <div style="font:400 22px var(--font-display);margin-top:18px;"><%= conta.nome %></div>
-    <div class="ac-meta" style="margin-top:8px;"><%= conta.email %></div>
-  </div>
-
-  <div class="ac-pad" style="padding-top:36px;">
-    <a class="ac-list-row" href="/conta/agendamentos"><span style="font:400 14px var(--font-ui);">Meus agendamentos</span><span style="color:var(--ink-soft-light);">›</span></a>
-    <form method="POST" action="/conta/sair">
-      <button type="submit" class="ac-list-row" style="width:100%;background:none;border:none;border-bottom:1px solid var(--line-light);cursor:pointer;">
-        <span style="font:400 14px var(--font-ui);color:var(--ink-soft-light);">Sair</span>
-      </button>
-    </form>
-  </div>
+<%/* App do cliente: perfil (v3). */%>
+<header class="cv-cab"><div class="cv-cab-txt"><h1>Perfil</h1></div></header>
+<div class="cv-secao" style="margin-top:16px">
+  <div class="cv-cartao cv-perfil" style="display:flex;align-items:center;gap:14px"><span class="cv-avatar" aria-hidden="true" style="width:52px;height:52px;font-size:19px"><%= conta.nome.charAt(0).toUpperCase() %></span><span class="corpo" style="min-width:0"><b style="display:block;font-size:17px;font-weight:600"><%= conta.nome %></b><span style="font-size:14px;color:var(--c-apoio)"><%= conta.email %></span></span></div>
 </div>
+<section class="cv-secao" aria-label="Conta">
+  <ul class="cv-lista">
+    <li><a class="cv-linha" href="/conta/agendamentos"><%- include('../partials/icone', { cvIc: 'agenda' }) %><span class="corpo"><span class="t">Meus agendamentos</span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a></li>
+    <li><form method="POST" action="/conta/sair"><button type="submit" class="cv-linha" style="width:100%;background:none;border:0;font:inherit;cursor:pointer"><%- include('../partials/icone', { cvIc: 'sair' }) %><span class="corpo"><span class="t">Sair</span></span></button></form></li>
+  </ul>
+</section>

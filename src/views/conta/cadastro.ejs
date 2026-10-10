@@ -1,31 +1,11 @@
-<%/* Andaime da Fase 0 — substituído pelo design "Cortavo" na Fase 1. */%>
-<div class="card auth-card">
-  <div class="auth-cabecalho">
-    <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf">Cortavo</span></div>
-    <p class="texto-secundario">Criar sua conta</p>
-  </div>
-
-  <form method="POST" action="/conta/cadastro" class="form">
-    <div class="campo">
-      <label for="nome">Nome</label>
-      <input type="text" id="nome" name="nome" placeholder="Seu nome" required autofocus />
-    </div>
-    <div class="campo">
-      <label for="email">E-mail</label>
-      <input type="email" id="email" name="email" placeholder="seu@email.com" required />
-    </div>
-    <div class="campo">
-      <label for="telefone">Telefone <span class="texto-sutil">(opcional)</span></label>
-      <input type="tel" id="telefone" name="telefone" placeholder="(11) 90000-0000" />
-    </div>
-    <div class="campo">
-      <label for="senha">Senha <span class="texto-sutil">(mín. 6 caracteres)</span></label>
-      <input type="password" id="senha" name="senha" placeholder="••••••••" minlength="6" required />
-    </div>
-    <button class="btn btn-primario btn-bloco" type="submit">Criar conta</button>
-  </form>
-
-  <div style="text-align:center;margin-top:16px;">
-    <a href="/conta/entrar" class="texto-secundario">Já tem conta? Entrar</a>
-  </div>
-</div>
+<%/* Conta do cliente: criar conta (v3). */%>
+<h1>Criar conta</h1>
+<p class="sub">Para marcar e acompanhar seus horários.</p>
+<form method="POST" action="/conta/cadastro" class="cv-cartao">
+  <div class="cv-campo"><label for="nome">Nome</label><input class="cv-entrada" type="text" id="nome" name="nome" placeholder="Seu nome" autocomplete="name" required autofocus /></div>
+  <div class="cv-campo"><label for="email">E-mail</label><input class="cv-entrada" type="email" id="email" name="email" placeholder="seu@email.com" autocomplete="email" required /></div>
+  <div class="cv-campo"><label for="telefone">Telefone <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><input class="cv-entrada" type="tel" id="telefone" name="telefone" placeholder="(11) 90000-0000" autocomplete="tel" /></div>
+  <div class="cv-campo"><label for="senha">Senha</label><input class="cv-entrada" type="password" id="senha" name="senha" minlength="6" autocomplete="new-password" required /><span class="cv-ajuda">No mínimo 6 caracteres.</span></div>
+  <button class="cv-btn cv-btn--largo" type="submit">Criar conta</button>
+</form>
+<p class="rodape"><a href="/conta/entrar">Já tenho conta</a></p>

@@ -1,41 +1,40 @@
+<%/* App do cliente final (/conta), redesign v3. Mesmo sistema do painel:
+     tokens + cv, navbar fixa em vidro com 4 seções, um objeto preto por tela.
+     Sem a palavra-marca "CORTAVO": o ícone oficial (C com check) no topo. */%>
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %>Cortavo</title>
-    <link rel="stylesheet" href="/css/app-cliente.css" />
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/cv.css" />
+    <link rel="stylesheet" href="/css/cv-cliente.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#0d0d0f" />
+    <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   </head>
-  <body class="ac-body">
+  <body class="cc">
     <% if (typeof flash !== 'undefined' && flash) { %>
-      <div class="ac-flash ac-flash--<%= flash.tipo %>"><%= flash.texto %></div>
+      <div class="cv-avisos"><div class="cv-aviso<%= flash.tipo === 'erro' ? ' cv-aviso--erro' : '' %>" role="<%= flash.tipo === 'erro' ? 'alert' : 'status' %>"><span><b><%= flash.texto %></b></span></div></div>
     <% } %>
-    <%- body %>
-
+    <main class="cc-tela"><%- body %></main>
     <% if (typeof abaAtiva !== 'undefined' && abaAtiva) { %>
-      <%
-        var abas = [
-          { chave: 'home', label: 'Home', href: '/conta' },
-          { chave: 'busca', label: 'Busca', href: '/conta/busca' },
-          { chave: 'agenda', label: 'Agenda', href: '/conta/agendamentos' },
-          { chave: 'perfil', label: 'Perfil', href: '/conta/perfil' },
-        ];
-      %>
-      <nav class="ac-tabbar <%= typeof tabbarDark !== 'undefined' && tabbarDark ? 'ac-tabbar--dark' : '' %>" aria-label="Navegação do app">
+      <% var abas = [
+           { chave: 'home', label: 'Início', href: '/conta', ic: 'inicio' },
+           { chave: 'busca', label: 'Busca', href: '/conta/busca', ic: 'busca' },
+           { chave: 'agenda', label: 'Agenda', href: '/conta/agendamentos', ic: 'agenda' },
+           { chave: 'perfil', label: 'Perfil', href: '/conta/perfil', ic: 'cliente' },
+         ]; %>
+      <nav class="cv-navbar cc-navbar" aria-label="Navegação do app">
         <% abas.forEach(function (aba) { %>
-          <a href="<%= aba.href %>" class="ac-tabbar-item <%= abaAtiva === aba.chave ? 'ativo' : '' %>">
-            <div class="ac-tabbar-label"><%= aba.label %></div>
-            <div class="ac-tabbar-underline"></div>
-          </a>
+          <a href="<%= aba.href %>" class="cv-nav-item"<% if (abaAtiva === aba.chave) { %> aria-current="page"<% } %>><%- include('../partials/icone', { cvIc: aba.ic }) %><span><%= aba.label %></span></a>
         <% }) %>
       </nav>
     <% } %>
-  <script src="/js/aviso-conexao.js" defer></script>
-<script src="/js/folha-arrastar.js" defer></script>
-</body>
+    <script src="/js/aviso-conexao.js" defer></script>
+  </body>
 </html>

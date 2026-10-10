@@ -1,0 +1,63 @@
+/* Cortavo v3 · app do cliente final (/conta). Mesmo sistema do painel e da
+   agenda pública: cartões brancos, o escolhido vira o objeto preto, barra de
+   ação em vidro, navbar de 4 seções. Só preto, branco e cinza. */
+body.cc { margin: 0; background: var(--c-pagina); color: var(--c-tinta); font-family: var(--fonte); -webkit-font-smoothing: antialiased; }
+.cc-tela { max-width: 560px; margin: 0 auto; padding-bottom: calc(var(--area-nav, 96px) + 72px); }
+.cc a { color: inherit; }
+.cc .cv-cab a { text-decoration: none; }
+.cc-navbar { grid-template-columns: repeat(4, 1fr); }
+.cc-navbar .cv-nav-item { text-decoration: none; }
+.cc-navbar .cv-nav-item[aria-current="page"] { background: rgba(17,17,17,.075); color: var(--c-tinta); }
+.cc-meta { margin: 10px var(--margem) 0; font-size: 14px; color: var(--c-apoio); }
+.cc .cv-busca { display: block; }
+.cc .cv-busca input { width: 100%; padding-left: 42px; background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cc .cv-busca { position: relative; margin: 16px var(--margem) 0; }
+.cc .cv-busca .cv-ic { position: absolute; left: 14px; top: 50%; translate: 0 -50%; width: 18px; height: 18px; color: var(--c-apoio); }
+.cc .cv-etq { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 999px; background: var(--c-bloco); font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.cc .cv-etq--preta { background: var(--c-tinta); color: #fff; }
+.cc .cv-etq--listra { background: var(--listra-bloqueado); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cc a.cv-linha { text-decoration: none; }
+.cc-servicos { display: grid; gap: 10px; }
+.cc-serv { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px 16px 16px 18px; border: 0; border-radius: 22px; background: var(--c-superficie); box-shadow: var(--s-cartao); text-align: left; font: inherit; color: inherit; cursor: pointer; transition: transform var(--d-press-out) var(--ease-out); }
+.cc-serv:active { transform: scale(.985); transition-duration: var(--d-press-in); }
+.cc-serv .txt { flex: 1; min-width: 0; }
+.cc-serv b { display: block; font-size: 17px; font-weight: 600; }
+.cc-serv small { display: block; font-size: 14px; color: var(--c-apoio); margin-top: 2px; }
+.cc-serv .marca { width: 28px; height: 28px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--c-fio-forte); display: grid; place-items: center; flex-shrink: 0; }
+.cc-serv .marca svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.cc-serv[aria-pressed="true"] { background: var(--c-objeto); color: #fff; box-shadow: var(--s-objeto); }
+.cc-serv[aria-pressed="true"] small { color: var(--c-sobre-objeto-2); }
+.cc-serv[aria-pressed="true"] .marca { background: #fff; color: #111; box-shadow: none; }
+.cc-serv[aria-pressed="true"] .marca svg { opacity: 1; }
+.cc-barra { position: fixed; z-index: calc(var(--z-nav) + 1); left: 12px; right: 12px; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); max-width: 536px; margin: 0 auto; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 20px; border-radius: 30px; background: var(--vidro); -webkit-backdrop-filter: var(--vidro-blur); backdrop-filter: var(--vidro-blur); box-shadow: var(--vidro-aro), var(--s-flutua); }
+.cc-barra[hidden] { display: none; }
+.cc-barra .info { flex: 1; min-width: 0; }
+.cc-barra .info b { display: block; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cc-barra .info span { display: block; font-size: 12.5px; font-weight: 600; color: var(--c-tinta-2); }
+.cc-barra .cv-btn { min-height: 52px; flex-shrink: 0; }
+.cc-barra .cv-btn[disabled] { opacity: 1; background: var(--c-bloco-2); color: var(--c-tinta-2); box-shadow: none; }
+.cc-pessoas { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--margem)); padding: 2px var(--margem) 4px; }
+.cc-pessoa { flex-shrink: 0; width: 84px; text-align: center; text-decoration: none; }
+.cc-pessoa .foto { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto; display: grid; place-items: center; overflow: hidden; background: var(--c-superficie); box-shadow: var(--s-cartao); font-size: 24px; font-weight: 800; color: var(--c-apoio); }
+.cc-pessoa .foto img { width: 100%; height: 100%; object-fit: cover; }
+.cc-pessoa .nome { display: block; margin-top: 6px; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-pessoa[aria-current="true"] .foto { box-shadow: 0 0 0 3px var(--c-pagina), 0 0 0 5px var(--c-tinta); }
+.cc-dias { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--margem)); padding: 2px var(--margem) 4px; }
+.cc-dia { flex-shrink: 0; width: 64px; height: 72px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: var(--c-superficie); box-shadow: var(--s-cartao); text-decoration: none; }
+.cc-dia small { font-size: 12px; font-weight: 600; color: var(--c-apoio); }
+.cc-dia b { font-size: 21px; font-weight: 800; letter-spacing: -.03em; }
+.cc-dia[aria-current="date"] { background: var(--c-objeto); color: #fff; box-shadow: var(--s-preto); }
+.cc-dia[aria-current="date"] small { color: var(--c-sobre-objeto-2); }
+.cc-horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cc-hora { height: 48px; border: 0; border-radius: 14px; background: var(--c-superficie); box-shadow: var(--s-cartao); font: inherit; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: inherit; cursor: pointer; }
+.cc-hora[aria-pressed="true"] { background: var(--c-tinta); color: #fff; }
+.cc-hora[disabled] { background: var(--listra-bloqueado); color: var(--c-apoio); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); text-decoration: line-through; cursor: default; }
+.cc-linhas { list-style: none; margin: 0; padding: 0; }
+.cc-linhas li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; font-size: 15px; border-top: .5px solid var(--c-fio-forte); }
+.cc-linhas li:first-child { border-top: 0; }
+.cc-linhas span { color: var(--c-apoio); }
+.cc-linhas b { font-weight: 600; text-align: right; }
+.cc .cv-seg a { display: grid; place-items: center; text-decoration: none; border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); }
+.cc .cv-seg a[aria-pressed="true"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
+@media (prefers-reduced-transparency: reduce) { .cc-barra { background: var(--c-superficie); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@media (prefers-reduced-motion: reduce) { .cc-serv { transition: none; } }

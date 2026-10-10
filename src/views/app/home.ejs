@@ -1,45 +1,21 @@
-<div class="ac-screen">
-  <div class="ac-pad" style="padding-top:24px;">
-    <div class="ac-wordmark">CORTAVO</div>
-  </div>
-
-  <% if (busca) { %>
-    <div class="ac-pad" style="padding-top:28px;">
-      <form method="GET" action="/conta/busca">
-        <input class="ac-search" type="search" name="q" value="<%= termo %>"
-          placeholder="Buscar barbearia" autofocus
-          style="width:100%;padding:14px 16px;border:1px solid var(--line-light);font:400 14px var(--font-ui);background:none;color:var(--ink-light);" />
-      </form>
-      <div class="ac-meta" style="margin-top:20px;"><%= barbearias.length %> <%= barbearias.length === 1 ? 'resultado' : 'resultados' %></div>
-    </div>
-  <% } else { %>
-    <div class="ac-pad" style="padding:44px 20px 30px;">
-      <div class="ac-eyebrow" style="margin-bottom:16px;">SÃO PAULO</div>
-      <div class="ac-display">Barbearias<br />perto de você</div>
-    </div>
-  <% } %>
-
-  <hr class="ac-hr" />
-
+<%/* App do cliente: início e busca de barbearias (v3). */%>
+<header class="cv-cab"><div class="cv-cab-txt"><p class="cv-cab-sup"><%= busca ? 'Busca' : 'São Paulo' %></p><h1><%= busca ? 'Buscar barbearia' : 'Barbearias perto de você' %></h1></div><div class="cv-cab-acoes"><%- include('../partials/logo-c', { cvTam: 40 }) %></div></header>
+<% if (busca) { %>
+  <form method="GET" action="/conta/busca" class="cv-busca" role="search"><span class="cv-oculto">Buscar barbearia</span><%- include('../partials/icone', { cvIc: 'busca' }) %><input class="cv-entrada" type="search" name="q" value="<%= termo %>" placeholder="Nome da barbearia" autofocus /></form>
+  <p class="cc-meta"><%= barbearias.length %> <%= barbearias.length === 1 ? 'resultado' : 'resultados' %></p>
+<% } %>
+<section class="cv-secao" style="margin-top:14px" aria-label="Barbearias">
   <% if (barbearias.length === 0) { %>
-    <div class="ac-pad" style="padding-top:40px;">
-      <p class="ac-body-text">Nenhuma barbearia encontrada.</p>
-    </div>
+    <div class="cv-cartao cv-vazio" role="status"><h2>Nenhuma barbearia encontrada</h2><p>Tente outro nome.</p></div>
+  <% } else { %>
+    <ul class="cv-lista">
+      <% barbearias.forEach(function (b) { %>
+        <li><a class="cv-linha" href="/conta/b/<%= b.slug %>">
+          <span class="cv-avatar" aria-hidden="true"><%= String(b.nome).replace(/^Barbearia\s+/i, '').charAt(0).toUpperCase() %></span>
+          <span class="corpo"><span class="t"><%= b.nome %></span><span class="s"><%= b.local %></span></span>
+          <span class="cv-etq<%= b.abertaHoje ? ' cv-etq--preta' : ' cv-etq--listra' %>"><%= b.abertaHoje ? 'Aberta hoje' : 'Fechada hoje' %></span>
+        </a></li>
+      <% }) %>
+    </ul>
   <% } %>
-
-  <% barbearias.forEach(function (b) { %>
-    <a class="ac-shop" href="/conta/b/<%= b.slug %>">
-      <div class="ac-shop-img" style="background:#1c1c1f;"></div>
-      <div class="ac-shop-row">
-        <span class="ac-shop-name"><%= b.nome %></span>
-        <span class="ac-shop-dist"><%= b.local %></span>
-      </div>
-      <div style="margin-top:8px;">
-        <span class="ac-live <%= b.abertaHoje ? 'ac-live--on' : 'ac-live--off' %>">
-          <span class="ac-live-dot"></span>
-          <span class="ac-live-label"><%= b.abertaHoje ? 'Aberta hoje' : 'Fechada hoje' %></span>
-        </span>
-      </div>
-    </a>
-  <% }) %>
-</div>
+</section>

@@ -1,23 +1,9 @@
-<%/* Andaime da Fase 0 — substituído pelo design "Cortavo" na Fase 1. */%>
-<div class="card auth-card">
-  <div class="auth-cabecalho">
-    <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf">Cortavo</span></div>
-    <p class="texto-secundario">Entrar na sua conta</p>
-  </div>
-
-  <form method="POST" action="/conta/entrar" class="form">
-    <div class="campo">
-      <label for="email">E-mail</label>
-      <input type="email" id="email" name="email" placeholder="seu@email.com" required autofocus />
-    </div>
-    <div class="campo">
-      <label for="senha">Senha</label>
-      <input type="password" id="senha" name="senha" placeholder="••••••••" required />
-    </div>
-    <button class="btn btn-primario btn-bloco" type="submit">Entrar</button>
-  </form>
-
-  <div style="text-align:center;margin-top:16px;">
-    <a href="/conta/cadastro" class="texto-secundario">Não tem conta? Criar conta</a>
-  </div>
-</div>
+<%/* Conta do cliente: entrar (v3). */%>
+<h1>Entrar</h1>
+<p class="sub">Entre na sua conta para ver e marcar horários.</p>
+<form method="POST" action="/conta/entrar" class="cv-cartao">
+  <div class="cv-campo"><label for="email">E-mail</label><input class="cv-entrada" type="email" id="email" name="email" placeholder="seu@email.com" autocomplete="username" required autofocus /></div>
+  <div class="cv-campo"><label for="senha">Senha</label><input class="cv-entrada" type="password" id="senha" name="senha" autocomplete="current-password" required /></div>
+  <button class="cv-btn cv-btn--largo" type="submit">Entrar</button>
+</form>
+<p class="rodape"><a href="/conta/cadastro">Não tem conta? Criar conta</a></p>

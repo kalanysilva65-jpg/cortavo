@@ -1,40 +1,25 @@
+<%/* Páginas avulsas no v3: erro, conta do cliente, acesso negado. */%>
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Barbearia' %></title>
-    <script>try{if(localStorage.getItem('tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/css/styles.css" />
-    <link rel="stylesheet" href="/css/tema-minimal.css" />
+    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Cortavo' %></title>
+    <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/cv.css" />
+    <link rel="stylesheet" href="/css/cv-paginas.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#111111" />
+    <meta name="theme-color" content="#F2F2F2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <body class="tela-centralizada">
-    <main class="caixa-central">
-      <%- include('../partials/flash') %> <%- body %>
+  <body class="cv-pag">
+    <main class="cv-pag-coluna">
+      <a class="cv-pag-marca" href="/"><%- include('../partials/logo-c', { cvTam: 36 }) %><b>Cortavo</b></a>
+      <% if (typeof flash !== 'undefined' && flash) { %><div class="avisos" role="<%= flash.tipo === 'erro' ? 'alert' : 'status' %>"><p class="<%= flash.tipo === 'erro' ? 'erro' : '' %>"><%= flash.texto %></p></div><% } %>
+      <%- body %>
     </main>
-    <script>
-      function toggleTema() {
-        const escuro = document.documentElement.getAttribute('data-tema') === 'escuro';
-        if (escuro) {
-          document.documentElement.removeAttribute('data-tema');
-          localStorage.setItem('tema', 'claro');
-        } else {
-          document.documentElement.setAttribute('data-tema', 'escuro');
-          localStorage.setItem('tema', 'escuro');
-        }
-      }
-    </script>
   </body>
 </html>

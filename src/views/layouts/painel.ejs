@@ -1,13 +1,9 @@
 <%
   // Precisa vir ANTES do <head>: é daqui que sai quais CSS a página carrega.
-  // Telas já no design SUAVE — as demais (fidelidade, comissões, horários e os
-  // formulários órfãos) seguem na pilha de CSS antiga.
-  var TELAS_SUAVE = ['/painel/meu-plano', '/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/perfil', '/painel/logo', '/painel/relatorios', '/painel/metas', '/painel/ia', '/painel/secretaria', '/painel/secretaria/teste', '/painel/conversas'];
-  // Telas já no design v3 (redesign da Dani, 2026-10-06). Elas carregam só
-  // tokens.css + cv.css + cv-telas.css (sem styles.css nem a pilha suave) e
-  // trazem o próprio cabeçalho. A lista cresce a cada fatia do plano de
-  // migração; quando todas estiverem aqui, a pilha antiga sai (fatia F11).
-  // A faixa do teste grátis mora só na Início (partials/faixa-teste.ejs).
+  // Redesign v3 completo (F11, 2026-10-10): toda tela do painel é v3; a pilha
+  // antiga (styles, suave, sv-*, tema-minimal, painel-app, painel-novo) saiu.
+  // Telas migradas, uma fatia por vez (registro do que já foi conferido em
+  // print e teste). A faixa do teste grátis mora só na Início.
   var TELAS_V3 = ['/painel', '/painel/mais', '/painel/gestao', '/painel/agenda', '/painel/caixa', '/painel/caixa/fechar', '/painel/comissoes', '/painel/secretaria', '/painel/meu-plano', '/painel/perfil', '/painel/link', '/painel/link/cartaz', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/metas', '/painel/logo', '/painel/horarios', '/painel/fidelidade', '/painel/conversas', '/painel/ia', '/painel/relatorios'];
   // Telas de cadastro e configuração v3: peças comuns (cv-cadastro.css/js).
   var CAD_V3 = ['/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/metas', '/painel/logo', '/painel/horarios', '/painel/fidelidade', '/painel/conversas', '/painel/ia', '/painel/relatorios', '/painel/caixa'];
@@ -20,8 +16,7 @@
   // Script próprio da tela (nem toda tela v3 tem).
   var JS_V3 = { '/painel/link': 'cv-link', '/painel/link/cartaz': 'cv-link', '/painel/agenda': 'cv-agenda', '/painel/caixa': 'cv-caixa', '/painel/caixa/fechar': 'cv-caixa', '/painel/comissoes': 'cv-comissoes' };
   var jsV3 = JS_V3[currentPath] || null;
-  var ehV3 = TELAS_V3.indexOf(currentPath) !== -1 || AVULSOS_V3.test(currentPath);
-  var ehSuave = !ehV3 && TELAS_SUAVE.indexOf(currentPath) !== -1;
+  var ehV3 = true; // F11: não há mais tela na pilha antiga
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -32,59 +27,12 @@
          barra fixa. É respeitado no app; no Safari comum é ignorado (ok). */%>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Painel' %></title>
-    <%
-      // CSS POR TELA (2026-08-01). Antes o layout carregava os 18 arquivos em
-      // toda página: 415 KB e 2709 regras, das quais ~1100 (painel-novo,
-      // painel-turno6 e os t6-*) não casavam com NADA numa tela do design novo,
-      // mais ~730 dos sv-* das outras telas. Medido no navegador, não estimado.
-      //
-      // A fonte é local (@font-face no suave.css) — sem Google Fonts.
-      var CSS_POR_TELA = {
-        '/painel/relatorios': 'sv-relatorios',
-        '/painel/clientes': 'sv-clientes-equipe',
-        '/painel/equipe': 'sv-clientes-equipe',
-        '/painel/servicos': 'sv-catalogo',
-        '/painel/produtos': 'sv-catalogo',
-        '/painel/estoque': 'sv-catalogo',
-        '/painel/planos': 'sv-planos-perfil',
-        '/painel/perfil': 'sv-planos-perfil',
-        '/painel/logo': 'sv-planos-perfil',
-        '/painel/meu-plano': 'sv-planos-perfil',
-        '/painel/metas': 'sv-metas',
-        '/painel/ia': 'sv-ia',
-        '/painel/secretaria/teste': 'sv-ia',
-        '/painel/conversas': 'sv-conversas',
-      };
-      var cssDaTela = CSS_POR_TELA[currentPath];
-    %>
-    <%/* `styles.css` fica nos dois caminhos: dele vêm os resets de base
-         (html/body/a/img/input) que o suave.css pressupõe em vez de repetir. */%>
-    <% if (!ehV3) { %><link rel="stylesheet" href="/css/styles.css?v=<%= assetV %>" /><% } %>
-    <%/* v3 (fatia F0): tokens e componentes da Dani. tokens.css vem DEPOIS do
-         styles.css porque os dois definem --fonte (vale a Plus Jakarta Sans);
-         cv.css traz a base nativa (mobile-native) e as classes cv-. Só o peso
-         800 é pré-carregado (números e títulos). */%>
+    <%/* v3: tokens e componentes da Dani; cv.css traz a base nativa e as
+         classes cv-. Só o peso 800 é pré-carregado (números e títulos). */%>
     <link rel="preload" href="/fonts/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/css/tokens.css?v=<%= assetV %>" />
     <link rel="stylesheet" href="/css/cv.css?v=<%= assetV %>" />
-    <% if (ehV3) { %>
-      <%/* Tela v3: nada da pilha antiga. */%>
-    <% } else if (ehSuave) { %>
-      <link rel="stylesheet" href="/css/suave.css?v=<%= assetV %>" />
-      <% if (cssDaTela) { %><link rel="stylesheet" href="/css/<%= cssDaTela %>.css?v=<%= assetV %>" /><% } %>
-      <%/* Por ULTIMO: so contem uma media query de min-width 1024px, e precisa
-           poder sobrescrever o que as folhas de tela definiram acima. */%>
-      <link rel="stylesheet" href="/css/sv-desktop.css?v=<%= assetV %>" />
-    <% } else { %>
-      <%/* Telas ainda não migradas (fidelidade, comissões, horários e os
-           formulários órfãos) seguem na pilha antiga — inteira, porque elas
-           dependem dela de verdade. */%>
-      <link rel="stylesheet" href="/css/tema-minimal.css?v=<%= assetV %>" />
-      <link rel="stylesheet" href="/css/painel-app.css?v=<%= assetV %>" />
-      <link rel="stylesheet" href="/css/painel-novo.css?v=<%= assetV %>" />
-    <% } %>
-    <%/* Por último: casca v3 (navbar, avisos) com especificidade acima das
-         regras antigas (.pg-sv a) e as peças de tela das telas v3. */%>
+    <%/* Casca v3 (navbar, avisos) e as peças de tela. */%>
     <link rel="stylesheet" href="/css/cv-telas.css?v=<%= assetV %>" />
     <%/* F13: menu lateral e grades no PC (só vale a partir de 1024 px). */%>
     <link rel="stylesheet" href="/css/cv-pc.css?v=<%= assetV %>" />
@@ -99,62 +47,25 @@
     <%/* Avisos nativos: só age dentro do app da loja (Capacitor). No navegador
          o arquivo sai sem fazer nada — lá quem cuida é o Web Push do Perfil. */%>
     <script defer src="/js/push-nativo.js?v=<%= assetV %>"></script>
-    <%/* Motor de animação do design suave: dispara as entradas por `data-*`
-         quando o elemento aparece na tela. `defer` porque ele varre o DOM —
-         precisa do documento montado, mas não deve segurar a pintura. */%>
-    <script src="/js/suave-anim.js?v=<%= assetV %>" defer></script>
     <%/* Movimento v3 (M1 a M7): molas da Apple em CSS linear() + WAAPI. */%>
     <script src="/js/cv-mola.js?v=<%= assetV %>" defer></script>
     <script src="/js/cv-movimento.js?v=<%= assetV %>" defer></script>
   </head>
-  <%
-    // Cada tela já convertida para o design novo ganha sua classe (.pg-*); as
-    // demais seguem no visual antigo.
-    var TELAS_NOVAS = {
-      '/painel': 'pg-home',
-      '/painel/agenda': 'pg-agenda',
-      '/painel/estoque': 'pg-estoque',
-      '/painel/servicos': 'pg-servicos',
-      '/painel/produtos': 'pg-produtos',
-      '/painel/planos': 'pg-planos',
-      '/painel/clientes': 'pg-clientes',
-      '/painel/equipe': 'pg-equipe',
-      '/painel/caixa': 'pg-caixa',
-      '/painel/relatorios': 'pg-relatorios',
-      '/painel/fidelidade': 'pg-fidelidade',
-    };
-    var classeTela = TELAS_NOVAS[currentPath] || '';
-  %>
-  <%/* pg-novo: marcador compartilhado por TODA tela no design novo — evita ter
-       que listar .pg-home, .pg-agenda, .pg-estoque... em cada regra genérica
-       do painel-novo.css (cabeçalho sem cartão, pop-ups de vidro etc). As
-       classes .pg-<tela> continuam existindo para o que É específico de
-       cada uma (o hero só existe na Home, por exemplo). */%>
   <%
     // Telas de tela cheia, sem a barra de navegação (pedido do dono, 2026-09-30).
     // v3: a navbar é fixa em todas as seções (spec 12); só as telas cheias de
     // conversa (campo de texto no rodapé) e a de logo ficam sem ela.
     var semNav = currentPath === '/painel/ia' || currentPath === '/painel/secretaria/teste' || (currentPath === '/painel/conversas' && typeof aberta !== 'undefined' && !!aberta);
   %>
-  <body class="app-painel <%= ehV3 ? 'pg-cv' : ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %><%= semNav ? ' sem-nav' : '' %>">
-    <% if (ehV3) { %>
+  <body class="app-painel pg-cv<%= semNav ? ' sem-nav' : '' %>">
     <%/* .cv-palco recua quando uma folha abre (M4); o aviso do servidor vira
          o aviso em vidro preto acima da navbar. */%>
     <div class="cv-palco"><main class="cv-tela" id="tela"><%- body %></main></div>
     <%- include('../partials/flash', { flashCv: true }) %>
-    <% } else { %>
-    <div class="app-topo-fixo">
-      <%- include('../partials/header-painel') %>
-    </div>
-    <main class="container conteudo">
-      <%- include('../partials/flash') %> <%- body %>
-    </main>
-    <% } %>
     <%- include('../partials/nav-inferior') %>
   <script src="/js/aviso-conexao.js" defer></script>
 <script src="/js/foto-comprimir.js" defer></script>
-<% if (currentPath === '/painel/servicos') { %><script src="/js/foto-mini.js?v=<%= assetV %>" defer></script><% } %>
-<script src="/js/folha-arrastar.js" defer></script>
+<% if (currentPath === '/painel/servicos' || /^\/painel\/servicos\/(novo|\d+\/editar)$/.test(currentPath)) { %><script src="/js/foto-mini.js?v=<%= assetV %>" defer></script><% } %>
 <script src="/js/cv-casca.js?v=<%= assetV %>" defer></script>
 <% if (ehCad) { %><script src="/js/cv-cadastro.js?v=<%= assetV %>" defer></script><% } %>
 <% if (jsV3 === 'cv-link') { %><script src="/js/qr.js?v=<%= assetV %>" defer></script><% } %>

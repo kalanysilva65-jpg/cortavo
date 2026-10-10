@@ -24,7 +24,7 @@
     É só a parte da <strong>IA</strong> — a conversa do WhatsApp (Meta) é grátis quando o cliente inicia.
     <br>Margem estimada assumindo plano de <strong>R$ <%= precoPlanoRef.toFixed(2) %></strong>/mês por barbearia ativa (ajuste em <code>PLANO_PRECO_REF</code>).
     <br><strong>Tokens</strong> (formato <em>entrada / saída</em>): separados por canal — WhatsApp (secretária) e Copiloto (assistente do painel). Já ponderados pelo cache (é o valor que gera o custo). A coluna <strong>Entrada crua</strong> mostra os tokens de entrada REAIS, sem a ponderação do cache (a saída já é crua) — medida só a partir de 20/09/2026 (meses anteriores aparecem como —).
-    <br><strong>WhatsApp (Meta)</strong>: mensagens enviadas no mês pela IA + equipe. Desde 01/10/2026 a Meta cobra a partir da <%= (typeof wppGratisMes !== 'undefined' ? wppGratisMes : 1000).toLocaleString('pt-BR') %>ª por número (~<%= (typeof wppPrecoMsgBRL !== 'undefined' ? wppPrecoMsgBRL : 0.035).toLocaleString('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits: 3 }) %> cada) e cada lembrete (template) desde o 1º — tudo no cartão da Cortavo, então esse custo já entra em <em>Custo</em> e <em>Margem</em>. Linha em <span style="color:#b45309;font-weight:700">laranja</span> = passou de 80% da franquia grátis.
+    <br><strong>WhatsApp (Meta)</strong>: mensagens enviadas no mês pela IA + equipe. Desde 01/10/2026 a Meta cobra a partir da <%= (typeof wppGratisMes !== 'undefined' ? wppGratisMes : 1000).toLocaleString('pt-BR') %>ª por número (~<%= (typeof wppPrecoMsgBRL !== 'undefined' ? wppPrecoMsgBRL : 0.035).toLocaleString('pt-BR', { style:'currency', currency:'BRL', minimumFractionDigits: 3 }) %> cada) e cada lembrete (template) desde o 1º — tudo no cartão da Cortavo, então esse custo já entra em <em>Custo</em> e <em>Margem</em>. Linha em <span class="cv-etq cv-etq--listra">franquia</span> = passou de 80% da franquia grátis.
     <br><span class="cv-texto-apoio">Obs.: o custo é <strong>estimado com o modelo ATUAL</strong> (WhatsApp <%= modelos.whatsapp %>). Se você trocou de modelo no meio do mês (ex.: Haiku → Sonnet), os tokens antigos são reprecificados pelo novo modelo e a estimativa pode ficar <strong>acima</strong> do valor real da Anthropic — que é a fatura oficial. No mês seguinte (modelo estável) os números se aproximam.</span>
   </p>
 
@@ -52,8 +52,8 @@
         <% function wpp(l){ return num(l.msgsEnviadas) + ' (' + num(l.msgsPagas) + ') · ' + num(l.lembretesMes) + (l.custoMetaBRL ? ' = ' + brl(l.custoMetaBRL) : ''); } %>
         <% function cru(l){ var v = l.tokensEntradaCru || 0; if (v === 0 && (l.tokensEntrada || 0) > 0) return '—'; return num(v); } %>
         <% linhas.forEach(function (l) { %>
-          <tr<%- l.alertaMsgs ? ' style="background:#fff7ed"' : '' %>>
-            <td><%= l.nome %><%- l.alertaMsgs ? ' <span style="color:#b45309;font-weight:700" title="Perto/acima das mensagens grátis do mês">⚠</span>' : '' %></td>
+          <tr<%- l.alertaMsgs ? ' style="background:var(--c-bloco)"' : '' %>>
+            <td><%= l.nome %><%- l.alertaMsgs ? ' <span class="cv-etq cv-etq--listra" title="Perto ou acima das mensagens grátis do mês">franquia</span>' : '' %></td>
             <td style="text-align:right"><%= num(l.conversas) %></td>
             <td style="text-align:right"><%= num(l.respostas) %></td>
             <td style="text-align:right"><%= num(l.copilotoConsultas) %></td>
@@ -109,7 +109,7 @@
         if (!d || !d.linhas) return;
         corpo.innerHTML = d.linhas.length
           ? d.linhas.map(function (l) {
-              return '<tr' + (l.alertaMsgs ? ' style="background:#fff7ed"' : '') + '><td>' + esc(l.nome) + (l.alertaMsgs ? ' <span style="color:#b45309;font-weight:700">⚠</span>' : '') + '</td>' +
+              return '<tr' + (l.alertaMsgs ? ' style="background:var(--c-bloco)"' : '') + '><td>' + esc(l.nome) + (l.alertaMsgs ? ' <span class="cv-etq cv-etq--listra">franquia</span>' : '') + '</td>' +
                 '<td style="text-align:right">' + n(l.conversas) + '</td>' +
                 '<td style="text-align:right">' + n(l.respostas) + '</td>' +
                 '<td style="text-align:right">' + n(l.copilotoConsultas) + '</td>' +
