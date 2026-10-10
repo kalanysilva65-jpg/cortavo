@@ -59,7 +59,7 @@
       <% }) %>
     </ul>
   <% } %>
-  <button class="cv-btn cv-btn--largo" type="button" data-abrir-folha="cat-folha-novo" style="margin-top:14px"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--20' }) %>Novo <%= palavra %></button>
+  <button class="cv-btn cv-btn--largo cv-cat-novo" type="button" data-abrir-folha="cat-folha-novo" style="margin-top:14px"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--20' }) %>Novo <%= palavra %></button>
   <button class="cv-btn cv-btn--texto cv-btn--largo" type="button" data-abrir-folha="cat-folha-categorias">Categorias</button>
 </section>
 
@@ -106,7 +106,7 @@
       </div>
       <div class="cv-dupla cv-cat-foto-acoes">
         <label class="cv-btn cv-btn--2" for="foto-<%= s.id %>"><%- include('../partials/icone', { cvIc: 'camera', cvCls: 'cv-ic--20' }) %><%= s.fotoUrl ? 'Trocar foto' : 'Adicionar foto' %></label>
-        <% if (s.fotoUrl) { %><button type="submit" class="cv-btn cv-btn--2 cv-txt-perigo" formaction="/painel/servicos/<%= s.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')"><%- include('../partials/icone', { cvIc: 'lixo', cvCls: 'cv-ic--20' }) %>Remover foto</button><% } %>
+        <% if (s.fotoUrl) { %><button type="submit" class="cv-perigo-link" formaction="/painel/servicos/<%= s.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')"><%- include('../partials/icone', { cvIc: 'lixo', cvCls: 'cv-ic--20' }) %>Remover foto</button><% } %>
       </div>
       <input class="cv-oculto" id="foto-<%= s.id %>" name="foto" type="file" accept="image/*"<% if (ehS) { %> data-foto-mini<% } %> />
       <% if (ehS) { %>

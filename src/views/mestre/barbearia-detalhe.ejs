@@ -43,7 +43,7 @@
       <small class="m-sutil">Vale na hora e fica na auditoria. Nada é apagado ao descer de plano.</small>
     </div>
     <div class="m-mt">
-      <button class="cv-btn cv-btn--p" type="submit">Salvar plano</button>
+      <button class="cv-btn cv-btn--2 cv-btn--p" type="submit">Salvar plano</button>
     </div>
   </form>
 </div>
@@ -318,7 +318,8 @@
     <h2>Excluir barbearia</h2>
     <p class="cv-texto-apoio m-mt">Remove a barbearia e todos os dados dela (equipe, clientes, agenda, caixa). Não dá para desfazer.</p>
     <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/remover" class="m-mt" onsubmit="return confirm(<%= JSON.stringify('Excluir a barbearia ' + barbearia.nome + ' e TODOS os dados dela?') %>)">
-      <button class="cv-btn cv-btn--2 cv-txt-perigo" type="submit">Excluir barbearia</button>
+      <div class="cv-campo"><label for="m-excluir-conf">Para confirmar, digite EXCLUIR</label><input class="cv-entrada" id="m-excluir-conf" required pattern="EXCLUIR" autocomplete="off" spellcheck="false" title="Digite EXCLUIR, em maiúsculas" /></div>
+      <button class="cv-btn cv-btn--perigo m-mt" type="submit">Excluir barbearia</button>
     </form>
   </div>
 </section>

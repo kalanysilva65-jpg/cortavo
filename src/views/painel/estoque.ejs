@@ -25,7 +25,7 @@
 <% if (baixoEstoque.length > 0) { %>
   <div class="cv-secao" style="margin-top:12px">
     <div class="cv-cartao cv-es-repor" role="status">
-      <span class="faixa" aria-hidden="true"></span>
+      <span class="cv-ic-redondo" aria-hidden="true"><%- include('../partials/icone', { cvIc: 'estoque', cvCls: 'cv-ic--20' }) %></span>
       <span class="corpo"><b><%= baixoEstoque.length %> para repor</b><small><%= nomesBaixo %><% if (restoBaixo > 0) { %> e mais <%= restoBaixo %><% } %></small></span>
     </div>
   </div>

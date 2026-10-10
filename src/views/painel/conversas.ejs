@@ -14,7 +14,7 @@
   <% if (!iaAtiva) { %>
     <div class="cv-secao" style="margin-top:14px"><div class="cv-cartao cv-cv-aviso" role="status"><%- include('../partials/icone', { cvIc: 'assistente' }) %><p>Respostas automáticas <b>desligadas</b> (falta a chave da IA). Você ainda pode responder na mão.</p></div></div>
   <% } else if (tetoAtingido) { %>
-    <div class="cv-secao" style="margin-top:14px"><div class="cv-cartao cv-cv-aviso cv-cv-aviso--teto" role="status"><span class="faixa" aria-hidden="true"></span><p><b>Teto de IA do mês atingido.</b> As respostas automáticas pausaram para conter custo. Responda na mão; volta no próximo mês.</p></div></div>
+    <div class="cv-secao" style="margin-top:14px"><div class="cv-cartao cv-cv-aviso cv-cv-aviso--teto" role="status"><span class="faixa" aria-hidden="true"></span><p><span class="cv-etq cv-etq--preta">Parado</span> <b>Teto de IA do mês atingido.</b> As respostas automáticas pausaram para conter custo. Responda na mão; volta no próximo mês.</p></div></div>
   <% } %>
 
   <% if (conversas.length > 0) { %>
@@ -25,7 +25,9 @@
     <p class="cv-texto-apoio" data-sem-resultado="cv" hidden style="padding:16px 4px">Nenhuma conversa encontrada.</p>
   </section>
 
-  <% if (ehAdmin) { %>
+  <%/* Simulador só no modo de teste (/painel/conversas?teste=1, link em
+       Secretária › Testar). Em uso normal, não aparece (revisão Dani P2 #21). */%>
+  <% if (ehAdmin && typeof modoTeste !== 'undefined' && modoTeste) { %>
     <section class="cv-secao" aria-labelledby="cv-sim-t">
       <details class="cv-cartao cv-cv-simular">
         <summary id="cv-sim-t">Simular mensagem de cliente (teste)</summary>
@@ -67,17 +69,17 @@
         <input type="hidden" name="ativa" value="<%= aberta.conversa.iaAtiva ? '0' : '1' %>" />
         <button type="submit" class="cv-btn cv-btn--p<%= aberta.conversa.iaAtiva ? ' cv-btn--2' : '' %>"><%= aberta.conversa.iaAtiva ? 'Assumir' : 'Devolver à IA' %></button>
       </form>
+      <%- include('../partials/mais-acoes', { maAcao: '/painel/conversas/' + aberta.conversa.id + '/excluir', maRotulo: 'Excluir conversa', maConfirmar: 'Excluir esta conversa e todas as mensagens? Isso apaga os dados do cliente e não dá para desfazer.', maAria: aberta.conversa.nome }) %>
     </header>
     <div class="cv-cv-status" role="status">
       <span><%= aberta.conversa.iaAtiva ? 'A IA está respondendo esta conversa.' : 'Você assumiu: a IA está pausada nesta conversa.' %></span>
-      <form method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/excluir" data-confirmar="Excluir esta conversa e todas as mensagens? Isso apaga os dados do cliente e não dá para desfazer."><button type="submit" class="cv-perigo-link" style="min-height:36px;font-size:13px">Excluir</button></form>
     </div>
 
     <div class="cv-cv-thread" id="cv-thread" data-id="<%= aberta.conversa.id %>" aria-live="polite"></div>
     <script type="application/json" id="cv-dados"><%- JSON.stringify(aberta.mensagens).split('<').join(String.fromCharCode(92) + 'u003c') %></script>
 
     <%/* Fora da janela de 24 h da Meta, texto e mídia livres não são entregues. */%>
-    <div class="cv-cv-janela" id="cv-janela"<% if (aberta.conversa.janelaAberta) { %> hidden<% } %>><span class="faixa" aria-hidden="true"></span><p>Passaram 24 h desde a última mensagem do cliente. Pelas regras do WhatsApp, só dá para retomar com uma <b>mensagem modelo</b> ou esperar ele escrever.</p></div>
+    <div class="cv-cv-janela" id="cv-janela"<% if (aberta.conversa.janelaAberta) { %> hidden<% } %>><span class="faixa" aria-hidden="true"></span><p><span class="cv-etq cv-etq--preta">Parado</span> Passaram 24 h desde a última mensagem do cliente. Pelas regras do WhatsApp, só dá para retomar com uma <b>mensagem modelo</b> ou esperar ele escrever.</p></div>
 
     <form class="cv-cv-compor" id="cv-form" method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/responder" autocomplete="off">
       <label class="cv-redondo cv-redondo--leve" title="Enviar foto, vídeo ou arquivo"><%- include('../partials/icone', { cvIc: 'imagem', cvCls: 'cv-ic--20' }) %><span class="cv-oculto">Anexar</span><input type="file" id="cv-arquivo" class="cv-oculto" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" /></label>

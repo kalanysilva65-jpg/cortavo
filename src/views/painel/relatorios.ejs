@@ -142,7 +142,7 @@
         <li><span class="linha"><span>Só serviço · <%= ticketData.semQtd %></span><b><%- dinheiro(ticketData.sem) %></b></span><%- barra(ticketData.semW, false) %></li>
       </ul>
     </div>
-    <div class="cv-objeto cv-gravada cv-rl-insight"><span class="cv-num cv-num--m"><%= ticketData.comPct %><span class="de">%</span></span><p>dos atendimentos levaram algum produto, e cada um rendeu <%= fmtBRL(ticketData.delta) %> a mais. Subir essa taxa é o caminho mais curto para aumentar o ticket.</p></div>
+    <div class="cv-cartao cv-rl-insight"><span class="cv-num cv-num--m"><%= ticketData.comPct %><span class="de">%</span></span><p>dos atendimentos levaram algum produto. Nesses, o ticket foi <%= fmtBRL(ticketData.delta) %> maior.</p></div>
     <% if (barberPerf.length) { %>
       <div class="cv-folha-sec"><h3>Por barbeiro</h3><ul class="cv-linhas"><% barberPerf.forEach(function (bp) { %><li><span><%= bp.name %><br><%= bp.qtd %> atendimentos · <%= fmtBRL(bp.valor) %></span><b><%- dinheiro(bp.ticket) %></b></li><% }) %></ul></div>
     <% } %>
@@ -165,7 +165,7 @@
         <div class="cv-legenda-graf" style="margin-top:10px"><span><i class="q" style="background:#191919"></i>Lotado</span><span><i class="q" style="background:#393939"></i>Cheio</span><span><i class="q" style="background:#9C9C9C"></i>Vago</span><span><i class="q" style="background:#EBEBEB"></i>Vazio</span></div>
       </div>
     </div>
-    <div class="cv-objeto cv-gravada cv-rl-insight"><% if (ocupInsight.temDados) { %><b>Pico às <%= ocupInsight.peak %></b><% if (ocupInsight.temBuraco) { %><b class="fraca">Buracos às <%= ocupInsight.gap %></b><% } %><p>Puxar clientes para os horários vagos vale mais que abrir novos horários no pico.</p><% } else { %><b>Sem movimento</b><p>Ainda não há atendimentos suficientes neste período para apontar pico e buraco.</p><% } %></div>
+    <div class="cv-cartao cv-rl-insight"><% if (ocupInsight.temDados) { %><b>Pico às <%= ocupInsight.peak %></b><% if (ocupInsight.temBuraco) { %><b class="fraca">Buracos às <%= ocupInsight.gap %></b><% } %><p>Puxar clientes para os horários vagos vale mais que abrir novos horários no pico.</p><% } else { %><b>Sem movimento</b><p>Ainda não há atendimentos suficientes neste período para apontar pico e buraco.</p><% } %></div>
     <% if (ocupPorBarbeiro.length) { %>
       <div class="cv-folha-sec"><h3>Por barbeiro</h3><ul class="cv-rl-barras"><% ocupPorBarbeiro.forEach(function (ob) { %><li><span class="linha"><span><%= ob.name %></span><b><%= ob.pct %>%</b></span><%- barra(ob.w) %><small><%= ob.sub %></small></li><% }) %></ul></div>
     <% } %>
@@ -210,7 +210,7 @@
       </ul>
       <p class="cv-texto-apoio" style="margin-top:10px"><b><%= clientesData.unicos %></b> clientes únicos · <b><%= clientesData.visitas %></b> atendimentos · <%= clientesData.mediaVisitas.toFixed(1).replace('.', ',') %> por cliente</p>
     </div>
-    <div class="cv-objeto cv-gravada cv-rl-insight"><span class="cv-num cv-num--m"><%= clientesData.recorrentesPct %><span class="de">%</span></span><p>de quem passou aqui no período já era da casa. Cliente que volta custa menos que cliente novo: vale medir isso todo mês.</p></div>
+    <div class="cv-cartao cv-rl-insight"><span class="cv-num cv-num--m"><%= clientesData.recorrentesPct %><span class="de">%</span></span><p>de quem passou aqui no período já era da casa. Cliente que volta custa menos que cliente novo: vale medir isso todo mês.</p></div>
   </div>
 </section>
 
@@ -222,7 +222,7 @@
     <div class="cv-folha-sec"><h3>A conta, passo a passo</h3>
       <ul class="cv-rl-barras"><% lucroCascata.forEach(function (cs) { %><li><span class="linha"><span><%= cs.label %> · <%= fmtBRL(cs.amount) %></span><b><%- dinheiro(cs.rest) %></b></span><%- barra(cs.w) %></li><% }) %></ul>
     </div>
-    <div class="cv-objeto cv-gravada cv-rl-insight"><span class="cv-num cv-num--m"><%= margemPct %><span class="de">%</span></span><p>do faturamento vira lucro. <% if (breakEven !== null) { %>Ponto de equilíbrio: <%= breakEven %> atendimentos no ticket atual.<% } else { %>Sem atendimentos no período não dá para calcular o ponto de equilíbrio.<% } %></p></div>
+    <div class="cv-cartao cv-rl-insight"><span class="cv-num cv-num--m"><%= margemPct %><span class="de">%</span></span><p>do faturamento vira lucro. <% if (breakEven !== null) { %>Ponto de equilíbrio: <%= breakEven %> atendimentos no ticket atual.<% } else { %>Sem atendimentos no período não dá para calcular o ponto de equilíbrio.<% } %></p></div>
   </div>
 </section>
 

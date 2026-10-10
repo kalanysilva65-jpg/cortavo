@@ -30,8 +30,8 @@
         <div><%- valor(prim, prim.atual, 'm') %></div>
         <span class="rot rot--n">de <%= prim.dinheiro ? fmtBRL(prim.alvo) : prim.alvo %> · <%= prim.pct %>%<%= prim.batida ? ' · batida' : '' %></span>
       </div>
-      <form method="POST" action="/painel/metas/<%= prim.id %>/remover" data-confirmar="Remover esta meta?"><button type="submit" class="cv-redondo cv-mt-x" aria-label="Remover a meta <%= prim.label %>"><%- fechar %></button></form>
     </section>
+    <div class="cv-mt-acoes"><%- include('../partials/mais-acoes', { maAcao: '/painel/metas/' + prim.id + '/remover', maRotulo: 'Remover meta', maConfirmar: 'Remover esta meta?', maAria: prim.label }) %></div>
   </div>
   <% if (resto.length) { %>
     <section class="cv-secao" aria-labelledby="mt-outras"><div class="cv-secao-cab"><h2 id="mt-outras">Outras metas</h2></div>
@@ -39,7 +39,7 @@
         <% resto.forEach(function (it) { %>
           <div class="cv-cartao cv-mt-card">
             <div class="topo"><span><b><%= it.label %></b><small><%= it.escopo %></small></span>
-              <form method="POST" action="/painel/metas/<%= it.id %>/remover" data-confirmar="Remover esta meta?"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Remover a meta <%= it.label %>"><%- fechar %></button></form></div>
+              <%- include('../partials/mais-acoes', { maAcao: '/painel/metas/' + it.id + '/remover', maRotulo: 'Remover meta', maConfirmar: 'Remover esta meta?', maAria: it.label }) %></div>
             <div class="cv-progresso" role="progressbar" aria-valuenow="<%= it.pct %>" aria-valuemin="0" aria-valuemax="100" aria-label="<%= it.label %>"><b style="transform:scaleX(<%= (Math.min(100, it.pct) / 100).toFixed(3) %>)"></b></div>
             <div class="nums"><%- valor(it, it.atual) %><span>de <%= it.dinheiro ? fmtBRL(it.alvo) : it.alvo %> · <%= it.pct %>%<%= it.batida ? ' · batida' : '' %></span></div>
           </div>

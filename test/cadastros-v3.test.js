@@ -243,3 +243,30 @@ test('Revisão Dani P1: ícone, formulários de página, jornada, Faltou e seman
   assert.match(css, /\.cv-gr-bloco\.faltou b \{[^}]*line-through/);
   assert.match(ler('public', 'js', 'cv-agenda-grade.js'), / atendimentos<\/span>/);
 });
+
+test('Revisão Dani P2: ações destrutivas, vidro preto único, listra e textos', () => {
+  const fs = require('fs'); const path = require('path');
+  const ler = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
+  const P = (f) => ler('src', 'views', 'painel', f);
+  assert.doesNotMatch(P('_catalogo.ejs'), /cv-btn--2 cv-txt-perigo" formaction="\/painel\/servicos\/<%= s\.id %>\/foto/); // 8
+  const ficha = ler('src', 'views', 'mestre', 'barbearia-detalhe.ejs');
+  assert.match(ficha, /cv-btn--2 cv-btn--p" type="submit">Salvar plano/); // 9
+  assert.match(ficha, /pattern="EXCLUIR"/); assert.match(ficha, /cv-btn--perigo m-mt" type="submit">Excluir barbearia/); // 10
+  for (const f of ['metas.ejs', 'fidelidade.ejs', 'horarios.ejs']) { // 11
+    assert.match(P(f), /partials\/mais-acoes/, f);
+    assert.doesNotMatch(P(f), /aria-label="Remover (a meta|o cupom|o bloqueio)/, f);
+  }
+  assert.match(ler('public', 'css', 'cv-agenda.css'), /\.cv-ag-bloquear \{ background: var\(--c-bloco-2\)/); // 12
+  assert.match(ler('public', 'css', 'cv-cadastro.css'), /\.pg-cv \.cv-seg a\[aria-pressed="true"\]/); // 14
+  assert.match(P('clientes.ejs'), /class="t cv-t-2l"/); // 15
+  assert.match(ler('public', 'css', 'cv.css'), /\[tabindex="-1"\]:focus/); // 16
+  assert.doesNotMatch(P('estoque.ejs'), /class="faixa"/); // 17
+  assert.match(P('conversas.ejs'), /cv-etq--preta">Parado/);
+  assert.match(P('equipe.ejs'), /sem-foto/); // 18
+  const rel = P('relatorios.ejs'); // 19
+  assert.doesNotMatch(rel, /cv-objeto cv-gravada cv-rl-insight/); assert.doesNotMatch(rel, /caminho mais curto/);
+  const conv = P('conversas.ejs'); // 20 e 21
+  assert.match(conv, /maRotulo: 'Excluir conversa'/);
+  assert.match(conv, /modoTeste/);
+  assert.match(ler('src', 'controllers', 'conversasController.js'), /modoTeste: req\.query\.teste === '1'/);
+});

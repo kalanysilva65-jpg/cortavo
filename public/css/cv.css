@@ -428,3 +428,7 @@ body.folha-aberta .cv-palco { transform: scale(.96) translateY(6px); border-radi
 /* Borda de rolagem (apple-design §12): o vão entre o cabeçalho e o seletor fixo esmaece em vez de mostrar conteúdo nítido */
 .cv-periodo-faixa { isolation: isolate; }
 .cv-periodo-faixa::before { content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: -10px; height: 34px; pointer-events: none; background: linear-gradient(var(--c-pagina) 35%, rgba(242,242,242,0)); }
+
+/* Revisão Dani P2 #16: título com tabindex="-1" recebe foco por programa
+   (folha abrindo) sem contorno. */
+[tabindex="-1"]:focus, [tabindex="-1"]:focus-visible { outline: none; }

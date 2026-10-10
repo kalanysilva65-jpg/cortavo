@@ -74,3 +74,10 @@
 @media (prefers-reduced-transparency: reduce) { .cv-cv-topo, .cv-cv-compor, .cv-cv-gravando { background: var(--c-superficie); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 @media (prefers-contrast: more) { .cv-msg--in { box-shadow: inset 0 0 0 1px var(--c-tinta); } }
 @media (min-width: 1024px) { .cv-cv-chat { min-height: calc(100dvh - 20px); } .cv-msg { max-width: 60%; } }
+
+/* P2 #17: "parado" como faixa listrada na borda, com etiqueta sólida; não
+   como quadradinho de ícone. */
+.cv-cv-aviso--teto, .cv-cv-janela { position: relative; overflow: hidden; padding-left: 22px; }
+.cv-cv-aviso .faixa, .cv-cv-janela .faixa { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; height: auto; border-radius: 0; box-shadow: none; }
+.cv-cv-aviso .cv-etq, .cv-cv-janela .cv-etq { margin-right: 4px; vertical-align: 1px; }
+.cv-cv-cab .cv-mais-acoes, header .cv-mais-acoes { margin-left: 4px; }

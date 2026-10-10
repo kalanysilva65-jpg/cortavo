@@ -41,7 +41,7 @@
           <button type="button" class="cv-linha" data-abrir-folha="cl-folha-<%= c.id %>">
             <span class="cv-avatar cv-avatar--claro" aria-hidden="true"><%= c.iniciais %></span>
             <span class="corpo">
-              <span class="t"><%= c.nome %></span>
+              <span class="t cv-t-2l"><%= c.nome %></span>
               <span class="s"><%= c.stats.servicoFavorito || 'Sem histórico' %> · <%= c.stats.ultimaVisitaLabel %><% if (c.stats.sumido) { %> · sumido<% } %><% if (c.aniversarianteMes) { %> · aniversário<% } %></span>
             </span>
             <span class="fim"><b><%- dinheiro(c.stats.totalGasto) %></b><small><%= c.selosFidelidade %> <%= c.selosFidelidade === 1 ? 'selo' : 'selos' %></small></span>

@@ -54,7 +54,7 @@
           <li><div class="cv-linha">
             <span class="cv-hr-listra" aria-hidden="true"></span>
             <span class="corpo"><span class="t"><%= fmtData(bl.data) %> · <%= bl.horaInicio %> às <%= bl.horaFim %></span><span class="s"><%= bl.motivo || 'Bloqueado' %> · <%= bl.usuario.nome %></span></span>
-            <form method="POST" action="/painel/horarios/bloqueios/<%= bl.id %>/remover" data-confirmar="Remover este bloqueio?"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Remover o bloqueio de <%= fmtData(bl.data) %>"><%- fechar %></button></form>
+            <%- include('../partials/mais-acoes', { maAcao: '/painel/horarios/bloqueios/' + bl.id + '/remover', maRotulo: 'Remover bloqueio', maConfirmar: 'Remover este bloqueio?', maAria: 'bloqueio de ' + fmtData(bl.data) }) %>
           </div></li>
         <% }) %>
       </ul>

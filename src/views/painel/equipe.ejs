@@ -92,8 +92,8 @@
 
       <div class="cv-campo">
         <span class="cv-rotulo">Como aparece no agendamento</span>
-        <div class="cv-eq-prev" id="eq-prev-<%= m.id %>" data-pos="<%= m.fotoPos || '50% 50%' %>">
-          <% if (m.fotoUrl) { %><img id="eq-prev-img-<%= m.id %>" src="<%= m.fotoUrl %>" alt="" style="object-position: <%= m.fotoPos || '50% 50%' %>" /><% } else { %><img id="eq-prev-img-<%= m.id %>" alt="" hidden /><span class="vazia">Escolha uma foto acima</span><% } %>
+        <div class="cv-eq-prev<%= m.fotoUrl ? '' : ' sem-foto' %>" id="eq-prev-<%= m.id %>" data-pos="<%= m.fotoPos || '50% 50%' %>">
+          <% if (m.fotoUrl) { %><img id="eq-prev-img-<%= m.id %>" src="<%= m.fotoUrl %>" alt="" style="object-position: <%= m.fotoPos || '50% 50%' %>" /><% } else { %><img id="eq-prev-img-<%= m.id %>" alt="" hidden /><span class="vazia" aria-hidden="true"><svg viewBox="0 0 64 64" width="96" height="96"><circle cx="32" cy="24" r="12" fill="#C9C9C9"/><path d="M8 64c0-14 11-22 24-22s24 8 24 22z" fill="#C9C9C9"/></svg></span><% } %>
           <span class="nome" aria-hidden="true"><b><%= m.nomePublico || m.nome %></b><small><%= m.descricao || 'Barbeiro' %></small></span>
         </div>
         <span class="cv-ajuda" id="eq-prev-dica-<%= m.id %>"<% if (!m.fotoUrl) { %> hidden<% } %>>Arraste a foto para enquadrar.</span>
@@ -154,7 +154,7 @@
     leitor.onload = function (ev) {
       var img = document.getElementById('eq-prev-img-' + id), box = document.getElementById('eq-prev-' + id);
       if (img) { img.src = ev.target.result; img.hidden = false; img.style.objectPosition = '50% 50%'; }
-      if (box) { box.setAttribute('data-pos', '50% 50%'); var v = box.querySelector('.vazia'); if (v) v.remove(); }
+      if (box) { box.setAttribute('data-pos', '50% 50%'); var v = box.querySelector('.vazia'); if (v) v.remove(); box.classList.remove('sem-foto'); }
       document.getElementById('eq-fotopos-' + id).value = '50% 50%';
       document.getElementById('eq-prev-dica-' + id).hidden = false;
     };

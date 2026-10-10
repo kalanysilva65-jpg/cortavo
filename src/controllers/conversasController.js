@@ -92,6 +92,7 @@ async function ver(req, res) {
 
   res.render('painel/conversas', {
     titulo: 'Conversas',
+    modoTeste: req.query.teste === '1',
     iaAtiva: secretaria.habilitada(),
     tetoAtingido: teto.atingido,
     conversas,

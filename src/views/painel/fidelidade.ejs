@@ -28,7 +28,7 @@
         <li><div class="cv-linha">
           <span class="corpo"><span class="t"><%= cp.nome %><% if (!cp.ativo) { %> <span class="cv-etq cv-etq--listra">inativo</span><% } %></span><span class="s"><%= cp.descricao ? cp.descricao + ' · ' : '' %>válido até <%= fmtData(cp.validade) %></span></span>
           <span class="cv-etq cv-etq--preta"><%= cp.desconto %></span>
-          <form method="POST" action="/painel/fidelidade/cupons/<%= cp.id %>/remover" data-confirmar="Remover este cupom?"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Remover o cupom <%= cp.nome %>"><%- fechar %></button></form>
+          <%- include('../partials/mais-acoes', { maAcao: '/painel/fidelidade/cupons/' + cp.id + '/remover', maRotulo: 'Remover cupom', maConfirmar: 'Remover este cupom?', maAria: cp.nome }) %>
         </div></li>
       <% }) %>
     </ul>

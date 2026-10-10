@@ -151,7 +151,7 @@ fieldset.cv-campo legend { padding: 0; margin-bottom: 4px; }
 
 /* ---- Estoque ------------------------------------------------------------ */
 .cv-es-repor { display: flex; align-items: center; gap: 14px; }
-.cv-es-repor .faixa { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; background: var(--listra-bloqueado); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-es-repor .cv-ic-redondo { width: 44px; height: 44px; }
 .cv-es-repor .corpo { min-width: 0; }
 .cv-es-repor b { display: block; font-size: 16px; font-weight: 800; }
 .cv-es-repor small { display: block; font-size: 14px; color: var(--c-apoio); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -188,7 +188,6 @@ div.cv-pl-card { cursor: default; }
 .cv-mt-obj .cv-num { color: #fff; }
 .cv-mt-obj .cv-num .moeda, .cv-mt-obj .cv-num .cent { color: var(--c-sobre-objeto-2); }
 .cv-mt-obj form { position: absolute; top: 10px; right: 10px; }
-.cv-mt-x { width: 44px; height: 44px; background: rgba(255,255,255,.1); color: #fff; box-shadow: none; }
 .cv-mt-card .topo { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
 .cv-mt-card .topo b { display: block; font-size: 16px; font-weight: 600; }
 .cv-mt-card .topo small { font-size: 13px; color: var(--c-apoio); }
@@ -267,10 +266,10 @@ div.cv-pl-card { cursor: default; }
 .cv-rl-cli b { color: var(--c-tinta); }
 .cv-rl-heroi { margin: 0 0 18px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .cv-rl-heroi .rot { font-size: 15px; color: var(--c-apoio); }
-.cv-rl-insight { margin: 18px 0 0; }
-.cv-rl-insight p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: var(--c-sobre-objeto-2); }
-.cv-rl-insight b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -.02em; color: #fff; }
-.cv-rl-insight b.fraca { color: var(--c-sobre-objeto-2); font-size: 17px; }
+.cv-rl-insight { margin: 18px 0 24px; background: var(--c-bloco); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-rl-insight p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: var(--c-tinta-2); }
+.cv-rl-insight b { display: block; font-size: 20px; font-weight: 800; letter-spacing: -.02em; color: var(--c-tinta); }
+.cv-rl-insight b.fraca { color: var(--c-apoio); font-size: 17px; }
 .cv-rl-sanfona { display: block !important; }
 .cv-rl-sanfona summary { display: flex; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; min-height: 44px; align-items: center; }
 .cv-rl-sanfona summary::-webkit-details-marker { display: none; }
@@ -310,3 +309,27 @@ div.cv-pl-card { cursor: default; }
 .cv-erro-linha { display: flex; align-items: center; gap: 10px; margin: 0; padding: 12px 14px; border-radius: var(--r-interno, 14px); background: var(--c-perigo-fundo); color: var(--c-perigo); font-size: 15px; font-weight: 600; line-height: 1.35; }
 .cv-erro-linha .cv-ic { flex: none; stroke-width: 2; }
 .cv-pl-form .cv-dupla .cv-campo + .cv-campo, .cv-folha .cv-dupla .cv-campo + .cv-campo { margin-top: 0; }
+
+/* Menu "⋯" de item (P2 #11). */
+.cv-mais-acoes { position: relative; flex: none; }
+.cv-mais-acoes > summary { list-style: none; cursor: pointer; }
+.cv-mais-acoes > summary::-webkit-details-marker { display: none; }
+.cv-mais-acoes-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; min-width: 200px; padding: 6px 14px; border-radius: 16px; background: var(--c-superficie); box-shadow: 0 8px 28px rgba(17,17,17,.14), inset 0 0 0 .5px var(--c-fio-forte); }
+.cv-mais-acoes-menu .cv-perigo-link { gap: 8px; width: 100%; }
+.cv-mt-acoes { display: flex; justify-content: flex-end; margin-top: 8px; }
+/* P2 #14: opção marcada do segmentado visível também no PC (o menu lateral
+   tem regra de link com especificidade maior). #13: no PC o "Novo" do fim da
+   lista não ocupa a largura toda. */
+.pg-cv .cv-seg a[aria-pressed="true"] { background: var(--c-superficie); color: var(--c-tinta); font-weight: 700; box-shadow: 0 1px 3px rgba(17,17,17,.12), inset 0 0 0 .5px var(--c-fio-forte); }
+@media (min-width: 1024px) { .pg-cv .cv-seg:has(> a) { max-width: 360px; } .cv-cat-novo { max-width: 320px; } }
+
+/* P2 #15: nome de pessoa quebra em até 2 linhas, nunca some. */
+.cv-linha .t.cv-t-2l { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+/* P2 #17: ícone de traço em círculo cinza para avisos (não a listra). */
+.cv-ic-redondo { width: 40px; height: 40px; border-radius: 50%; background: var(--c-bloco-2); display: grid; place-items: center; flex: none; color: var(--c-tinta); }
+
+/* P2 #18: sem foto, silhueta cinza e nome em tinta, sem degradê (como o
+   retrato do link público). */
+.cv-eq-prev.sem-foto { background: var(--c-bloco-2); }
+.cv-eq-prev.sem-foto .vazia { place-items: start center; padding-top: 18px; }
+.cv-eq-prev.sem-foto .nome { background: none; color: var(--c-tinta); }

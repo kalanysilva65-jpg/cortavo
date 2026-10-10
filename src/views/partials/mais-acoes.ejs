@@ -1,0 +1,10 @@
+<%/* Menu "⋯" de um item (revisão Dani P2 #11): o excluir sai do "×" ao lado
+     do dado e fica atrás de um toque a mais, com confirmação. Sem JS funciona
+     (details/summary). Parâmetros: maAcao (rota POST), maRotulo (texto do
+     botão), maConfirmar (pergunta), maAria (nome do item). */%>
+<details class="cv-mais-acoes">
+  <summary class="cv-redondo cv-redondo--leve" aria-label="Mais ações: <%= maAria %>"><%- include('icone', { cvIc: 'reticencias', cvCls: 'cv-ic--18' }) %></summary>
+  <div class="cv-mais-acoes-menu">
+    <form method="POST" action="<%= maAcao %>" data-confirmar="<%= maConfirmar %>"><button type="submit" class="cv-perigo-link"><%- include('icone', { cvIc: 'lixo', cvCls: 'cv-ic--18' }) %><%= maRotulo %></button></form>
+  </div>
+</details>

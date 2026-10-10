@@ -165,3 +165,4 @@
 }
 @media (prefers-reduced-motion: reduce) { .cv-gr-bloco { transition: none; } .cv-gr-bloco:active { transform: none; } }
 @media (min-width: 1024px) { .cv-gr-est svg { width: 13px; height: 13px; flex: none; } }
+.cv-ag-bloquear { background: var(--c-bloco-2) !important; color: var(--c-tinta); }
