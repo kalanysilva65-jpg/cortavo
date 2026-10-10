@@ -1,808 +1,259 @@
-<%/* Relatórios no design SUAVE (pedido do dono, 2026-07-31): substitui a capa
-     editorial do Turno 6 (faixas sangrando, números de 80px) pelo HTML de
-     referência que ele anexou — tela de fundo BRANCO, topo fixo com o filtro de
-     período, cartão escuro do faturamento e, abaixo, ladrilhos cinzas e dois
-     cartões de gráfico. Nada foi cortado: o detalhe de cada número continua
-     existindo, só que agora em FOLHA INFERIOR (sobe de baixo) em vez de folha
-     de página inteira. Estilos em public/css/sv-relatorios.css. */%>
+<%/* Relatórios (redesign v3). Sem mockup próprio: o sistema aplicado com
+     rigor e a mesma gramática da Gestão. Período em segmento (sem vidro: o
+     vidro de período é só o da Gestão), o objeto preto com o faturamento,
+     quatro cartões-resumo, mais vendidos, formas de pagamento e clientes.
+     Cada cartão abre a folha de detalhe (os mesmos dados de antes). Números
+     com "R$" e centavos pequenos. Mesmas rotas e parâmetros. */%>
 <%
-  // A ordem dos blocos vem da referência e é intencional: primeiro o dinheiro
-  // que entrou, depois as médias que explicam esse dinheiro, e só então os
-  // gráficos de composição. O que exige leitura fica por último.
-  var ladrilhos = [
-    { modal: 'ticket', num: fmtT6(ticketMedio), rot: 'ticket médio', neg: false },
-    { modal: 'ocupacao', num: ocupacaoPct + '%', rot: 'agenda ocupada', neg: false },
-    { modal: 'lucro', num: fmtT6(lucro), rot: 'lucro estimado', neg: lucro < 0 },
-    { modal: 'gastos', num: fmtT6(gastos), rot: 'gastos', neg: false },
-  ];
+  var fechar = include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' });
+  var dinheiro = function (c, tam) { return include('../partials/dinheiro', { cvC: c, cvTam: tam || 'p' }); };
+  function variacao(v) { return v === null || v === undefined ? '' : '<span class="cv-delta' + (v < 0 ? ' cv-delta--cai' : '') + '">' + (v >= 0 ? '+' : '') + v + '% vs anterior</span>'; }
+  function cab(id, titulo) { return '<div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="' + id + '-t" tabindex="-1" data-foco>' + titulo + '</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar">' + fechar + '</button></div></div>'; }
+  function barra(w, escura) { return '<span class="cv-rl-trilho"><b style="width:' + w + (String(w).indexOf('%') === -1 ? '%' : '') + (escura === false ? ';background:var(--d-3)' : '') + '"></b></span>'; }
+  var PER = [['hoje', 'Hoje'], ['semana', 'Semana'], ['mes', 'Mês'], ['ano', 'Ano']];
 %>
-<div class="sv-tela sv-rl">
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup"><%= relPeriodLabel %></p><h1>Relatórios</h1></div>
+  <%/* Exportar continua sendo o print do navegador. */%>
+  <div class="cv-cab-acoes"><button type="button" class="cv-redondo cv-redondo--leve" onclick="window.print()" aria-label="Exportar ou imprimir"><%- include('../partials/icone', { cvIc: 'exportar', cvCls: 'cv-ic--18' }) %></button></div>
+</header>
 
-  <div class="sv-rl-topo">
-    <div class="sv-rl-topo-linha">
-      <h1 class="sv-rl-titulo">Relatórios</h1>
-      <div class="sv-rl-acoes">
-        <%/* Exportar continua sendo o print do navegador: não existe geração
-             de PDF no servidor, e é o que dá pra oferecer sem back-end novo. */%>
-        <button type="button" class="sv-rl-icone" onclick="window.print()" aria-label="Exportar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>
-        </button>
-        <a href="/painel" class="sv-rl-icone" aria-label="Fechar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        </a>
-      </div>
+<div class="cv-secao" style="margin-top:16px">
+  <nav class="cv-seg cv-rl-per" aria-label="Período">
+    <% PER.forEach(function (p) { %><a href="/painel/relatorios?periodo=<%= p[0] %>" aria-pressed="<%= periodo === p[0] %>"<% if (periodo === p[0]) { %> aria-current="page"<% } %>><%= p[1] %></a><% }) %>
+    <button type="button" aria-pressed="<%= periodo === 'custom' %>" aria-controls="rel-custom" onclick="relCustomToggle()" aria-label="Escolher datas"><%- include('../partials/icone', { cvIc: 'calendario', cvCls: 'cv-ic--18' }) %></button>
+  </nav>
+  <form id="rel-custom" class="cv-cartao cv-rl-custom" method="GET" action="/painel/relatorios"<% if (periodo !== 'custom') { %> hidden<% } %>>
+    <input type="hidden" name="periodo" value="custom" />
+    <div class="cv-dupla">
+      <div class="cv-campo"><label for="rel-de">De</label><input class="cv-entrada" id="rel-de" type="date" name="de" value="<%= deStr %>" required /></div>
+      <div class="cv-campo"><label for="rel-ate">Até</label><input class="cv-entrada" id="rel-ate" type="date" name="ate" value="<%= ateStr %>" required /></div>
     </div>
-
-    <div class="sv-rl-periodos sv-rolagem">
-      <a class="sv-rl-per <%= periodo === 'hoje' ? 'sel' : '' %>" href="/painel/relatorios?periodo=hoje">Hoje</a>
-      <a class="sv-rl-per <%= periodo === 'semana' ? 'sel' : '' %>" href="/painel/relatorios?periodo=semana">Semana</a>
-      <a class="sv-rl-per <%= periodo === 'mes' ? 'sel' : '' %>" href="/painel/relatorios?periodo=mes">Mês</a>
-      <a class="sv-rl-per <%= periodo === 'ano' ? 'sel' : '' %>" href="/painel/relatorios?periodo=ano">Ano</a>
-      <button type="button" class="sv-rl-per <%= periodo === 'custom' ? 'sel' : '' %>" onclick="relCustomToggle()" aria-controls="rel-custom">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h18M7 3v3M17 3v3M4 5h16v16H4z"/></svg>
-        <span><%= periodo === 'custom' ? relPeriodLabel : 'Período' %></span>
-      </button>
-    </div>
-
-    <%/* O período personalizado abre AQUI, embaixo dos selos, em vez de numa
-         folha: é um form GET normal, então o filtro continua sendo um link
-         que dá pra guardar/compartilhar. */%>
-    <form id="rel-custom" class="sv-rl-custom" method="GET" action="/painel/relatorios" <%= periodo === 'custom' ? '' : 'hidden' %>>
-      <input type="hidden" name="periodo" value="custom" />
-      <div class="sv-rl-custom-datas">
-        <div class="sv-rl-custom-campo">
-          <label class="sv-rl-custom-rot" for="rel-de">De</label>
-          <input id="rel-de" class="sv-rl-custom-input" type="date" name="de" value="<%= deStr %>" required />
-        </div>
-        <div class="sv-rl-custom-campo">
-          <label class="sv-rl-custom-rot" for="rel-ate">Até</label>
-          <input id="rel-ate" class="sv-rl-custom-input" type="date" name="ate" value="<%= ateStr %>" required />
-        </div>
-      </div>
-      <div class="sv-rl-atalhos">
-        <% relCustomShortcuts.forEach(function (sh) { %>
-          <button type="button" class="sv-rl-atalho" onclick="relAtalho('<%= sh.de %>','<%= sh.ate %>')"><%= sh.label %></button>
-        <% }) %>
-      </div>
-      <button type="submit" class="sv-rl-custom-ok">Aplicar período</button>
-    </form>
-  </div>
-
-  <div class="sv-rl-corpo sv-rolagem">
-
-    <%/* 1. Faturamento — o número que abre a tela, com o recorte
-         serviços / produtos / atendimentos dentro do próprio cartão. */%>
-    <button type="button" class="sv-rl-fat sv-reveal" onclick="abrirModal('fat')">
-      <span class="sv-rl-fat-rot">
-        Faturamento do período
-        <% if (variacaoFaturamento !== null) { %> · <%= variacaoFaturamento >= 0 ? '+' : '' %><%= variacaoFaturamento %>% vs anterior<% } %>
-      </span>
-      <span class="sv-rl-fat-num"><%= fmtT6(faturamento) %></span>
-      <span class="sv-rl-tri">
-        <span class="sv-rl-tri-cel">
-          <span class="sv-rl-tri-num"><%= fmtT6(servicosValor) %></span>
-          <span class="sv-rl-tri-lab">serviços</span>
-        </span>
-        <span class="sv-rl-tri-cel">
-          <span class="sv-rl-tri-num"><%= fmtT6(produtosValor) %></span>
-          <span class="sv-rl-tri-lab">produtos</span>
-        </span>
-        <span class="sv-rl-tri-cel">
-          <span class="sv-rl-tri-num"><%= atendimentos %></span>
-          <span class="sv-rl-tri-lab">atend.</span>
-        </span>
-      </span>
-    </button>
-
-    <%/* 2. Os quatro ladrilhos cinzas, dois a dois. */%>
-    <% for (var i = 0; i < ladrilhos.length; i += 2) { %>
-      <div class="sv-rl-par">
-        <% ladrilhos.slice(i, i + 2).forEach(function (ld) { %>
-          <button type="button" class="sv-rl-meia sv-reveal <%= i === 0 ? 'sv-rl-p2' : 'sv-rl-p3' %>" onclick="abrirModal('<%= ld.modal %>')">
-            <span class="sv-rl-meia-num <%= ld.neg ? 'sv-rl-neg' : '' %>"><%= ld.num %></span>
-            <span class="sv-rl-meia-lab"><%= ld.rot %></span>
-          </button>
-        <% }) %>
-      </div>
-    <% } %>
-
-    <%/* 3. Serviços mais vendidos — barra fina por serviço, o % à direita. */%>
-    <button type="button" class="sv-rl-cartao sv-reveal sv-rl-p4" onclick="abrirModal('produtos')">
-      <span class="sv-rl-cartao-topo">
-        <span class="sv-rl-cartao-tit">Serviços mais vendidos</span>
-        <svg class="sv-rl-cartao-seta" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-      </span>
-      <% if (topServices.length) { %>
-        <span class="sv-rl-svcs">
-          <% topServices.forEach(function (sv) { %>
-            <span>
-              <span class="sv-rl-svc-linha">
-                <span class="sv-rl-svc-nome"><%= sv.name %></span>
-                <span class="sv-rl-svc-pct"><%= sv.pct %>%</span>
-              </span>
-              <span class="sv-rl-svc-trilho">
-                <span data-fill class="sv-rl-svc-cheio" style="width:<%= sv.w %>;"></span>
-              </span>
-            </span>
-          <% }) %>
-        </span>
-      <% } else { %>
-        <span class="sv-rl-pag-vazio">Nenhum serviço concluído neste período.</span>
-      <% } %>
-    </button>
-
-    <%/* 4. Formas de pagamento — barra única repartida pelo peso de cada uma. */%>
-    <button type="button" class="sv-rl-cartao sv-reveal" onclick="abrirModal('pagamentos')">
-      <span class="sv-rl-cartao-topo">
-        <span class="sv-rl-cartao-tit">Formas de pagamento</span>
-        <svg class="sv-rl-cartao-seta" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-      </span>
-      <% if (formasPagamento.length) { %>
-        <span class="sv-rl-pag-stack">
-          <%/* Piso de 8 no flex: uma forma com 2% do total viraria um risco
-               invisível e o selo dela ficaria órfão na legenda. */%>
-          <% formasPagamento.forEach(function (f) { %>
-            <span class="sv-rl-pag-col" style="flex:<%= Math.max(8, f.pct) %>;background:<%= f.cor %>;"></span>
-          <% }) %>
-        </span>
-        <span class="sv-rl-pag-legenda">
-          <% formasPagamento.forEach(function (f) { %>
-            <span class="sv-rl-pag-selo">
-              <span class="sv-rl-pag-ponto" style="background:<%= f.cor %>;"></span>
-              <span class="sv-rl-pag-txt"><%= f.label %> <%= f.pct %>%</span>
-            </span>
-          <% }) %>
-        </span>
-      <% } else { %>
-        <span class="sv-rl-pag-vazio">Nenhum recebimento com forma de pagamento registrada.</span>
-      <% } %>
-    </button>
-
-    <%/* 5. Clientes novos — bloco escuro, frase inteira. */%>
-    <button type="button" class="sv-rl-clientes sv-reveal" onclick="abrirModal('clientes')">
-      <span>
-        <span class="sv-rl-clientes-num"><%= clientesNovos %></span>
-        <span class="sv-rl-clientes-txt">clientes novos no período, contra <%= clientesRecorrentes %> que já eram da casa.</span>
-      </span>
-      <svg class="sv-rl-clientes-seta" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-    </button>
-
-    <div class="sv-rl-fim"></div>
-  </div>
+    <div class="cv-chips" style="flex-wrap:wrap;margin:10px 0 0;padding:0"><% relCustomShortcuts.forEach(function (sh) { %><button type="button" class="cv-chip" onclick="relAtalho('<%= sh.de %>','<%= sh.ate %>')"><span><%= sh.label %></span></button><% }) %></div>
+    <button type="submit" class="cv-btn cv-btn--largo" style="margin-top:12px">Aplicar período</button>
+  </form>
 </div>
 
-
-<%/* ======================= FOLHA · FATURAMENTO ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-fat" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Faturamento</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
-      </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-
-    <div class="sv-rl-hero">
-      <div class="sv-rl-hero-num" data-count><%= fmtT6(faturamento) %></div>
-      <div class="sv-rl-hero-txt">Entradas do caixa no período<br><%= fmtBRL(servicosValor) %> em serviços · <%= fmtBRL(produtosValor) %> em produtos</div>
-    </div>
-
-    <div class="sv-rl-secao">
-      <div class="sv-rl-eyebrow">O que foi vendido</div>
-      <% if (relVendasRows.length === 0) { %>
-        <div class="sv-vazio">Nenhuma venda registrada neste período.</div>
-      <% } %>
-      <% relVendasRows.forEach(function (vr) { %>
-        <div class="sv-rl-item" data-anim="svcIn">
-          <div class="sv-rl-item-num" data-count><%= fmtT6(vr.valor) %></div>
-          <div class="sv-rl-item-baixo">
-            <div class="sv-rl-item-txt"><%= vr.name %><br><%= vr.kind %> · <%= vr.qtyLabel %></div>
-            <button type="button" class="sv-rl-seta" onclick="relSanfona(this)" aria-expanded="false" aria-label="Ver detalhe">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-          </div>
-          <div class="sv-rl-detalhe" hidden>
-            <% vr.entries.forEach(function (ev) { %>
-              <div class="sv-rl-detalhe-linha">
-                <div>
-                  <div class="sv-rl-detalhe-tit"><%= ev.when %></div>
-                  <div class="sv-rl-detalhe-sub"><%= ev.who %></div>
-                </div>
-                <div class="sv-rl-detalhe-val"><%= fmtBRL(ev.valor) %></div>
-              </div>
-            <% }) %>
-            <% if (vr.more) { %><div class="sv-rl-detalhe-mais"><%= vr.more %></div><% } %>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-
-    <% if (barberPerf.length) { %>
-      <div class="sv-rl-secao sv-rl-secao--cartao">
-        <div class="sv-rl-eyebrow">Por barbeiro</div>
-        <% barberPerf.forEach(function (bp) { %>
-          <div class="sv-rl-barb">
-            <div class="sv-rl-barb-linha">
-              <div class="sv-rl-barb-nome"><%= bp.name %></div>
-              <div class="sv-rl-barb-num"><%= fmtT6(bp.valor) %></div>
-            </div>
-            <div class="sv-rl-barra"><div data-fill class="sv-rl-barra-cheia" style="width:<%= bp.pct %>%;"></div></div>
-            <div class="sv-rl-barb-sub"><%= bp.qtd %> atendimentos · ticket <%= fmtBRL(bp.ticket) %></div>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
-
-    <% if (slotHistory.length) { %>
-      <div class="sv-rl-secao sv-rl-secao--cartao">
-        <div class="sv-rl-eyebrow">Últimos atendimentos</div>
-        <% slotHistory.forEach(function (sh) { %>
-          <div class="sv-rl-hist">
-            <div class="sv-rl-hist-quando">
-              <div class="sv-rl-hist-hora"><%= sh.time %></div>
-              <div class="sv-rl-hist-dia"><%= sh.day %></div>
-            </div>
-            <div class="sv-rl-hist-corpo">
-              <div class="sv-rl-hist-cliente"><%= sh.client %></div>
-              <div class="sv-rl-hist-sub"><%= sh.service %> · <%= sh.barber %></div>
-            </div>
-            <div class="sv-rl-hist-val"><%= fmtT6(sh.valor) %></div>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
-  </div>
+<div class="cv-secao" style="margin-top:14px">
+  <button type="button" class="cv-objeto cv-gravada cv-rl-fat" data-abrir-folha="agm-fat">
+    <span class="rot">Faturamento do período</span>
+    <span class="num"><%- dinheiro(faturamento, 'g') %></span>
+    <%- variacao(variacaoFaturamento) %>
+    <span class="cv-tres">
+      <span><%- dinheiro(servicosValor) %><span class="rot">serviços</span></span>
+      <span><%- dinheiro(produtosValor) %><span class="rot">produtos</span></span>
+      <span><span class="cv-num"><%= atendimentos %></span><span class="rot">atendimentos</span></span>
+    </span>
+  </button>
 </div>
 
-
-<%/* ======================= FOLHA · MAIS VENDIDOS ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-produtos" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Mais vendidos</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
-      </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-eyebrow">Serviços</div>
-      <% topServices.forEach(function (sv) { %>
-        <div class="sv-rl-rank">
-          <div class="sv-rl-rank-qtd"><%= sv.qtd %></div>
-          <div class="sv-rl-rank-corpo">
-            <div class="sv-rl-rank-nome"><%= sv.name %></div>
-            <div class="sv-rl-rank-val"><%= fmtBRL(sv.valor) %> · <%= sv.pct %>% dos serviços</div>
-          </div>
-        </div>
-      <% }) %>
-      <% if (!topServices.length) { %><div class="sv-vazio">Nenhum serviço no período.</div><% } %>
-    </div>
-
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-eyebrow">Produtos</div>
-      <% relProdutosRows.forEach(function (pr) { %>
-        <div class="sv-rl-rank">
-          <div class="sv-rl-rank-qtd"><%= pr.qty %></div>
-          <div class="sv-rl-rank-corpo">
-            <div class="sv-rl-rank-nome"><%= pr.name %></div>
-            <div class="sv-rl-rank-val"><%= fmtBRL(pr.valor) %></div>
-          </div>
-        </div>
-      <% }) %>
-      <% if (!relProdutosRows.length) { %><div class="sv-vazio">Nenhum produto vendido no período.</div><% } %>
-
-      <div class="sv-rl-total">
-        <div class="sv-rl-total-rot">Total em produtos · <%= relProdutosTotalQty %> un</div>
-        <div class="sv-rl-total-val"><%= fmtT6(produtosValorTotal) %></div>
-      </div>
-    </div>
-  </div>
+<div class="cv-secao cv-rl-grade" style="margin-top:12px">
+  <button type="button" class="cv-cartao cv-resumo" data-abrir-folha="agm-ticket"><span class="rot">Ticket médio</span><%- dinheiro(ticketMedio, 'm') %><%- variacao(variacaoTicket) %></button>
+  <button type="button" class="cv-cartao cv-resumo" data-abrir-folha="agm-ocupacao"><span class="rot">Agenda ocupada</span><span class="cv-num cv-num--m"><%= ocupacaoPct %><span class="de">%</span></span></button>
+  <button type="button" class="cv-cartao cv-resumo" data-abrir-folha="agm-lucro"><span class="rot">Lucro estimado</span><%- dinheiro(lucro, 'm') %><%- variacao(variacaoLucro) %></button>
+  <button type="button" class="cv-cartao cv-resumo" data-abrir-folha="agm-gastos"><span class="rot">Gastos</span><%- dinheiro(gastos, 'm') %></button>
 </div>
 
-
-<%/* ======================= FOLHA · TICKET MÉDIO ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-ticket" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Ticket médio</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
-      </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-
-    <div class="sv-rl-hero">
-      <div class="sv-rl-hero-num" data-count><%= fmtT6(ticketMedio) %></div>
-      <div class="sv-rl-hero-txt">Média por atendimento no período<br><%= fmtBRL(faturamento) %> em <%= atendimentos %> atendimentos<% if (variacaoTicket !== null) { %> · <%= variacaoTicket >= 0 ? '+' : '' %><%= variacaoTicket %>% vs anterior<% } %></div>
-    </div>
-
-    <%/* Ticket por atendimento x por cliente (pedido do dono, 2026-09-03): o
-         "por cliente" divide o mesmo faturamento pelos clientes distintos, então
-         sobe quando a mesma pessoa volta mais de uma vez no período. */%>
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-secao-tit">Por atendimento x por cliente</div>
-      <div class="sv-rl-fills">
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= ticketPorTipo.atendW %>;background:#393939;">
-            <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= fmtT6(ticketPorTipo.atendimento) %></span>
-          </div>
-          <div class="sv-rl-fill-rot">Por atendimento · <%= atendimentos %> atend.</div>
-        </div>
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= ticketPorTipo.clienteW %>;background:#9C9C9C;">
-            <span class="sv-rl-fill-val" style="color:#191919;"><%= fmtT6(ticketPorTipo.cliente) %></span>
-          </div>
-          <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Por cliente · <%= clientesData.unicos %> únicos</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-secao-tit">Com produto x só serviço</div>
-      <div class="sv-rl-fills">
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= ticketData.comW %>;background:#393939;">
-            <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= fmtT6(ticketData.com) %></span>
-          </div>
-          <div class="sv-rl-fill-rot">Com produto · <%= ticketData.comQtd %> atendimentos</div>
-        </div>
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= ticketData.semW %>;background:#9C9C9C;">
-            <span class="sv-rl-fill-val" style="color:#191919;"><%= fmtT6(ticketData.sem) %></span>
-          </div>
-          <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Só serviço · <%= ticketData.semQtd %> atendimentos</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="sv-rl-bloco sv-rl-bloco--escuro">
-      <div class="sv-rl-bloco-num"><%= ticketData.comPct %>%</div>
-      <div class="sv-rl-bloco-txt">dos atendimentos levaram algum produto — e cada um deles rendeu <%= fmtT6(ticketData.delta) %> a mais. Subir essa taxa é o caminho mais curto para aumentar o ticket.</div>
-    </div>
-
-    <% if (barberPerf.length) { %>
-      <div class="sv-rl-secao sv-rl-secao--cartao">
-        <div class="sv-rl-eyebrow">Por barbeiro</div>
-        <% barberPerf.forEach(function (bp) { %>
-          <div class="sv-rl-dupla">
-            <div class="sv-rl-dupla-esq">
-              <div class="sv-rl-dupla-nome"><%= bp.name %></div>
-              <div class="sv-rl-dupla-sub"><%= bp.qtd %> atendimentos · <%= fmtBRL(bp.valor) %></div>
-            </div>
-            <div class="sv-rl-dupla-num"><%= fmtT6(bp.ticket) %></div>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
+<section class="cv-secao" aria-labelledby="rl-mais">
+  <div class="cv-secao-cab"><h2 id="rl-mais">Serviços mais vendidos</h2><a href="#" data-abrir-folha="agm-produtos">Ver tudo</a></div>
+  <div class="cv-cartao">
+    <% if (topServices.length) { %>
+      <ul class="cv-rl-barras">
+        <% topServices.forEach(function (sv) { %><li><span class="linha"><span><%= sv.name %></span><b><%= sv.pct %>%</b></span><%- barra(sv.w) %></li><% }) %>
+      </ul>
+    <% } else { %><p class="cv-texto-apoio" style="margin:0">Nenhum serviço concluído neste período.</p><% } %>
   </div>
-</div>
+</section>
 
-
-<%/* ======================= FOLHA · OCUPAÇÃO ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-ocupacao" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Ocupação</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
-      </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-
-    <div class="sv-rl-ocup-topo">
-      <div class="sv-rl-hero-num" data-count><%= ocupData.pct %>%</div>
-      <div class="sv-rl-ocup-lado"><%= ocupData.sub %><br><%= ocupData.livres %></div>
-    </div>
-
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-mapa-topo">
-        <div class="sv-rl-secao-tit">Mapa</div>
-        <%/* Duas leituras do MESMO período: "Dia" soma as horas de todos os dias
-             (a curva do expediente) e "Semana" cruza dia × hora (onde a agenda
-             enche). Alternar é só client-side — os dados já vieram. */%>
-        <div class="sv-rl-mapa-abas">
-          <button type="button" class="sv-rl-mapa-btn sel" data-mapa="dia" onclick="relMapa('dia')">Dia</button>
-          <button type="button" class="sv-rl-mapa-btn" data-mapa="semana" onclick="relMapa('semana')">Semana</button>
-        </div>
-      </div>
-
-      <div class="sv-rl-mapa" id="rel-mapa-dia">
-        <div class="sv-rl-slots">
-          <% ocupSlots.forEach(function (sl) { %>
-            <div class="sv-rl-slot">
-              <div class="sv-rl-slot-hora" style="color:<%= sl.hourColor %>;"><%= sl.hour %></div>
-              <div class="sv-rl-slot-trilho"><div data-fill class="sv-rl-slot-cheio" style="width:<%= sl.w %>;background:<%= sl.bg %>;"></div></div>
-              <div class="sv-rl-slot-num" style="color:<%= sl.labelColor %>;"><%= sl.label %></div>
-            </div>
-          <% }) %>
-        </div>
-      </div>
-
-      <div class="sv-rl-mapa" id="rel-mapa-semana" hidden>
-        <div class="sv-rl-grid-dias">
-          <% ocupGrid.days.forEach(function (d) { %><div class="sv-rl-grid-dia"><%= d %></div><% }) %>
-        </div>
-        <div class="sv-rl-grid-linhas">
-          <% ocupGrid.rows.forEach(function (row) { %>
-            <div class="sv-rl-grid-linha">
-              <div class="sv-rl-grid-hora"><%= row.hour %></div>
-              <% row.cells.forEach(function (c) { %><div class="sv-rl-grid-cel" style="background:<%= c.bg %>;"></div><% }) %>
-            </div>
-          <% }) %>
-        </div>
-        <div class="sv-rl-legenda-mapa">
-          <span class="sv-rl-legenda-item"><span class="sv-rl-swatch" style="background:#191919;"></span>Lotado</span>
-          <span class="sv-rl-legenda-item"><span class="sv-rl-swatch" style="background:#393939;"></span>Cheio</span>
-          <span class="sv-rl-legenda-item"><span class="sv-rl-swatch" style="background:#9C9C9C;"></span>Vago</span>
-          <span class="sv-rl-legenda-item"><span class="sv-rl-swatch" style="background:#EBEBEB;"></span>Vazio</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="sv-rl-bloco sv-rl-bloco--escuro">
-      <div class="sv-rl-bloco-rot">Onde agir</div>
-      <% if (ocupInsight.temDados) { %>
-        <div class="sv-rl-bloco-frase">Pico às <%= ocupInsight.peak %></div>
-        <% if (ocupInsight.temBuraco) { %>
-          <div class="sv-rl-bloco-frase sv-rl-bloco-frase--fraca">Buracos às <%= ocupInsight.gap %></div>
-        <% } %>
-        <div class="sv-rl-bloco-txt">Puxar clientes para os horários vagos vale mais que abrir novos horários no pico.</div>
-      <% } else { %>
-        <div class="sv-rl-bloco-frase">Sem movimento</div>
-        <div class="sv-rl-bloco-txt">Ainda não há atendimentos suficientes neste período para apontar pico e buraco.</div>
-      <% } %>
-    </div>
-
-    <% if (ocupPorBarbeiro.length) { %>
-      <div class="sv-rl-secao sv-rl-secao--cartao">
-        <div class="sv-rl-eyebrow">Por barbeiro</div>
-        <% ocupPorBarbeiro.forEach(function (ob) { %>
-          <div class="sv-rl-barb">
-            <div class="sv-rl-barb-linha">
-              <div class="sv-rl-barb-nome"><%= ob.name %></div>
-              <div class="sv-rl-barb-num"><%= ob.pct %>%</div>
-            </div>
-            <div class="sv-rl-barra"><div data-fill class="sv-rl-barra-cheia" style="width:<%= ob.w %>;"></div></div>
-            <div class="sv-rl-barb-sub"><%= ob.sub %></div>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
-
-    <div class="sv-rl-secao">
-      <div class="sv-rl-secao-tit">Por dia da semana</div>
-    </div>
-    <div class="sv-rl-colunas sv-rolagem">
-      <% ocupWeekBars.forEach(function (wb) { %>
-        <div data-reveal class="sv-rl-coluna" style="height:<%= wb.h %>px;background:<%= wb.bg %>;">
-          <div class="sv-rl-coluna-num" style="color:<%= wb.text %>;"><%= wb.value %></div>
-          <div class="sv-rl-coluna-lab" style="color:<%= wb.muted %>;"><%= wb.label %></div>
-        </div>
-      <% }) %>
-    </div>
-  </div>
-</div>
-
-
-<%/* ======================= FOLHA · PAGAMENTOS ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-pagamentos" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Pagamentos</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
-      </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-
-    <div class="sv-rl-hero">
-      <div class="sv-rl-hero-num" data-count><%= fmtT6(pagData.total) %></div>
-      <div class="sv-rl-hero-txt">Recebido no período<br><%= pagData.transacoes %> transações em <%= formasPagamento.length %> formas de pagamento</div>
-    </div>
-
+<section class="cv-secao" aria-labelledby="rl-pag">
+  <div class="cv-secao-cab"><h2 id="rl-pag">Formas de pagamento</h2><a href="#" data-abrir-folha="agm-pagamentos">Ver tudo</a></div>
+  <div class="cv-cartao">
     <% if (formasPagamento.length) { %>
-      <div class="sv-rl-donut-linha">
-        <div class="sv-rl-donut">
-          <svg width="148" height="148" viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="#EBEBEB" stroke-width="14"></circle>
-            <% pagDonut.forEach(function (dn) { %>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="<%= dn.color %>" stroke-width="14" stroke-dasharray="<%= dn.dash %>" stroke-dashoffset="<%= dn.offset %>"></circle>
-            <% }) %>
-          </svg>
-          <div class="sv-rl-donut-centro">
-            <div class="sv-rl-donut-pct"><%= pagData.maiorPct %>%</div>
-            <div class="sv-rl-donut-nome"><%= pagData.maiorNome %></div>
-          </div>
-        </div>
-        <div class="sv-rl-legenda">
-          <% formasPagamento.forEach(function (f) { %>
-            <div class="sv-rl-leg">
-              <span class="sv-rl-leg-cor" style="background:<%= f.cor %>;"></span>
-              <span class="sv-rl-leg-corpo">
-                <span class="sv-rl-leg-nome"><%= f.label %></span>
-                <span class="sv-rl-leg-val"><%= fmtBRL(f.valor) %></span>
-              </span>
-              <span class="sv-rl-leg-pct"><%= f.pct %>%</span>
-            </div>
-          <% }) %>
-        </div>
-      </div>
+      <div class="cv-rl-pilha" role="img" aria-label="<%= formasPagamento.map(function (f) { return f.label + ' ' + f.pct + '%'; }).join(', ') %>"><% formasPagamento.forEach(function (f, i) { %><i style="flex:<%= Math.max(8, f.pct) %>;background:var(--d-<%= Math.min(i + 1, 4) %>)"></i><% }) %></div>
+      <ul class="cv-linhas" style="margin-top:10px"><% formasPagamento.forEach(function (f, i) { %><li><span><i class="cv-rl-ponto" style="background:var(--d-<%= Math.min(i + 1, 4) %>)"></i><%= f.label %></span><b><%- dinheiro(f.valor) %> · <%= f.pct %>%</b></li><% }) %></ul>
+    <% } else { %><p class="cv-texto-apoio" style="margin:0">Nenhum recebimento com forma de pagamento registrada.</p><% } %>
+  </div>
+</section>
 
-      <div class="sv-rl-secao">
-        <div class="sv-rl-eyebrow">Forma por forma</div>
-        <% formasPagamento.forEach(function (f) { %>
-          <div class="sv-rl-item" data-anim="svcIn">
-            <div class="sv-rl-item-num" data-count><%= fmtT6(f.valor) %></div>
-            <div class="sv-rl-item-txt sv-rl-item-txt--solto"><%= f.label %> · <%= f.pct %>%<br><%= f.qtd %> recebimentos · ticket <%= fmtBRL(f.ticket) %></div>
-          </div>
+<section class="cv-secao" aria-labelledby="rl-cli">
+  <div class="cv-secao-cab"><h2 id="rl-cli">Clientes</h2><a href="#" data-abrir-folha="agm-clientes">Ver tudo</a></div>
+  <button type="button" class="cv-cartao cv-rl-cli" data-abrir-folha="agm-clientes"><span class="cv-num cv-num--m"><%= clientesNovos %></span><span>clientes novos no período, contra <b><%= clientesRecorrentes %></b> que já eram da casa.</span></button>
+</section>
+
+<%/* ======================= Folhas de detalhe ======================= */%>
+<section class="cv-folha cv-rl-folha" id="agm-fat" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-fat-t">
+  <%- cab('agm-fat', 'Faturamento') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= relPeriodLabel %> · <%= fmtBRL(servicosValor) %> em serviços e <%= fmtBRL(produtosValor) %> em produtos</p>
+    <div class="cv-rl-heroi"><%- dinheiro(faturamento, 'g') %></div>
+    <div class="cv-folha-sec"><h3>O que foi vendido</h3>
+      <% if (!relVendasRows.length) { %><p class="cv-texto-apoio">Nenhuma venda registrada neste período.</p><% } %>
+      <ul class="cv-linhas">
+        <% relVendasRows.forEach(function (vr) { %>
+          <li class="cv-rl-sanfona"><details><summary><span><b style="font-weight:600;color:var(--c-tinta)"><%= vr.name %></b><br><%= vr.kind %> · <%= vr.qtyLabel %></span><b><%- dinheiro(vr.valor) %></b></summary>
+            <ul class="cv-linhas cv-rl-det"><% vr.entries.forEach(function (ev) { %><li><span><%= ev.when %> · <%= ev.who %></span><b><%= fmtBRL(ev.valor) %></b></li><% }) %><% if (vr.more) { %><li><span><%= vr.more %></span></li><% } %></ul>
+          </details></li>
         <% }) %>
+      </ul>
+    </div>
+    <% if (barberPerf.length) { %>
+      <div class="cv-folha-sec"><h3>Por barbeiro</h3>
+        <ul class="cv-rl-barras"><% barberPerf.forEach(function (bp) { %><li><span class="linha"><span><%= bp.name %></span><b><%- dinheiro(bp.valor) %></b></span><%- barra(bp.pct) %><small><%= bp.qtd %> atendimentos · ticket <%= fmtBRL(bp.ticket) %></small></li><% }) %></ul>
       </div>
-
-      <div class="sv-rl-secao sv-rl-secao--cartao">
-        <div class="sv-rl-secao-tit">Quando o dinheiro cai</div>
-        <div class="sv-rl-fills">
-          <div>
-            <div data-fill class="sv-rl-fill" style="width:<%= pagData.naHoraW %>;background:#191919;">
-              <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= fmtT6(pagData.naHoraValor) %></span>
-            </div>
-            <div class="sv-rl-fill-rot">Na hora · Pix e dinheiro · <%= pagData.naHoraPct %>%</div>
-          </div>
-          <div>
-            <div data-fill class="sv-rl-fill" style="width:<%= pagData.depoisW %>;background:#9C9C9C;">
-              <span class="sv-rl-fill-val" style="color:#191919;"><%= fmtT6(pagData.depoisValor) %></span>
-            </div>
-            <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Depois · cartão, no prazo da maquininha · <%= pagData.depoisPct %>%</div>
-          </div>
-        </div>
+    <% } %>
+    <% if (slotHistory.length) { %>
+      <div class="cv-folha-sec"><h3>Últimos atendimentos</h3>
+        <ul class="cv-linhas"><% slotHistory.forEach(function (sh) { %><li><span><b style="font-weight:600;color:var(--c-tinta)"><%= sh.time %></b> <%= sh.day %> · <%= sh.client %><br><%= sh.service %> · <%= sh.barber %></span><b><%- dinheiro(sh.valor) %></b></li><% }) %></ul>
       </div>
-    <% } else { %>
-      <div class="sv-vazio">Nenhum recebimento com forma de pagamento registrada neste período.</div>
     <% } %>
   </div>
-</div>
+</section>
 
-
-<%/* ======================= FOLHA · CLIENTES ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-clientes" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Clientes</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
-      </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
+<section class="cv-folha cv-rl-folha" id="agm-produtos" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-produtos-t">
+  <%- cab('agm-produtos', 'Mais vendidos') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= relPeriodLabel %></p>
+    <div class="cv-folha-sec"><h3>Serviços</h3>
+      <% if (!topServices.length) { %><p class="cv-texto-apoio">Nenhum serviço no período.</p><% } %>
+      <ul class="cv-linhas"><% topServices.forEach(function (sv) { %><li><span><b style="font-weight:800;color:var(--c-tinta)"><%= sv.qtd %>×</b> <%= sv.name %></span><b><%= fmtBRL(sv.valor) %> · <%= sv.pct %>%</b></li><% }) %></ul>
     </div>
-
-    <div class="sv-rl-hero">
-      <div class="sv-rl-hero-num" data-count><%= clientesData.novos %></div>
-      <div class="sv-rl-hero-txt">clientes novos no período<br><%= clientesData.total %> atendidos ao todo · <%= clientesData.novosPct %>% eram primeira vez</div>
-    </div>
-
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-secao-tit">Novos x recorrentes</div>
-      <div class="sv-rl-fills">
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.novosW %>;background:#191919;">
-            <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= clientesData.novos %></span>
-          </div>
-          <div class="sv-rl-fill-rot">Novos · <%= clientesData.novosPct %>% · <%= fmtBRL(clientesData.receitaNovos) %></div>
-        </div>
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.recorrentesW %>;background:#9C9C9C;">
-            <span class="sv-rl-fill-val" style="color:#191919;"><%= clientesData.recorrentes %></span>
-          </div>
-          <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Recorrentes · <%= clientesData.recorrentesPct %>% · <%= fmtBRL(clientesData.receitaRecorrentes) %></div>
-        </div>
-      </div>
-    </div>
-
-    <%/* Únicos x atendimentos e veio-1x x voltou (pedido do dono, 2026-09-03).
-         Único = pessoa distinta; atendimentos = visitas (contam as repetidas).
-         "Voltou" = 2+ atendimentos no período. */%>
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-secao-tit">Veio uma vez x voltou</div>
-      <div class="sv-rl-fills">
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.voltaramW %>;background:#191919;">
-            <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= clientesData.voltaram %></span>
-          </div>
-          <div class="sv-rl-fill-rot">Voltou (2+) · <%= clientesData.voltaramPct %>%</div>
-        </div>
-        <div>
-          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.umaVezW %>;background:#9C9C9C;">
-            <span class="sv-rl-fill-val" style="color:#191919;"><%= clientesData.umaVez %></span>
-          </div>
-          <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Só uma vez · <%= clientesData.umaVezPct %>%</div>
-        </div>
-      </div>
-      <div class="sv-rl-folha-sub" style="margin-top:14px;"><strong><%= clientesData.unicos %></strong> clientes únicos · <strong><%= clientesData.visitas %></strong> atendimentos · <%= clientesData.mediaVisitas.toFixed(1).replace('.', ',') %> por cliente</div>
-    </div>
-
-    <div class="sv-rl-bloco sv-rl-bloco--escuro">
-      <div class="sv-rl-bloco-num"><%= clientesData.recorrentesPct %>%</div>
-      <div class="sv-rl-bloco-txt">de quem passou aqui no período já era da casa. Cliente que volta custa menos que cliente novo — vale medir isso todo mês.</div>
+    <div class="cv-folha-sec"><h3>Produtos</h3>
+      <% if (!relProdutosRows.length) { %><p class="cv-texto-apoio">Nenhum produto vendido no período.</p><% } %>
+      <ul class="cv-linhas"><% relProdutosRows.forEach(function (pr) { %><li><span><b style="font-weight:800;color:var(--c-tinta)"><%= pr.qty %>×</b> <%= pr.name %></span><b><%= fmtBRL(pr.valor) %></b></li><% }) %>
+        <li><span>Total em produtos · <%= relProdutosTotalQty %> un</span><b><%- dinheiro(produtosValorTotal) %></b></li></ul>
     </div>
   </div>
-</div>
+</section>
 
+<section class="cv-folha cv-rl-folha" id="agm-ticket" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-ticket-t">
+  <%- cab('agm-ticket', 'Ticket médio') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= fmtBRL(faturamento) %> em <%= atendimentos %> atendimentos</p>
+    <div class="cv-rl-heroi"><%- dinheiro(ticketMedio, 'g') %><%- variacao(variacaoTicket) %></div>
+    <div class="cv-folha-sec"><h3>Por atendimento e por cliente</h3>
+      <ul class="cv-rl-barras">
+        <li><span class="linha"><span>Por atendimento · <%= atendimentos %></span><b><%- dinheiro(ticketPorTipo.atendimento) %></b></span><%- barra(ticketPorTipo.atendW) %></li>
+        <li><span class="linha"><span>Por cliente · <%= clientesData.unicos %> únicos</span><b><%- dinheiro(ticketPorTipo.cliente) %></b></span><%- barra(ticketPorTipo.clienteW, false) %></li>
+      </ul>
+    </div>
+    <div class="cv-folha-sec"><h3>Com produto e só serviço</h3>
+      <ul class="cv-rl-barras">
+        <li><span class="linha"><span>Com produto · <%= ticketData.comQtd %></span><b><%- dinheiro(ticketData.com) %></b></span><%- barra(ticketData.comW) %></li>
+        <li><span class="linha"><span>Só serviço · <%= ticketData.semQtd %></span><b><%- dinheiro(ticketData.sem) %></b></span><%- barra(ticketData.semW, false) %></li>
+      </ul>
+    </div>
+    <div class="cv-objeto cv-gravada cv-rl-insight"><span class="cv-num cv-num--m"><%= ticketData.comPct %><span class="de">%</span></span><p>dos atendimentos levaram algum produto, e cada um rendeu <%= fmtBRL(ticketData.delta) %> a mais. Subir essa taxa é o caminho mais curto para aumentar o ticket.</p></div>
+    <% if (barberPerf.length) { %>
+      <div class="cv-folha-sec"><h3>Por barbeiro</h3><ul class="cv-linhas"><% barberPerf.forEach(function (bp) { %><li><span><%= bp.name %><br><%= bp.qtd %> atendimentos · <%= fmtBRL(bp.valor) %></span><b><%- dinheiro(bp.ticket) %></b></li><% }) %></ul></div>
+    <% } %>
+  </div>
+</section>
 
-<%/* ======================= FOLHA · LUCRO ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-lucro" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Lucro</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
+<section class="cv-folha cv-rl-folha" id="agm-ocupacao" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-ocupacao-t">
+  <%- cab('agm-ocupacao', 'Ocupação') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= ocupData.sub %> · <%= ocupData.livres %></p>
+    <div class="cv-rl-heroi"><span class="cv-num cv-num--g"><%= ocupData.pct %><span class="de">%</span></span></div>
+    <div class="cv-folha-sec">
+      <div class="cv-seg" role="tablist" aria-label="Mapa" style="margin-bottom:12px"><button type="button" role="tab" data-mapa="dia" aria-pressed="true" aria-selected="true" onclick="relMapa('dia')">Por hora</button><button type="button" role="tab" data-mapa="semana" aria-pressed="false" aria-selected="false" onclick="relMapa('semana')">Dia × hora</button></div>
+      <div id="rel-mapa-dia"><ul class="cv-rl-barras cv-rl-horas"><% ocupSlots.forEach(function (sl) { %><li><span class="linha"><span><%= sl.hour %></span><b><%= sl.label %></b></span><%- barra(sl.w) %></li><% }) %></ul></div>
+      <div id="rel-mapa-semana" hidden>
+        <div class="cv-rl-mapa" style="--cols:<%= ocupGrid.days.length %>">
+          <span></span><% ocupGrid.days.forEach(function (d) { %><span class="dia"><%= d %></span><% }) %>
+          <% ocupGrid.rows.forEach(function (row) { %><span class="hora"><%= row.hour %></span><% row.cells.forEach(function (c) { %><i style="background:<%= c.bg %>"></i><% }) %><% }) %>
+        </div>
+        <div class="cv-legenda-graf" style="margin-top:10px"><span><i class="q" style="background:#191919"></i>Lotado</span><span><i class="q" style="background:#393939"></i>Cheio</span><span><i class="q" style="background:#9C9C9C"></i>Vago</span><span><i class="q" style="background:#EBEBEB"></i>Vazio</span></div>
       </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
     </div>
-
-    <div class="sv-rl-hero">
-      <div class="sv-rl-hero-num <%= lucro < 0 ? 'sv-rl-neg' : '' %>"><%= fmtT6(lucro) %></div>
-      <div class="sv-rl-hero-txt">Lucro do período<br><%= fmtBRL(faturamento) %> faturados − <%= fmtBRL(gastos) %> de gastos<% if (variacaoLucro !== null) { %> · <%= variacaoLucro >= 0 ? '+' : '' %><%= variacaoLucro %>% vs anterior<% } %></div>
+    <div class="cv-objeto cv-gravada cv-rl-insight"><% if (ocupInsight.temDados) { %><b>Pico às <%= ocupInsight.peak %></b><% if (ocupInsight.temBuraco) { %><b class="fraca">Buracos às <%= ocupInsight.gap %></b><% } %><p>Puxar clientes para os horários vagos vale mais que abrir novos horários no pico.</p><% } else { %><b>Sem movimento</b><p>Ainda não há atendimentos suficientes neste período para apontar pico e buraco.</p><% } %></div>
+    <% if (ocupPorBarbeiro.length) { %>
+      <div class="cv-folha-sec"><h3>Por barbeiro</h3><ul class="cv-rl-barras"><% ocupPorBarbeiro.forEach(function (ob) { %><li><span class="linha"><span><%= ob.name %></span><b><%= ob.pct %>%</b></span><%- barra(ob.w) %><small><%= ob.sub %></small></li><% }) %></ul></div>
+    <% } %>
+    <div class="cv-folha-sec"><h3>Por dia da semana</h3>
+      <div class="cv-rl-colunas"><% ocupWeekBars.forEach(function (wb) { %><div><span class="v"><%= wb.value %></span><i style="height:<%= wb.h %>px"></i><span class="l"><%= wb.label %></span></div><% }) %></div>
     </div>
+  </div>
+</section>
 
-    <div class="sv-rl-secao sv-rl-secao--cartao">
-      <div class="sv-rl-secao-tit">A conta, passo a passo</div>
-      <div class="sv-rl-fills">
-        <% lucroCascata.forEach(function (cs) { %>
-          <div>
-            <div data-fill class="sv-rl-fill" style="width:<%= cs.w %>;background:<%= cs.bg %>;">
-              <span class="sv-rl-fill-val" style="color:<%= cs.text %>;"><%= fmtT6(cs.rest) %></span>
-            </div>
-            <div class="sv-rl-fill-linha">
-              <span class="sv-rl-fill-rot"><%= cs.label %></span>
-              <span class="sv-rl-fill-valor"><%= fmtBRL(cs.amount) %></span>
-            </div>
-          </div>
+<section class="cv-folha cv-rl-folha" id="agm-pagamentos" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-pagamentos-t">
+  <%- cab('agm-pagamentos', 'Pagamentos') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= pagData.transacoes %> transações em <%= formasPagamento.length %> formas</p>
+    <div class="cv-rl-heroi"><%- dinheiro(pagData.total, 'g') %></div>
+    <% if (formasPagamento.length) { %>
+      <div class="cv-folha-sec"><h3>Forma por forma</h3><ul class="cv-linhas"><% formasPagamento.forEach(function (f, i) { %><li><span><i class="cv-rl-ponto" style="background:var(--d-<%= Math.min(i + 1, 4) %>)"></i><b style="font-weight:600;color:var(--c-tinta)"><%= f.label %></b> · <%= f.pct %>%<br><%= f.qtd %> recebimentos · ticket <%= fmtBRL(f.ticket) %></span><b><%- dinheiro(f.valor) %></b></li><% }) %></ul></div>
+      <div class="cv-folha-sec"><h3>Quando o dinheiro cai</h3>
+        <ul class="cv-rl-barras">
+          <li><span class="linha"><span>Na hora · Pix e dinheiro · <%= pagData.naHoraPct %>%</span><b><%- dinheiro(pagData.naHoraValor) %></b></span><%- barra(pagData.naHoraW) %></li>
+          <li><span class="linha"><span>Depois · cartão · <%= pagData.depoisPct %>%</span><b><%- dinheiro(pagData.depoisValor) %></b></span><%- barra(pagData.depoisW, false) %></li>
+        </ul>
+      </div>
+    <% } else { %><p class="cv-texto-apoio">Nenhum recebimento com forma de pagamento registrada neste período.</p><% } %>
+  </div>
+</section>
+
+<section class="cv-folha cv-rl-folha" id="agm-clientes" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-clientes-t">
+  <%- cab('agm-clientes', 'Clientes') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= clientesData.total %> atendidos · <%= clientesData.novosPct %>% eram primeira vez</p>
+    <div class="cv-rl-heroi"><span class="cv-num cv-num--g"><%= clientesData.novos %></span><span class="rot">clientes novos</span></div>
+    <div class="cv-folha-sec"><h3>Novos e recorrentes</h3>
+      <ul class="cv-rl-barras">
+        <li><span class="linha"><span>Novos · <%= clientesData.novosPct %>% · <%= fmtBRL(clientesData.receitaNovos) %></span><b><%= clientesData.novos %></b></span><%- barra(clientesData.novosW) %></li>
+        <li><span class="linha"><span>Recorrentes · <%= clientesData.recorrentesPct %>% · <%= fmtBRL(clientesData.receitaRecorrentes) %></span><b><%= clientesData.recorrentes %></b></span><%- barra(clientesData.recorrentesW, false) %></li>
+      </ul>
+    </div>
+    <div class="cv-folha-sec"><h3>Veio uma vez e voltou</h3>
+      <ul class="cv-rl-barras">
+        <li><span class="linha"><span>Voltou (2 ou mais) · <%= clientesData.voltaramPct %>%</span><b><%= clientesData.voltaram %></b></span><%- barra(clientesData.voltaramW) %></li>
+        <li><span class="linha"><span>Só uma vez · <%= clientesData.umaVezPct %>%</span><b><%= clientesData.umaVez %></b></span><%- barra(clientesData.umaVezW, false) %></li>
+      </ul>
+      <p class="cv-texto-apoio" style="margin-top:10px"><b><%= clientesData.unicos %></b> clientes únicos · <b><%= clientesData.visitas %></b> atendimentos · <%= clientesData.mediaVisitas.toFixed(1).replace('.', ',') %> por cliente</p>
+    </div>
+    <div class="cv-objeto cv-gravada cv-rl-insight"><span class="cv-num cv-num--m"><%= clientesData.recorrentesPct %><span class="de">%</span></span><p>de quem passou aqui no período já era da casa. Cliente que volta custa menos que cliente novo: vale medir isso todo mês.</p></div>
+  </div>
+</section>
+
+<section class="cv-folha cv-rl-folha" id="agm-lucro" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-lucro-t">
+  <%- cab('agm-lucro', 'Lucro') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= fmtBRL(faturamento) %> faturados menos <%= fmtBRL(gastos) %> de gastos</p>
+    <div class="cv-rl-heroi"><%- dinheiro(lucro, 'g') %><%- variacao(variacaoLucro) %></div>
+    <div class="cv-folha-sec"><h3>A conta, passo a passo</h3>
+      <ul class="cv-rl-barras"><% lucroCascata.forEach(function (cs) { %><li><span class="linha"><span><%= cs.label %> · <%= fmtBRL(cs.amount) %></span><b><%- dinheiro(cs.rest) %></b></span><%- barra(cs.w) %></li><% }) %></ul>
+    </div>
+    <div class="cv-objeto cv-gravada cv-rl-insight"><span class="cv-num cv-num--m"><%= margemPct %><span class="de">%</span></span><p>do faturamento vira lucro. <% if (breakEven !== null) { %>Ponto de equilíbrio: <%= breakEven %> atendimentos no ticket atual.<% } else { %>Sem atendimentos no período não dá para calcular o ponto de equilíbrio.<% } %></p></div>
+  </div>
+</section>
+
+<section class="cv-folha cv-rl-folha" id="agm-gastos" data-folha role="dialog" aria-modal="true" aria-labelledby="agm-gastos-t">
+  <%- cab('agm-gastos', 'Gastos') %>
+  <div class="cv-folha-corpo">
+    <p class="cv-folha-sub"><%= gastosPctFat %>% do faturamento</p>
+    <div class="cv-rl-heroi"><%- dinheiro(gastos, 'g') %></div>
+    <div class="cv-folha-sec"><h3>Por categoria</h3>
+      <% if (!gastoRows.length) { %><p class="cv-texto-apoio">Nenhum gasto neste período.</p><% } %>
+      <ul class="cv-linhas">
+        <% gastoRows.forEach(function (gr) { %>
+          <li class="cv-rl-sanfona"><details><summary><span><b style="font-weight:600;color:var(--c-tinta)"><%= gr.name %></b><br><%= gr.qtdLabel %> · <%= gr.pct %>% do total</span><b><%- dinheiro(gr.valor) %></b></summary>
+            <ul class="cv-linhas cv-rl-det"><% gr.entries.forEach(function (ge) { %><li><span><%= ge.desc %> · <%= ge.date %></span><b><%= fmtBRL(ge.valor) %></b></li><% }) %></ul>
+          </details></li>
         <% }) %>
-      </div>
-    </div>
-
-    <div class="sv-rl-bloco sv-rl-bloco--escuro">
-      <div class="sv-rl-bloco-num"><%= margemPct %>%</div>
-      <div class="sv-rl-bloco-txt">
-        do faturamento vira lucro.
-        <% if (breakEven !== null) { %>Ponto de equilíbrio: <%= breakEven %> atendimentos no ticket atual.<% } else { %>Sem atendimentos no período não dá pra calcular o ponto de equilíbrio.<% } %>
-      </div>
+        <li><span>Total do período</span><b><%- dinheiro(gastos) %></b></li>
+      </ul>
     </div>
   </div>
-</div>
-
-
-<%/* ======================= FOLHA · GASTOS ======================= */%>
-<div class="sv-folha-fundo sv-rl-pagina" id="agm-gastos" hidden onclick="if(event.target===this)fecharModal(this)">
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-rl-folha-topo">
-      <div>
-        <div class="sv-folha-titulo">Gastos</div>
-        <div class="sv-rl-folha-sub"><%= relPeriodLabel %></div>
-      </div>
-      <button type="button" class="sv-rl-folha-x" onclick="fecharModal(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-
-    <div class="sv-rl-hero">
-      <div class="sv-rl-hero-num" data-count><%= fmtT6(gastos) %></div>
-      <div class="sv-rl-hero-txt">Gastos do período<br><%= gastosPctFat %>% do faturamento</div>
-    </div>
-
-    <div class="sv-rl-secao">
-      <div class="sv-rl-eyebrow">Por categoria</div>
-      <% if (gastoRows.length === 0) { %>
-        <div class="sv-vazio">Nenhum gasto neste período.</div>
-      <% } %>
-      <% gastoRows.forEach(function (gr) { %>
-        <div class="sv-rl-item" data-anim="svcIn">
-          <div class="sv-rl-item-num" data-count><%= fmtT6(gr.valor) %></div>
-          <div class="sv-rl-item-baixo">
-            <div class="sv-rl-item-txt"><%= gr.name %><br><%= gr.qtdLabel %> · <%= gr.pct %>% do total</div>
-            <button type="button" class="sv-rl-seta" onclick="relSanfona(this)" aria-expanded="false" aria-label="Ver detalhe">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-          </div>
-          <div class="sv-rl-detalhe" hidden>
-            <% gr.entries.forEach(function (ge) { %>
-              <div class="sv-rl-detalhe-linha">
-                <div>
-                  <div class="sv-rl-detalhe-tit"><%= ge.desc %></div>
-                  <div class="sv-rl-detalhe-sub"><%= ge.date %></div>
-                </div>
-                <div class="sv-rl-detalhe-val"><%= fmtBRL(ge.valor) %></div>
-              </div>
-            <% }) %>
-          </div>
-        </div>
-      <% }) %>
-
-      <div class="sv-rl-total">
-        <div class="sv-rl-total-rot">Total do período</div>
-        <div class="sv-rl-total-val"><%= fmtT6(gastos) %></div>
-      </div>
-    </div>
-  </div>
-</div>
-
+</section>
 
 <script>
-  // Pop-ups: os mesmos nomes de sempre (`abrirModal`/`fecharModal`), porque
-  // outras telas e o Esc global dependem deles. O que mudou é o mecanismo —
-  // a folha inferior aparece/some pelo atributo `hidden` (o CSS compartilhado
-  // já trata `.sv-folha-fundo[hidden]`), e não mais por `style.display`, senão
-  // o display inline venceria a regra e a folha nunca fecharia.
-  function abrirModal(id) {
-    var o = document.getElementById('agm-' + id);
-    if (o) { o.hidden = false; document.body.classList.add('modal-aberto'); }
-  }
-  function fecharModal(o) {
-    if (o) { o.hidden = true; document.body.classList.remove('modal-aberto'); }
-  }
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.sv-folha-fundo').forEach(function (o) { o.hidden = true; });
-      document.body.classList.remove('modal-aberto');
-    }
-  });
-
-  // Painel de período personalizado (abre/fecha embaixo dos selos).
-  function relCustomToggle() {
-    var f = document.getElementById('rel-custom');
-    if (f) f.hidden = !f.hidden;
-  }
-  // Atalho só PREENCHE as datas — o envio continua sendo o submit do form,
-  // pra não disparar navegação em toque errado.
-  function relAtalho(de, ate) {
-    var a = document.getElementById('rel-de');
-    var b = document.getElementById('rel-ate');
-    if (a) a.value = de;
-    if (b) b.value = ate;
-  }
-
-  // Sanfona das faixas de venda/gasto.
-  function relSanfona(btn) {
-    var item = btn.closest('.sv-rl-item');
-    if (!item) return;
-    var caixa = item.querySelector('.sv-rl-detalhe');
-    if (!caixa) return;
-    caixa.hidden = !caixa.hidden;
-    btn.classList.toggle('aberto', !caixa.hidden);
-    btn.setAttribute('aria-expanded', String(!caixa.hidden));
-  }
-
-  // Mapa da ocupação: Dia (curva do expediente) x Semana (dia × hora).
+  // Nomes de sempre (outras telas chamam abrirModal('fat') etc.).
+  function abrirModal(id) { var ir = function () { if (window.cvAbrirFolha) cvAbrirFolha('agm-' + id); }; if (window.cvAbrirFolha) ir(); else document.addEventListener('DOMContentLoaded', ir); }
+  function relCustomToggle() { var f = document.getElementById('rel-custom'); if (f) f.hidden = !f.hidden; }
+  // Atalho só preenche as datas; o envio continua sendo o submit.
+  function relAtalho(de, ate) { document.getElementById('rel-de').value = de; document.getElementById('rel-ate').value = ate; }
   function relMapa(qual) {
-    var semana = document.getElementById('rel-mapa-semana');
-    var dia = document.getElementById('rel-mapa-dia');
-    if (semana) semana.hidden = qual !== 'semana';
-    if (dia) dia.hidden = qual !== 'dia';
-    document.querySelectorAll('.sv-rl-mapa-btn').forEach(function (b) {
-      b.classList.toggle('sel', b.getAttribute('data-mapa') === qual);
-    });
+    document.getElementById('rel-mapa-semana').hidden = qual !== 'semana';
+    document.getElementById('rel-mapa-dia').hidden = qual !== 'dia';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-mapa]'), function (b) { var on = b.getAttribute('data-mapa') === qual; b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-selected', String(on)); });
   }
 </script>

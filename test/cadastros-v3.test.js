@@ -176,3 +176,13 @@ test('Assistente v3: cabeçalho v3, sugestões sem emoji, mesmos ids e rotas da 
   assert.match(html, /\/painel\/ia\/mensagem/);
   assert.match(html, /\/painel\/ia\/acao/);
 });
+
+test('Relatórios v3: período sem vidro, objeto do faturamento, cartões e as 8 folhas de detalhe', async () => {
+  v3('/painel/relatorios');
+  const src = fs.readFileSync(path.join(VIEWS, 'painel/relatorios.ejs'), 'utf8');
+  assert.doesNotMatch(src, /class="sv-|cv-periodo"/);
+  for (const f of ['fat', 'produtos', 'ticket', 'ocupacao', 'pagamentos', 'clientes', 'lucro', 'gastos']) assert.match(src, new RegExp('id="agm-' + f + '" data-folha'), f);
+  assert.match(src, /href="\/painel\/relatorios\?periodo=<%= p\[0\] %>"/);
+  assert.match(src, /action="\/painel\/relatorios"/);
+  assert.match(src, /function abrirModal\(/);
+});
