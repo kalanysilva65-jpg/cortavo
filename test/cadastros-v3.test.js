@@ -284,3 +284,34 @@ test('Revisão Dani P3: acabamento', () => {
   assert.match(ler('src', 'views', 'painel', 'equipe.ejs'), /Abrir a agenda/);
   assert.match(ler('src', 'views', 'painel', 'ia.ejs'), /cv-ia-sugs cv-chips/); // 30
 });
+
+test('Gestão em produção: período rola junto, datas cabem, sem órfão, Caixa no Mais', () => {
+  const fs = require('fs'); const path = require('path');
+  const ler = (...p) => fs.readFileSync(path.join(__dirname, '..', ...p), 'utf8');
+  const cv = ler('public', 'css', 'cv.css'), telas = ler('public', 'css', 'cv-telas.css');
+  assert.match(cv, /\.cv-periodo-faixa \{ position: relative !important/);
+  assert.doesNotMatch(telas, /\.cv-periodo-faixa \{ position: sticky/);
+  assert.match(telas, /\.cv-g-datas \{ display: grid; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/);
+  assert.match(telas, /\.cv-g-datas > \.cv-btn \{ grid-column: 1 \/ -1/);
+  assert.match(cv, /\.cv-grade > :last-child:nth-child\(odd\) \{ grid-column: 1 \/ -1/);
+  assert.match(ler('public', 'css', 'cv-pc.css'), /cv-g-inteiro/);
+  for (const f of fs.readdirSync(path.join(__dirname, '..', 'public', 'css'))) assert.doesNotMatch(ler('public', 'css', f), /grid-template-columns: 1fr 1fr/, f);
+  const g = ler('src', 'views', 'painel', 'gestao.ejs');
+  assert.doesNotMatch(g, /href: '\/painel\/caixa'/); assert.doesNotMatch(g, /'Dinheiro'/);
+  const m = ler('src', 'views', 'partials', 'mais-listas.ejs');
+  assert.equal((m.match(/href: '\/painel\/caixa', t: 'Caixa'[^}]*chave: 'caixa_ver'/g) || []).length, 2);
+  assert.doesNotMatch(m, /href: '\/painel\/caixa'[^}]*admin: true/);
+  const nav = ler('src', 'views', 'partials', 'nav-inferior.ejs');
+  assert.doesNotMatch(nav, /gestao: \[[^\]]*\/painel\/caixa/);
+  assert.match(nav, /caixa\?abrir=lancamento/);
+});
+
+test('Mais: Caixa só para admin ou funcionário com caixa_ver', async () => {
+  const ejs = require('ejs'); const path = require('path');
+  const arq = path.join(__dirname, '..', 'src', 'views', 'partials', 'mais-listas.ejs');
+  const base = { usuario: { id: 2, nome: 'Diego', papel: 'funcionario' }, ehAdmin: false, barbeariaAtual: { nome: 'X' }, podeAcessar: () => true, foraDoPlano: () => null };
+  const ver = async (loc) => { const s = {}; await ejs.renderFile(arq, { ...base, ...loc, saida: s }, { async: true }); return JSON.stringify(s.secoes); };
+  assert.doesNotMatch(await ver({ pode: () => false }), /\/painel\/caixa/);
+  assert.match(await ver({ pode: (k) => k === 'caixa_ver' }), /\/painel\/caixa/);
+  assert.match(await ver({ ehAdmin: true, usuario: { id: 1, nome: 'R', papel: 'admin' }, pode: () => false }), /\/painel\/caixa/);
+});

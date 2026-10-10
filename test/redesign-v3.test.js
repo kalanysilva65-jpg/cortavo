@@ -42,7 +42,7 @@ test('F1 navbar: as mesmas 5 seções para dono e para barbeiro com tudo bloquea
 
 test('F1 navbar: a seção ativa segue a tela (aria-current)', async () => {
   const casos = {
-    '/painel': 'inicio', '/painel/agenda': 'agenda', '/painel/horarios': 'agenda', '/painel/caixa': 'gestao',
+    '/painel': 'inicio', '/painel/agenda': 'agenda', '/painel/horarios': 'agenda', '/painel/caixa': 'mais',
     '/painel/relatorios': 'gestao', '/painel/clientes': 'mais', '/painel/perfil': 'mais', '/painel/secretaria/teste': 'mais',
   };
   for (const [caminho, secao] of Object.entries(casos)) {
@@ -61,7 +61,8 @@ const menuPC = (html) => html.match(/<aside class="pc-menu"[\s\S]*?<\/aside>/)[0
 test('F13 menu PC: mesmas seções, Novo com as ações liberadas e os itens do Mais (dono)', async () => {
   const pc = menuPC(await render('partials/nav-inferior.ejs', locais({ caminho: '/painel/caixa' })));
   for (const h of ['/painel', '/painel/agenda', '/painel/gestao', '/painel/caixa', '/painel/comissoes', '/painel/equipe', '/painel/clientes', '/painel/meu-plano']) assert.match(pc, new RegExp('href="' + h + '"'), h);
-  assert.match(pc, /<a class="pc-item" href="\/painel\/caixa" aria-current="page">Caixa<\/a>/);
+  // Caixa mora no Mais (Caixa e cadastros) desde 2026-10-10.
+  assert.match(pc, /href="\/painel\/caixa"[^>]*aria-current="page"/);
   assert.doesNotMatch(pc, /href="\/painel\/gestao" aria-current/);
   assert.match(pc, /id="pc-novo" aria-haspopup="menu" aria-expanded="false"/);
   assert.equal((pc.match(/role="menuitem"/g) || []).length, 4);
@@ -90,7 +91,8 @@ test('F1 Gestão: barbeiro com tudo bloqueado vê o estado vazio com atalho, nun
 
 test('F1 Gestão: admin no Essencial vê cadeado; barbeiro vê só o liberado, sem cadeado', async () => {
   const admin = await render('painel/gestao.ejs', locais({ plano: 'essencial', caminho: '/painel/gestao' }));
-  assert.match(admin, /href="\/painel\/caixa"/);
+  assert.doesNotMatch(admin, /href="\/painel\/caixa"/); // Caixa saiu da Gestão (fica no Mais)
+  assert.match(admin, /href="\/painel\/comissoes"/);
   assert.match(admin, /Relatórios \(fora do plano\)/);
   assert.match(admin, /Plano Barbearia/);
   const barbeiro = await render('painel/gestao.ejs', locais({ admin: false, plano: 'essencial', bloqueados: ['estoque'], caminho: '/painel/gestao' }));
@@ -327,7 +329,7 @@ test('F5 Gestão: com o dado do B4 aparecem seletor de período e cartões; sem 
   assert.equal((com.match(/class="col"/g) || []).length, 7);
   assert.match(com, /Desempenho da equipe/);
   for (const ausente of ['Formas de pagamento', 'Comissões a pagar', 'Faltas', 'Lucro', 'Meta do mês', 'Ocupação<']) assert.ok(!com.includes(ausente), ausente);
-  assert.match(com, /href="\/painel\/caixa"/); // a lista de telas continua embaixo
+  assert.match(com, /href="\/painel\/comissoes"/); // a lista de telas continua embaixo (Caixa foi para o Mais)
   const vazio = await render('painel/gestao.ejs', { ...locais({ caminho: '/painel/gestao' }), gestao: { rotulo: 'Hoje', faturamento: { valor: 0 }, atendimentos: { valor: 0 } } });
   assert.match(vazio, /Os números chegam com os atendimentos/);
 });

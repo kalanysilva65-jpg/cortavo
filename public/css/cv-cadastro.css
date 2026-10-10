@@ -60,7 +60,7 @@ button.cv-linha, a.cv-linha { color: inherit; text-decoration: none; background:
 select.cv-entrada { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--c-apoio) 50%), linear-gradient(135deg, var(--c-apoio) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
 textarea.cv-entrada { min-height: 96px; padding-top: 12px; line-height: 1.45; resize: vertical; }
 .cv-perigo-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--c-perigo); font-weight: 600; font-size: 15px; background: none; border: 0; font-family: inherit; cursor: pointer; padding: 0; }
-.cv-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cv-dupla { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .cv-dupla .cv-campo + .cv-campo { margin-top: 0; }
 .cv-chave { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
 .cv-chave input[type="checkbox"] { width: 46px; height: 28px; appearance: none; -webkit-appearance: none; border-radius: 14px; background: var(--c-bloco-2); position: relative; cursor: pointer; flex-shrink: 0; transition: background-color var(--d-curta) var(--ease-out); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
@@ -221,7 +221,7 @@ div.cv-pl-card { cursor: default; }
 
 /* ---- Horários ------------------------------------------------------------ */
 .cv-hr-listra { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; background: var(--listra-bloqueado); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); }
-.cv-hr-jornada li { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 4px 8px; padding-block: 8px; }
+.cv-hr-jornada li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 4px 8px; padding-block: 8px; }
 .cv-hr-jornada li > .cv-chave { grid-column: 1 / -1; }
 .cv-hr-jornada .cv-entrada { width: 100%; min-width: 108px; min-height: 44px; padding: 0 10px; font-size: 16px; font-variant-numeric: tabular-nums; }
 @media (min-width: 420px) { .cv-hr-jornada li { grid-template-columns: 1fr 120px 120px; } .cv-hr-jornada li > .cv-chave { grid-column: auto; } }
@@ -237,7 +237,7 @@ div.cv-pl-card { cursor: default; }
 .cv-lista .cv-linha form { margin: 0; }
 
 /* ---- Relatórios ---------------------------------------------------------- */
-.cv-rl-per { grid-template-columns: repeat(4, 1fr) 48px; grid-auto-flow: unset; display: grid; }
+.cv-rl-per { grid-template-columns: repeat(4, minmax(0, 1fr)) 48px; grid-auto-flow: unset; display: grid; }
 .cv-rl-per button { display: grid; place-items: center; border: 0; background: none; color: var(--c-tinta-2); cursor: pointer; }
 .cv-rl-per button[aria-pressed="true"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
 .cv-rl-custom { margin-top: 10px; }
@@ -250,7 +250,7 @@ div.cv-pl-card { cursor: default; }
 .cv-rl-fat .cv-tres .cv-num { font-size: 20px; }
 .cv-objeto .cv-num, .cv-objeto .cv-num .int { color: #fff; }
 .cv-objeto .cv-num .moeda, .cv-objeto .cv-num .cent, .cv-objeto .cv-num .de { color: var(--c-sobre-objeto-2); }
-.cv-rl-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cv-rl-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .cv-rl-grade > .cv-cartao { text-align: left; border: 0; font: inherit; color: inherit; cursor: pointer; min-height: 112px; }
 .cv-rl-barras { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .cv-rl-barras .linha { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; margin-bottom: 6px; }
@@ -286,7 +286,7 @@ div.cv-pl-card { cursor: default; }
 .cv-rl-colunas i { display: block; width: 100%; max-width: 36px; border-radius: 8px 8px 4px 4px; background: var(--d-1); min-height: 4px; }
 .cv-rl-colunas .v { font-size: 12px; font-weight: 800; }
 .cv-rl-colunas .l { font-size: 12px; color: var(--c-apoio); }
-@media (min-width: 1024px) { .cv-rl-grade { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1024px) { .cv-rl-grade { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media print { .cv-navbar, .pc-menu, .cv-cab-acoes, .cv-rl-per, .cv-rl-custom { display: none !important; } body.app-painel { padding: 0 !important; } }
 
 /* ---- Formulários em página inteira -------------------------------------- */

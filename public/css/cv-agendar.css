@@ -18,7 +18,7 @@ body.ap { background: var(--c-pagina); }
 .ap-voltar { flex-shrink: 0; }
 
 /* Trilha dos 4 passos: segmentos, o atual é preto, os feitos cinza-escuro */
-.ap-trilha { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 18px var(--margem) 0; }
+.ap-trilha { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 18px var(--margem) 0; }
 .ap-trilha i { height: 4px; border-radius: 2px; background: var(--c-bloco-2); position: relative; overflow: hidden; }
 .ap-trilha i.feito { background: var(--d-2); }
 .ap-trilha i.atual { background: var(--c-tinta); }
@@ -46,7 +46,7 @@ body.ap { background: var(--c-pagina); }
 .ap-plano { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); font-size: 14px; font-weight: 600; }
 
 /* Barbeiros: ladrilhos com retrato */
-.ap-barbs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ap-barbs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .ap-barb { text-align: left; border-radius: 22px; overflow: hidden; background: var(--c-superficie); box-shadow: var(--s-cartao); transition: transform var(--d-press-out) var(--ease-out); display: flex; flex-direction: column; }
 .ap-barb:active { transform: scale(.98); transition-duration: var(--d-press-in); }
 .ap-retrato { aspect-ratio: 1 / 1; position: relative; display: grid; place-items: center; background: radial-gradient(80% 70% at 30% 20%, #FAFAFA, #E3E3E3); overflow: hidden; }
@@ -84,7 +84,7 @@ body.ap { background: var(--c-pagina); }
 .ap-bloco-cab { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 2px 10px; }
 .ap-bloco-cab b { font-size: 17px; font-weight: 800; letter-spacing: -.015em; }
 .ap-bloco-cab span { font-size: 13px; color: var(--c-apoio); font-weight: 600; }
-.ap-horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ap-horas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .ap-hora { height: 48px; border-radius: 14px; background: var(--c-superficie); box-shadow: var(--s-cartao); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; transition: transform var(--d-press-out) var(--ease-out), background-color var(--d-curta) var(--ease-out); }
 .ap-hora:active { transform: scale(var(--press)); transition-duration: var(--d-press-in); }
 .ap-hora[aria-pressed="true"] { background: var(--c-tinta); color: #fff; }
@@ -161,8 +161,8 @@ body.ap { background: var(--c-pagina); }
   .ap-tela .ap-trilha, .ap-tela .ap-passo-rot, .ap-tela .ap-h1, .ap-tela .ap-sub { margin-left: 0; margin-right: 0; }
   .ap-tela .ap-conteudo { padding: 0; }
   .ap-tela .ap-feito-cel { display: none; }
-  .ap-barbs { grid-template-columns: repeat(3, 1fr); }
-  .ap-horas { grid-template-columns: repeat(6, 1fr); }
+  .ap-barbs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ap-horas { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .ap-dias { margin: 0; padding: 2px 0 4px; flex-wrap: wrap; overflow: visible; }
   .ap-barra { left: calc(440px + max(0px, (100vw - 440px - 640px) / 2) + 48px); right: auto; width: 544px; max-width: none; margin: 0; bottom: 28px; }
   .ap-dia { width: 60px; } .ap-dias { gap: 6px; flex-wrap: nowrap; }

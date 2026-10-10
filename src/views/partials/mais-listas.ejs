@@ -12,6 +12,9 @@
   var _ehAdm = (typeof ehAdmin !== 'undefined') && !!ehAdmin;
   var _ehDono = (typeof ehDono !== 'undefined') && !!ehDono;
   var _usu = (typeof usuario !== 'undefined' && usuario) || {};
+  // Antes de "var pode" abaixo (que, dentro do with do EJS, sobrescreve o
+  // locals.pode): a função das chaves de dados (caixa_ver etc.).
+  var _podeChave = (typeof locals !== 'undefined' && typeof locals.pode === 'function') ? locals.pode : null;
   var fdp = (typeof foraDoPlano === 'function') ? foraDoPlano : function () { return null; };
   var pode = (typeof podeAcessar === 'function') ? podeAcessar : function () { return true; };
   var plano = (typeof planoCortavo !== 'undefined' && planoCortavo) ? planoCortavo : null;
@@ -24,6 +27,8 @@
   // Monta o item já decidido: null = não aparece; .cadeado = nome do plano.
   function item(o) {
     if (o.admin && !_ehAdm) return null;
+    // Chave de dados (ex.: caixa_ver): o funcionário só vê com a permissão.
+    if (o.chave && !_ehAdm && !(_podeChave && _podeChave(o.chave))) return null;
     if (o.href && o.href.indexOf('/painel/') === 0 && !pode(o.href.split('#')[0])) return null;
     var tranca = o.href ? fdp(o.href.split('#')[0]) : null;
     var cadeado = tranca ? nomeDoPlano(tranca) : (o.cadeado || null);
@@ -57,7 +62,8 @@
       semAssistente ? null : { href: '/painel/ia', t: 'Assistente', s: 'Pergunte sobre a agenda e os números', ic: 'assistente', cadeado: tetos.assistente === 0 ? 'Barbearia' : null },
       { href: '/painel/fidelidade', t: 'Fidelidade', s: 'Selos e cupons dos clientes', ic: 'fidelidade', admin: true },
     ].filter(Boolean)) },
-    { t: 'Cadastros', itens: lista([
+    { t: 'Caixa e cadastros', itens: lista([
+      { href: '/painel/caixa', t: 'Caixa', s: 'Entradas, saídas e saldo do dia', ic: 'caixa', chave: 'caixa_ver' },
       { href: '/painel/clientes', t: 'Clientes', s: 'Contatos e histórico', ic: 'cliente' },
       { href: '/painel/servicos', t: 'Serviços', s: 'Preço, tempo e foto opcional', ic: 'tesoura' },
       { href: '/painel/produtos', t: 'Produtos', s: 'O que a barbearia vende', ic: 'loja' },
@@ -72,7 +78,8 @@
       { href: '/painel/conversas', t: 'Conversas', s: 'O WhatsApp da barbearia', ic: 'conversa' },
       (semAssistente || tetos.assistente === 0) ? null : { href: '/painel/ia', t: 'Assistente', s: 'Pergunte sobre a sua agenda', ic: 'assistente' },
     ].filter(Boolean)) },
-    { t: 'Cadastros', itens: lista([
+    { t: 'Caixa e cadastros', itens: lista([
+      { href: '/painel/caixa', t: 'Caixa', s: 'Entradas, saídas e saldo do dia', ic: 'caixa', chave: 'caixa_ver' },
       { href: '/painel/clientes', t: 'Clientes', s: 'Contatos e histórico', ic: 'cliente' },
       { href: '/painel/servicos', t: 'Serviços', s: 'Preço e tempo de cada um', ic: 'tesoura' },
       { href: '/painel/produtos', t: 'Produtos', s: 'O que a barbearia vende', ic: 'loja' },

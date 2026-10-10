@@ -2,10 +2,10 @@
    Cortavo v3 · Caixa e Fechar caixa (fatia F6). Mockups: prints 09, 09c, 10.
    ========================================================================= */
 .cv-cx-atalhos { margin: 12px calc(-1 * var(--e-5)) 12px; padding: 0 var(--e-5); }
-.cv-cx-es { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: .5px solid var(--c-fio-objeto); }
+.cv-cx-es { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 22px; padding-top: 16px; border-top: .5px solid var(--c-fio-objeto); }
 .cv-cx-es b { display: block; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; }
 .cv-cx-es .rot--p { font-size: 12px; font-weight: 400; }
-.cv-cx-acoes { display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; margin-top: 12px; }
+.cv-cx-acoes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 10px; margin-top: 12px; }
 .cv-cx-lancar, .cv-cx-acoes .cv-btn--2 { background: var(--c-superficie); box-shadow: var(--s-cartao); color: var(--c-tinta); }
 .cv-cx-receber { display: flex !important; align-items: center; gap: 12px; }
 .cv-cx-receber .corpo { flex: 1; min-width: 0; }
@@ -42,3 +42,4 @@
 .cv-cx-fechado b { display: block; font-size: 17px; }
 .cv-cx-fechado span span { font-size: 14px; color: var(--c-apoio); }
 #cx-fechar .cv-cartao + .cv-cartao { margin-top: 12px; }
+.cv-cx-acoes > .cv-btn { min-width: 0; }

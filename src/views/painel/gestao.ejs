@@ -23,8 +23,7 @@
   }
   function lista(itens) { return itens.map(item).filter(Boolean); }
   var secoes = [
-    { t: ehAdmin ? 'Dinheiro' : 'Seus números', itens: lista(ehAdmin ? [
-      { href: '/painel/caixa', t: 'Caixa', s: 'Entradas, saídas e saldo do dia', ic: 'caixa', admin: true },
+    { t: ehAdmin ? 'Números' : 'Seus números', itens: lista(ehAdmin ? [
       { href: '/painel/relatorios', t: 'Relatórios', s: 'Faturamento, equipe e clientes por período', ic: 'gestao', admin: true },
       { href: '/painel/comissoes', t: 'Comissões', s: 'Quanto cada barbeiro fez', ic: 'comissao' },
       { href: '/painel/metas', t: 'Metas', s: 'Metas do mês e o quanto falta', ic: 'meta', admin: true },
@@ -96,3 +95,22 @@
     </section>
   <% }) %>
 <% } %>
+<script>
+  // Cartão órfão (2026-10-10): no PC a grade dos números tem 2 colunas e os
+  // cartões dependem do plano e das permissões; o último que sobra sozinho
+  // na linha ocupa a largura toda. No celular, a regra é só CSS (.cv-grade).
+  (function () {
+    function ajustar() {
+      Array.prototype.forEach.call(document.querySelectorAll('.cv-g-cartoes'), function (g) {
+        var filhos = Array.prototype.filter.call(g.children, function (c) { return c.offsetParent !== null; });
+        filhos.forEach(function (c) { c.classList.remove('cv-g-inteiro'); });
+        var u = filhos[filhos.length - 1]; if (!u || filhos.length < 2) return;
+        var topo = u.getBoundingClientRect().top;
+        var sozinho = filhos.slice(0, -1).every(function (c) { return c.getBoundingClientRect().bottom <= topo + 1; });
+        if (sozinho && u.getBoundingClientRect().width < g.getBoundingClientRect().width - 2) u.classList.add('cv-g-inteiro');
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ajustar); else ajustar();
+    window.addEventListener('resize', ajustar);
+  })();
+</script>

@@ -20,7 +20,7 @@
 @keyframes cvIaPonto { 0%, 100% { opacity: .3; transform: none; } 50% { opacity: 1; transform: translateY(-2px); } }
 .cv-ia-prop { align-self: stretch; padding: 16px; border-radius: var(--r-cartao); background: var(--c-superficie); box-shadow: var(--s-cartao), inset 0 0 0 1px var(--c-tinta); }
 .cv-ia-prop-txt { font-size: 15px; line-height: 1.45; white-space: pre-wrap; }
-.cv-ia-prop-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.cv-ia-prop-acoes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin-top: 12px; }
 .cv-ia-prop-acoes button { min-height: 48px; border-radius: var(--r-pilula); border: 0; font: inherit; font-weight: 600; cursor: pointer; }
 .cv-ia-prop-cancelar { background: var(--c-bloco-2); color: var(--c-tinta); }
 .cv-ia-prop-ok { background: var(--c-tinta); color: #fff; }
@@ -36,7 +36,7 @@
 .cv-ia-config-txt { margin-top: 6px; font-size: 15px; line-height: 1.45; color: var(--c-tinta-2); }
 @media (prefers-reduced-motion: reduce) { .cv-ia-digitando span { animation: none; } .cv-ia-sug { transition: none; } }
 @media (prefers-reduced-transparency: reduce) { .cv-ia-composer { background: var(--c-superficie); -webkit-backdrop-filter: none; backdrop-filter: none; } }
-@media (min-width: 1024px) { .cv-ia-msg { max-width: 64%; } .cv-ia-sugs { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1024px) { .cv-ia-msg { max-width: 64%; } .cv-ia-sugs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .cv-ia-mic.gravando { background: var(--c-tinta); color: #fff; }
 
 /* P3 #30: sugestões em chips, como em Secretária › Testar. */

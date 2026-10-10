@@ -102,9 +102,16 @@ button.cv-linha { font: inherit; color: inherit; background: none; border: 0; cu
 
 
 /* Gestão (F5) */
-.cv-periodo-faixa { position: sticky; }
+.cv-periodo-faixa { position: relative; }
 .cv-periodo .ind { width: 0; }
-.cv-g-datas { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 10px; }
+/* Datas: De e Até lado a lado, Ver embaixo na largura toda; nada passa da
+   tela em 320 px (campo de data tem largura mínima própria no navegador). */
+.cv-g-datas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: end; margin-top: 10px; min-width: 0; }
+.cv-g-datas[hidden] { display: none; }
+.cv-g-datas .cv-campo { min-width: 0; }
+.cv-g-datas .cv-entrada { width: 100%; min-width: 0; max-width: 100%; padding-inline: 10px; font-size: 15px; -webkit-appearance: none; appearance: none; }
+.cv-g-datas > .cv-btn { grid-column: 1 / -1; width: 100%; }
+@media (min-width: 560px) { .cv-g-datas { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; } .cv-g-datas > .cv-btn { grid-column: auto; width: auto; } }
 .cv-g-datas .cv-campo + .cv-campo { margin-top: 0; }
 .cv-g-datas .cv-entrada { min-height: 44px; background: var(--c-superficie); }
 .cv-comparar { margin: 10px 4px 0; }
@@ -124,10 +131,10 @@ a.cv-cartao { display: block; color: inherit; }
 .cv-logo-c { display: grid; place-items: center; background: var(--c-objeto); flex-shrink: 0; } /* o C com check oficial, branco sobre preto */
 
 /* Segmentado de período e campos lado a lado (Caixa, Comissões) */
-.cv-cx-periodos { display: grid; grid-template-columns: 1fr 1fr 1fr 44px; height: 44px; }
+.cv-cx-periodos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 44px; height: 44px; }
 .cv-cx-periodos a, .cv-cx-periodos .cv-cx-cal { display: grid; place-items: center; border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); transition: background-color var(--d-curta) var(--ease-out); }
 .cv-cx-periodos [aria-current="page"] { background: var(--c-superficie); color: var(--c-tinta); box-shadow: 0 1px 3px rgba(17,17,17,.12); }
 .cv-cx-custom { margin-top: 10px; }
-.cv-cx-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cv-cx-duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .cv-cx-duas .cv-campo + .cv-campo { margin-top: 0; }
 .cv-cx-val { margin-top: 6px; font-size: 19px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }

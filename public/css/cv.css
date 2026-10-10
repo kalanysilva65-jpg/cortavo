@@ -62,7 +62,7 @@ input, select, textarea { font: inherit; font-size: 16px; }
 .cv-cab-compacto.vidro .titulo { opacity: 1; transform: none; }
 
 /* ---- Navbar em pílula de vidro com lente (M5) --------------------------- */
-.cv-navbar { position: fixed; z-index: var(--z-nav); left: 14px; right: 14px; max-width: 362px; margin: 0 auto; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); height: 64px; border-radius: var(--r-pilula); display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 0 6px;
+.cv-navbar { position: fixed; z-index: var(--z-nav); left: 14px; right: 14px; max-width: 362px; margin: 0 auto; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); height: 64px; border-radius: var(--r-pilula); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 6px;
   background: var(--vidro); -webkit-backdrop-filter: var(--vidro-blur); backdrop-filter: var(--vidro-blur); box-shadow: var(--vidro-aro), var(--s-flutua); isolation: isolate; }
 .cv-navbar::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1; background: radial-gradient(120% 70% at 50% -20%, rgba(255,255,255,.6), rgba(255,255,255,0) 60%); }
 .cv-nav-item { position: relative; z-index: 1; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--c-tinta-2); border-radius: var(--r-pilula); transition: transform var(--d-press-out) var(--ease-out); }
@@ -198,7 +198,7 @@ body.folha-aberta .cv-navbar { box-shadow: var(--vidro-aro); }
 
 /* ---- Seletor de período em vidro (Gestão) ------------------------------ */
 .cv-periodo-faixa { position: sticky; z-index: calc(var(--z-cab) - 1); top: calc(52px + env(safe-area-inset-top, 0px) + 6px); padding: 0 var(--margem); margin-top: var(--e-4); }
-.cv-periodo { position: relative; display: grid; grid-template-columns: repeat(4, 1fr) auto; align-items: center; height: 44px; padding: 4px; border-radius: var(--r-pilula); isolation: isolate;
+.cv-periodo { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: center; height: 44px; padding: 4px; border-radius: var(--r-pilula); isolation: isolate;
   background: var(--vidro); -webkit-backdrop-filter: var(--vidro-blur); backdrop-filter: var(--vidro-blur); box-shadow: var(--vidro-aro), var(--s-flutua); }
 .cv-periodo button { position: relative; z-index: 1; height: 36px; border-radius: var(--r-pilula); font-size: 14px; font-weight: 600; color: var(--c-tinta-2); transition: color var(--d-curta) var(--ease-out); }
 .cv-periodo button[aria-pressed="true"] { color: #fff; }
@@ -271,7 +271,7 @@ body.folha-aberta .cv-navbar { box-shadow: var(--vidro-aro); }
 body.folha-aberta .cv-palco { transform: scale(.96) translateY(6px); border-radius: 28px; overflow: hidden; }
 
 /* As 4 ações do Novo */
-.cv-acoes4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cv-acoes4 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .cv-acao { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 18px; min-height: 112px; padding: 16px; border-radius: 22px; text-align: left; background: var(--c-superficie); box-shadow: var(--s-cartao), inset 0 0 0 .5px var(--c-fio); transition: transform var(--d-press-out) var(--ease-out); }
 .cv-acao:active { transform: scale(var(--press)); transition-duration: var(--d-press-in); }
 .cv-acao b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
@@ -291,7 +291,7 @@ body.folha-aberta .cv-palco { transform: scale(.96) translateY(6px); border-radi
 .cv-ajuda { font-size: var(--t-legenda); color: var(--c-apoio); }
 .cv-erro { font-size: var(--t-legenda); color: var(--c-perigo); font-weight: 600; display: flex; gap: 6px; align-items: center; }
 .cv-campo.invalido .cv-entrada { box-shadow: inset 0 0 0 1.5px var(--c-perigo); background: var(--c-superficie); }
-.cv-horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cv-horas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .cv-hora { height: 44px; border-radius: 12px; background: var(--c-superficie); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); font-weight: 600; font-variant-numeric: tabular-nums; font-size: 15px; transition: transform var(--d-press-out) var(--ease-out); }
 .cv-hora:active { transform: scale(var(--press)); transition-duration: var(--d-press-in); }
 .cv-hora[aria-pressed="true"] { background: var(--c-tinta); color: #fff; box-shadow: none; }
@@ -332,7 +332,7 @@ body.folha-aberta .cv-palco { transform: scale(.96) translateY(6px); border-radi
 .cv-selo-txt span { display: block; margin-top: 4px; color: var(--c-apoio); font-size: 15px; font-variant-numeric: tabular-nums; }
 
 /* ---- Agenda ------------------------------------------------------------- */
-.cv-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cv-dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .cv-dia { height: 64px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: var(--c-superficie); box-shadow: var(--s-cartao); transition: transform var(--d-press-out) var(--ease-out); }
 .cv-dia small { font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--c-apoio); }
 .cv-dia b { font-size: 19px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
@@ -432,3 +432,17 @@ body.folha-aberta .cv-palco { transform: scale(.96) translateY(6px); border-radi
 /* Revisão Dani P2 #16: título com tabindex="-1" recebe foco por programa
    (folha abrindo) sem contorno. */
 [tabindex="-1"]:focus, [tabindex="-1"]:focus-visible { outline: none; }
+
+/* Gestão (2026-10-10, bug em produção): o seletor de período continua em
+   vidro, mas rola junto com a página. Sticky, a faixa (com as datas e a
+   comparação) cobria o conteúdo ao rolar. */
+.cv-periodo-faixa { position: relative !important; top: auto; z-index: auto; }
+.cv-periodo-faixa::before { content: none; }
+/* Grade de 2: o último cartão sozinho na linha ocupa a largura toda. */
+.cv-grade > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* Nenhuma tela rola para o lado. */
+html, body { overflow-x: clip; }
+/* Campo de data e hora tem largura mínima própria no navegador: dentro de
+   grade ou linha, encolhe até caber (sem rolagem lateral em 320 px). */
+input[type="date"].cv-entrada, input[type="time"].cv-entrada { min-width: 0; max-width: 100%; }
+.cv-campo { min-width: 0; }

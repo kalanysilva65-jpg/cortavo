@@ -38,12 +38,12 @@
 .cv-ag-folha .cv-folha-cab h2:focus { outline: none; }
 .cv-ag-zona-fim { display: flex; justify-content: flex-end; margin: -6px 0 -6px; }
 .cv-ag-folha .cv-folha-corpo { padding-bottom: 8px; }
-.cv-ag-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.cv-ag-duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 16px; }
 .cv-ag-duas .cv-campo + .cv-campo { margin-top: 0; }
 
 /* Mês */
 .cv-ag-ano { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 16px; }
-.cv-ag-meses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cv-ag-meses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cv-ag-meses .cv-chip { justify-content: center; height: 44px; max-width: none; }
 
 /* Novo */

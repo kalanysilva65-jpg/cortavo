@@ -5,7 +5,7 @@ body.cc { margin: 0; background: var(--c-pagina); color: var(--c-tinta); font-fa
 .cc-tela { max-width: 560px; margin: 0 auto; padding-bottom: calc(var(--area-nav, 96px) + 72px); }
 .cc a { color: inherit; }
 .cc .cv-cab a { text-decoration: none; }
-.cc-navbar { grid-template-columns: repeat(4, 1fr); }
+.cc-navbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cc-navbar .cv-nav-item { text-decoration: none; }
 .cc-navbar .cv-nav-item[aria-current="page"] { background: rgba(17,17,17,.075); color: var(--c-tinta); }
 .cc-meta { margin: 10px var(--margem) 0; font-size: 14px; color: var(--c-apoio); }
@@ -48,7 +48,7 @@ body.cc { margin: 0; background: var(--c-pagina); color: var(--c-tinta); font-fa
 .cc-dia b { font-size: 21px; font-weight: 800; letter-spacing: -.03em; }
 .cc-dia[aria-current="date"] { background: var(--c-objeto); color: #fff; box-shadow: var(--s-preto); }
 .cc-dia[aria-current="date"] small { color: var(--c-sobre-objeto-2); }
-.cc-horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cc-horas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .cc-hora { height: 48px; border: 0; border-radius: 14px; background: var(--c-superficie); box-shadow: var(--s-cartao); font: inherit; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: inherit; cursor: pointer; }
 .cc-hora[aria-pressed="true"] { background: var(--c-tinta); color: #fff; }
 .cc-hora[disabled] { background: var(--listra-bloqueado); color: var(--c-apoio); box-shadow: inset 0 0 0 .5px var(--c-fio-forte); text-decoration: line-through; cursor: default; }

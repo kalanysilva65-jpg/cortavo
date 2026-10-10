@@ -105,3 +105,4 @@
 @media (prefers-reduced-motion: reduce) { .pc-pop { transition: none; } }
 /* Tablet (abaixo do menu lateral): layout do celular numa coluna legível. */
 @media (min-width: 700px) and (max-width: 1023.98px) { .pg-cv .cv-tela { max-width: 640px; margin: 0 auto; } }
+@media (min-width: 1024px) { .pg-cv .cv-g-cartoes > .cv-g-inteiro { grid-column: 1 / -1; } }

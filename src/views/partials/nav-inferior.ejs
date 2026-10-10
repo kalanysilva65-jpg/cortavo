@@ -11,7 +11,8 @@
   // que é onde moram os cadastros e as configurações.
   var SECOES_NAV = {
     agenda: ['/painel/agenda', '/painel/horarios'],
-    gestao: ['/painel/gestao', '/painel/caixa', '/painel/relatorios', '/painel/comissoes', '/painel/metas'],
+    // Caixa mora no Mais (Caixa e cadastros), não na Gestão (2026-10-10).
+    gestao: ['/painel/gestao', '/painel/relatorios', '/painel/comissoes', '/painel/metas'],
   };
   function secaoDe(caminho) {
     var c = String(caminho || '').toLowerCase().replace(/\/+$/, '') || '/painel';
@@ -91,7 +92,6 @@
   var SUB_GESTAO = [
     // Mesmo filtro da tela Gestão (painel/gestao.ejs): o barbeiro só vê a
     // própria comissão, e nada do que o plano não libera.
-    { href: '/painel/caixa', t: 'Caixa', admin: true },
     { href: '/painel/comissoes', t: _adm ? 'Comissões' : 'Minha comissão' },
     { href: '/painel/relatorios', t: 'Relatórios', admin: true },
     { href: '/painel/metas', t: 'Metas', admin: true },
