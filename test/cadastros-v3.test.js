@@ -140,3 +140,14 @@ test('Horários v3: janela em chips, jornada e bloqueio em folha, mesmas rotas e
   assert.match(html, /action="\/painel\/horarios\/bloqueios\/3\/remover" data-confirmar/);
   assert.match(html, /function abrirModal\(/);
 });
+
+test('Fidelidade v3: objeto com 3 números, cupons, ranking com selo e resgate, cupom em folha', async () => {
+  v3('/painel/fidelidade');
+  const html = await render('painel/fidelidade.ejs', { ...comuns, fidClientesFieisCount: 4, fidCuponsAtivosCount: 1, fidResgatesMes: 2, hojeIso: '2026-10-10',
+    cupons: [{ id: 1, nome: 'Aniv', descricao: '', validade: new Date(), desconto: '20%', ativo: true }], fidRanking: [{ id: 9, rank: 1, initials: 'LA', name: "D'Ávila", loyalty: 3 }] });
+  assert.doesNotMatch(html, SEM_ANTIGO);
+  assert.equal((html.match(/class="cv-objeto/g) || []).length, 1);
+  assert.match(html, /action="\/painel\/fidelidade\/clientes\/9\/resgatar" data-confirmar="Resgatar 3 selo\(s\) de D&#39;Ávila\?"/);
+  assert.match(html, /action="\/painel\/fidelidade\/clientes\/9\/selo"/);
+  assert.match(html, /action="\/painel\/fidelidade\/cupons"/);
+});

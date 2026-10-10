@@ -226,3 +226,11 @@ div.cv-pl-card { cursor: default; }
 .cv-hr-jornada .cv-entrada { width: 108px; min-height: 44px; padding: 0 8px; flex-shrink: 0; font-size: 15px; }
 .cv-hr-jornada .cv-chave span { font-size: 14px; }
 .cv-hr-jornada li:has(input[type="checkbox"]:not(:checked)) input[type="time"] { opacity: .4; }
+
+/* ---- Fidelidade ---------------------------------------------------------- */
+.cv-fid-linha { gap: 10px; }
+.cv-fid-linha .pos { width: 20px; flex-shrink: 0; font-size: 15px; font-weight: 800; color: var(--c-apoio); text-align: center; font-variant-numeric: tabular-nums; }
+.cv-fid-linha form { flex-shrink: 0; }
+.cv-fid-linha .cv-btn--p { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.cv-lista .cv-linha .cv-etq--preta { flex-shrink: 0; height: 26px; font-size: 13px; }
+.cv-lista .cv-linha form { margin: 0; }

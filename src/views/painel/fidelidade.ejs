@@ -1,134 +1,73 @@
-<%
-  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
-%>
+<%/* Fidelidade (redesign v3). Sem mockup próprio: o sistema aplicado com
+     rigor. Objeto com os três números (clientes fiéis, cupons ativos,
+     resgates no mês), cupons em lista, ranking com + selo e Resgatar.
+     Novo cupom em folha. Mesmas rotas e campos. */%>
+<% var fechar = include('../partials/icone', { cvIc: 'fechar', cvCls: 'cv-ic--18' }); %>
+<header class="cv-cab">
+  <div class="cv-cab-txt"><p class="cv-cab-sup">Atendimento</p><h1>Fidelidade</h1></div>
+  <div class="cv-cab-acoes"><button class="cv-btn" type="button" data-abrir-folha="agm-novo"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--18' }) %>Cupom</button></div>
+</header>
 
-<!-- Cabeçalho: título + subtítulo centralizados (igual Planos) e "+" sem
-     círculo (abre "Novo cupom", escurece atrás) — é assim no HTML original. -->
-<div class="ag2-topo">
-  <div class="ag2-marca-linha">
-    <span class="ag2-avatar-deco"></span>
-    <span class="ag2-marca ag2-marca--escura"><%= nomeBarbearia %></span>
-    <button type="button" class="ag2-add" onclick="abrirModal('novo')" aria-label="Novo cupom">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
-  </div>
-  <div class="ag2-titulo">Fidelidade</div>
-  <div class="ag2-subtitulo">Selos, cupons e clientes mais fiéis</div>
-
-  <div class="fid-stats">
-    <div class="fid-stat">
-      <div class="fid-stat-num"><%= fidClientesFieisCount %></div>
-      <div class="fid-stat-label">Clientes fiéis</div>
+<div class="cv-secao" style="margin-top:16px">
+  <section class="cv-objeto cv-gravada" aria-label="Resumo da fidelidade">
+    <div class="cv-tres">
+      <div><span class="cv-num"><%= fidClientesFieisCount %></span><span class="rot">clientes fiéis</span></div>
+      <div><span class="cv-num"><%= fidCuponsAtivosCount %></span><span class="rot">cupons ativos</span></div>
+      <div><span class="cv-num"><%= fidResgatesMes %></span><span class="rot">resgates no mês</span></div>
     </div>
-    <div class="fid-stat">
-      <div class="fid-stat-num"><%= fidCuponsAtivosCount %></div>
-      <div class="fid-stat-label">Cupons ativos</div>
-    </div>
-    <div class="fid-stat">
-      <div class="fid-stat-num"><%= fidResgatesMes %></div>
-      <div class="fid-stat-label">Resgates/mês</div>
-    </div>
-  </div>
+  </section>
 </div>
 
-<div class="ag2-corpo">
-  <div class="fid-secao-titulo">CUPONS E PROMOÇÕES</div>
+<section class="cv-secao" aria-labelledby="fid-cupons">
+  <div class="cv-secao-cab"><h2 id="fid-cupons">Cupons e promoções</h2></div>
   <% if (cupons.length === 0) { %>
-    <div class="ag2-vazio">Nenhum cupom cadastrado ainda.</div>
+    <div class="cv-cartao"><p class="cv-texto-apoio" style="margin:0">Nenhum cupom ainda. Um cupom de aniversário costuma trazer o cliente de volta.</p></div>
   <% } else { %>
-    <div class="fid-lista">
+    <ul class="cv-lista cv-lista--sem-ic">
       <% cupons.forEach(function (cp) { %>
-        <div class="fid-cupom-card <%= !cp.ativo ? 'fid-cupom-card--inativo' : '' %>">
-          <div>
-            <div class="fid-cupom-nome"><%= cp.nome %></div>
-            <% if (cp.descricao) { %><div class="fid-cupom-desc"><%= cp.descricao %></div><% } %>
-            <div class="fid-cupom-validade">Válido até <%= fmtData(cp.validade) %></div>
-          </div>
-          <div class="fid-cupom-acoes">
-            <span class="fid-cupom-desconto"><%= cp.desconto %></span>
-            <form method="POST" action="/painel/fidelidade/cupons/<%= cp.id %>/remover" onsubmit="return confirm('Remover este cupom?')">
-              <button type="submit" class="fid-cupom-remover">Remover</button>
-            </form>
-          </div>
-        </div>
+        <li><div class="cv-linha">
+          <span class="corpo"><span class="t"><%= cp.nome %><% if (!cp.ativo) { %> <span class="cv-etq cv-etq--listra">inativo</span><% } %></span><span class="s"><%= cp.descricao ? cp.descricao + ' · ' : '' %>válido até <%= fmtData(cp.validade) %></span></span>
+          <span class="cv-etq cv-etq--preta"><%= cp.desconto %></span>
+          <form method="POST" action="/painel/fidelidade/cupons/<%= cp.id %>/remover" data-confirmar="Remover este cupom?"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Remover o cupom <%= cp.nome %>"><%- fechar %></button></form>
+        </div></li>
       <% }) %>
-    </div>
+    </ul>
   <% } %>
+</section>
 
-  <div class="fid-secao-titulo fid-secao-titulo--espacada">RANKING DE CLIENTES FIÉIS</div>
+<section class="cv-secao" aria-labelledby="fid-rank">
+  <div class="cv-secao-cab"><h2 id="fid-rank">Clientes mais fiéis</h2></div>
   <% if (fidRanking.length === 0) { %>
-    <div class="ag2-vazio">Nenhum cliente com selos ainda.</div>
+    <div class="cv-cartao"><p class="cv-texto-apoio" style="margin:0">Nenhum cliente com selos ainda. Cada atendimento concluído pode virar um selo.</p></div>
   <% } else { %>
-    <div class="fid-lista">
+    <ul class="cv-lista">
       <% fidRanking.forEach(function (fc) { %>
-        <div class="fid-rank-card">
-          <span class="fid-rank-num"><%= fc.rank %></span>
-          <span class="fid-rank-avatar"><%= fc.initials %></span>
-          <span class="fid-rank-info">
-            <span class="fid-rank-nome"><%= fc.name %></span>
-            <span class="fid-rank-selos"><%= fc.loyalty %> selo<%= fc.loyalty === 1 ? '' : 's' %> acumulado<%= fc.loyalty === 1 ? '' : 's' %></span>
-          </span>
-          <%/* O texto do confirm vem de um data-attribute escapado pelo <%= %>
-               (HTML-safe): montar a mensagem inline com JSON.stringify quebrava
-               com nome que tem aspas/apóstrofo e abria brecha de injeção. */%>
-          <form method="POST" action="/painel/fidelidade/clientes/<%= fc.id %>/resgatar" class="inline" data-confirmar="Resgatar <%= fc.loyalty %> selo(s) de <%= fc.name %>?" onsubmit="return confirm(this.dataset.confirmar)">
-            <button type="submit" class="fid-rank-resgatar">Resgatar</button>
-          </form>
-          <form method="POST" action="/painel/fidelidade/clientes/<%= fc.id %>/selo" class="inline">
-            <button type="submit" class="fid-rank-add" aria-label="Adicionar selo">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-          </form>
-        </div>
+        <li><div class="cv-linha cv-fid-linha">
+          <span class="pos" aria-label="<%= fc.rank %>º"><%= fc.rank %></span>
+          <span class="corpo"><span class="t"><%= fc.name %></span><span class="s"><%= fc.loyalty %> <%= fc.loyalty === 1 ? 'selo' : 'selos' %></span></span>
+          <form method="POST" action="/painel/fidelidade/clientes/<%= fc.id %>/resgatar" data-confirmar="Resgatar <%= fc.loyalty %> selo(s) de <%= fc.name %>?"><button type="submit" class="cv-btn cv-btn--2 cv-btn--p">Resgatar</button></form>
+          <form method="POST" action="/painel/fidelidade/clientes/<%= fc.id %>/selo"><button type="submit" class="cv-redondo cv-redondo--leve" aria-label="Adicionar um selo para <%= fc.name %>"><%- include('../partials/icone', { cvIc: 'mais', cvCls: 'cv-ic--18' }) %></button></form>
+        </div></li>
       <% }) %>
-    </div>
+    </ul>
   <% } %>
-</div>
+</section>
 
-<!-- Pop-up: novo cupom (escurece atrás, igual Serviços/Planos). -->
-<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Novo cupom</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
-    <form method="POST" action="/painel/fidelidade/cupons" class="form mt-16">
-      <div class="campo">
-        <label for="cupom-nome">Nome do cupom</label>
-        <input id="cupom-nome" name="nome" required />
+<section class="cv-folha" id="agm-novo" data-folha role="dialog" aria-modal="true" aria-labelledby="fid-novo-t">
+  <div class="cv-folha-zona"><div class="cv-puxador" aria-hidden="true"></div><div class="cv-folha-cab"><h2 id="fid-novo-t" tabindex="-1" data-foco>Novo cupom</h2><button type="button" class="cv-redondo cv-redondo--leve" data-fechar aria-label="Fechar"><%- fechar %></button></div></div>
+  <div class="cv-folha-corpo">
+    <form method="POST" action="/painel/fidelidade/cupons">
+      <div class="cv-campo"><label for="cupom-nome">Nome do cupom</label><input class="cv-entrada" id="cupom-nome" name="nome" required /></div>
+      <div class="cv-campo"><label for="cupom-desc">Descrição <span style="font-weight:400;color:var(--c-apoio)">(opcional)</span></label><input class="cv-entrada" id="cupom-desc" name="descricao" /></div>
+      <div class="cv-dupla" style="margin-top:14px">
+        <div class="cv-campo"><label for="cupom-desconto">Desconto</label><input class="cv-entrada" id="cupom-desconto" name="desconto" placeholder="20% ou R$15" required /></div>
+        <div class="cv-campo"><label for="cupom-validade">Válido até</label><input class="cv-entrada" id="cupom-validade" name="validade" type="date" value="<%= hojeIso %>" required /></div>
       </div>
-      <div class="campo">
-        <label for="cupom-desc">Descrição <span class="texto-sutil">(opcional)</span></label>
-        <input id="cupom-desc" name="descricao" />
-      </div>
-      <div class="campo">
-        <label for="cupom-desconto">Desconto <span class="texto-sutil">(ex.: 20% ou R$15)</span></label>
-        <input id="cupom-desconto" name="desconto" placeholder="20%" required />
-      </div>
-      <div class="campo">
-        <label for="cupom-validade">Válido até</label>
-        <input id="cupom-validade" name="validade" type="date" value="<%= hojeIso %>" required />
-      </div>
-      <div class="modal-acoes">
-        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-        <button class="btn btn-primario" type="submit">Adicionar</button>
-      </div>
+      <button class="cv-btn cv-btn--largo" type="submit">Adicionar</button>
     </form>
   </div>
-</div>
+</section>
 
 <script>
-  function abrirModal(id) {
-    var o = document.getElementById('agm-' + id);
-    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
-  }
-  function fecharModal(o) {
-    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
-  }
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
-      document.body.classList.remove('modal-aberto');
-    }
-  });
+  function abrirModal(id) { var ir = function () { if (window.cvAbrirFolha) cvAbrirFolha('agm-' + id); }; if (window.cvAbrirFolha) ir(); else document.addEventListener('DOMContentLoaded', ir); }
 </script>
