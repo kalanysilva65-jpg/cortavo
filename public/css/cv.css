@@ -462,3 +462,17 @@ input[type="date"].cv-entrada, input[type="time"].cv-entrada { min-width: 0; max
 .cv-poste--topo { position: fixed; z-index: calc(var(--z-folha) + 5); top: env(safe-area-inset-top, 0px); left: 0; right: 0; border-radius: 0; background: transparent; pointer-events: none; }
 .cv-poste--topo[hidden] { display: none; }
 .cv-esq-grupo { width: 100%; }
+
+/* ---- Movimento #9 · toque nas linhas e tabelas (M5) ----------------------
+   Realce cinza na hora (60 ms) e solta em 160 ms. Vale também para as linhas
+   que são <button>/<a> nos cadastros (lá o fundo era zerado) e para as linhas
+   de tabela que abrem folha no PC. Cartões-link ganham o mesmo .985 do
+   cv-toca. Reduzir movimento: só a cor, sem escala. */
+.cv-linha, .cv-tabela tr[data-abrir-folha], .m-tab tr[data-href], tr[data-href] { transition: background-color 160ms var(--ease-out); -webkit-tap-highlight-color: transparent; }
+.pg-cv .cv-linha:active, .pg-cv button.cv-linha:active, .pg-cv a.cv-linha:active,
+.cv-tabela tr[data-abrir-folha]:active, tr[data-href]:active { background: var(--c-bloco); transition-duration: 60ms; }
+a.cv-cartao:not(.cv-toca), button.cv-cartao:not(.cv-toca) { transition: transform var(--d-press-out, 160ms) var(--ease-out); }
+a.cv-cartao:not(.cv-toca):active, button.cv-cartao:not(.cv-toca):active { transform: scale(.985); transition-duration: var(--d-press-in, 60ms); }
+@media (prefers-reduced-motion: reduce) {
+  a.cv-cartao:active, button.cv-cartao:active { transform: none !important; opacity: .7; }
+}

@@ -50,3 +50,15 @@ test('#5 carregando (M3): poste depois de 300 ms em fetch e troca de página; es
   assert.match(css, /\.cv-poste--topo \{ position: fixed/);
   assert.match(css, /prefers-reduced-motion[\s\S]*\.cv-poste::before, \.cv-esq::after \{ animation: none; \}/);
 });
+
+test('#9 toque nas linhas e tabelas; #12 reduzir movimento esmaece em vez de ficar mudo', () => {
+  const css = ler('public', 'css', 'cv.css');
+  assert.match(css, /\.pg-cv button\.cv-linha:active[\s\S]*background: var\(--c-bloco\); transition-duration: 60ms/);
+  assert.match(css, /\.cv-tabela tr\[data-abrir-folha\]:active/);
+  assert.match(css, /a\.cv-cartao:not\(\.cv-toca\):active[^}]*scale\(\.985\)/);
+  assert.match(css, /prefers-reduced-motion: reduce\) \{\s*a\.cv-cartao:active, button\.cv-cartao:active \{ transform: none !important; opacity: \.7; \}/);
+  const vida = ler('public', 'js', 'cv-vida.js');
+  assert.match(vida, /if \(reduz\(\)\) \{\s*Array\.prototype\.forEach\.call\(doc\.querySelectorAll\('\.cv-tela \.cv-num/);
+  assert.match(ler('public', 'js', 'cv-movimento.js'), /Reduzir movimento: o logo aparece pronto, esmaecendo/);
+  assert.match(ler('public', 'css', 'cv-telas.css'), /cvPagEsmaece/);
+});

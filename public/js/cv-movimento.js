@@ -39,7 +39,8 @@
   function desenharLogo(svg, dur, atraso) {
     var guia = svg.querySelector('.guia'); if (!guia) return null;
     var L = guia.getTotalLength(); guia.style.strokeDasharray = L + ' ' + L;
-    if (reduz()) { guia.style.strokeDashoffset = 0; return null; }
+    // Reduzir movimento: o logo aparece pronto, esmaecendo (200 ms), sem traço.
+    if (reduz()) { guia.style.strokeDashoffset = 0; return svg.animate ? svg.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: atraso || 0, fill: 'backwards' }) : null; }
     guia.style.strokeDashoffset = L;
     return guia.animate([{ strokeDashoffset: L }, { strokeDashoffset: 0 }], { duration: dur || 560, delay: atraso || 0, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'forwards' });
   }

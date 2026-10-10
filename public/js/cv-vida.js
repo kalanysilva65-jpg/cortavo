@@ -60,6 +60,13 @@
   function numeros() {
     var C = g.Cortavo; if (!C || TELAS_M2.indexOf(caminho()) < 0) return;
     if (!primeiraVez('cvM2:' + caminho() + ':' + new Date().toDateString())) return;
+    // #12 Reduzir movimento sem ficar mudo: números, anéis e barras entram
+    // prontos, mas esmaecem (200 ms) em vez de aparecer secos.
+    if (reduz()) {
+      Array.prototype.forEach.call(doc.querySelectorAll('.cv-tela .cv-num, .cv-tela .cv-aneis, .cv-tela .cv-barras, .cv-tela .cv-hbarras'), function (el) {
+        if (visivel(el)) guardar(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'linear' }));
+      });
+    }
     var n = 0;
     Array.prototype.forEach.call(doc.querySelectorAll('.cv-tela .cv-num'), function (el) {
       var iEl = el.querySelector('.int'), cEl = el.querySelector('.cent');
