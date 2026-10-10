@@ -1,4 +1,8 @@
-// Controlador do painel de comissões por barbeiro (somente admin).
+// Controlador do painel de comissões por barbeiro.
+// Acesso (spec 12): o ADMIN vê todos; o FUNCIONÁRIO também abre a tela (rota
+// GET /comissoes liberada pelo plano `comissoes`), mas SÓ com a própria
+// comissão: o recorte por usuário está em `barbeiroSelecionado` e na lista de
+// barbeiros enviada à tela. Não restringir a rota ao admin.
 // Serviços: comissão pela % de cada barbeiro. Produtos: comissão fixa (COMISSAO_PRODUTO_PERCENTUAL).
 // Relatório sobre dados existentes, usando o valorUnitario congelado e só
 // agendamentos CONCLUÍDOS no período.
@@ -270,13 +274,19 @@ async function ver(req, res) {
     }
   }
 
+  // Funcionário não recebe os colegas (nem na lista do filtro, nem nos dados).
+  const barbeirosTela = req.ehAdmin ? barbeiros : barbeiros.filter((x) => String(x.id) === barbeiroSelecionado);
+  if (!req.ehAdmin) {
+    for (const k of Object.keys(situacoes)) if (k !== barbeiroSelecionado) delete situacoes[k];
+  }
+
   res.render('painel/comissoes', {
     situacoes,
     pagamentosComissao,
     nomePeriodo: periodoAtivo === 'hoje' ? 'Hoje' : periodoAtivo === 'semana' ? 'Esta semana' : periodoAtivo === 'mes' ? 'Este mês' : inicioStr.split('-').reverse().join('/') + ' a ' + fimStr.split('-').reverse().join('/'),
     titulo: 'Comissões',
     grupos,
-    barbeiros,
+    barbeiros: barbeirosTela,
     barbeiroSelecionado,
     inicioStr,
     fimStr,
