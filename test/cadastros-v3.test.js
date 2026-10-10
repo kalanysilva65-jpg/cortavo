@@ -209,3 +209,15 @@ test('F11 limpeza: só tokens e cv* em public/css; layout sem pilha antiga', () 
   const lay = fs.readFileSync(path.join(__dirname, '..', 'src', 'views', 'layouts', 'painel.ejs'), 'utf8');
   for (const k of ['/css/styles.css', '/css/suave', '/css/sv-', 'tema-minimal.css', 'painel-app.css', 'painel-novo.css', "partials/header-painel"]) assert.ok(!lay.includes(k), 'layout cita ' + k);
 });
+
+test('F13 agenda no PC: vistas Lista/Colunas/Semana ligadas aos JSONs do Beto', () => {
+  const fs = require('fs'); const path = require('path');
+  const v = fs.readFileSync(path.join(__dirname, '..', 'src', 'views', 'painel', 'agenda.ejs'), 'utf8');
+  assert.match(v, /id="cv-ag-vistas"[^>]*hidden/);
+  assert.match(v, /data-vista="colunas"/); assert.match(v, /data-vista="semana"/);
+  assert.match(v, /id="cv-ag-lista"/); assert.match(v, /cv-agenda-grade\.js/);
+  const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'cv-agenda-grade.js'), 'utf8');
+  assert.match(js, /\/painel\/agenda\/'/); assert.match(js, /semana' : 'dia'\) \+ '\.json/);
+  assert.match(js, /min-width: 1024px/);
+  assert.doesNotMatch(js, /telefone|email/i);
+});

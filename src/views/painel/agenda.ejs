@@ -70,6 +70,16 @@
       </div>
     <% } %>
 
+    <%/* PC (F13): Lista, Colunas por barbeiro e Semana, pelos JSONs da agenda
+         (cv-agenda-grade.js). Escondido sem JS e no celular. */%>
+    <div class="cv-seg cv-ag-vistas" id="cv-ag-vistas" role="group" aria-label="Vista da agenda" hidden>
+      <button type="button" data-vista="lista" aria-pressed="false">Lista</button>
+      <button type="button" data-vista="colunas" aria-pressed="false">Colunas</button>
+      <button type="button" data-vista="semana" aria-pressed="false">Semana</button>
+    </div>
+    <div class="cv-ag-grade" id="cv-ag-grade" data-data="<%= dataStr %>" data-barbeiro="<%= ehAdmin ? barbeiroSelecionado : usuario.id %>" aria-live="polite" hidden></div>
+
+    <div id="cv-ag-lista">
     <p class="cv-ag-resumo" id="cv-ag-resumo" data-n="<%= _nAtend %>"><%= _nAtend ? _nAtend + (_nAtend === 1 ? ' atendimento' : ' atendimentos') : 'Nenhum atendimento marcado' %></p>
 
     <% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
@@ -135,9 +145,11 @@
         <div class="cv-agora-linha" data-min="<%= _minAgora %>" aria-label="Agora, <%= _horaAgora %>"><span><%= _horaAgora %></span><i></i></div>
       <% } %>
     </div>
+    </div>
   </div>
 
 </div>
+<script src="/js/cv-agenda-grade.js" defer></script>
 
 <%/* ------------------------------------------------------------------------
      Folhas (M4). Uma aberta por vez, pelo Cortavo.folha (cv-movimento.js):
