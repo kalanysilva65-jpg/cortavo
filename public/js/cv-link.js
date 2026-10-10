@@ -2,8 +2,9 @@
    Copiar o link (botões [data-copiar-url] são tratados no cv-casca.js),
    mensagem pronta editável, compartilhar (folha nativa no celular; WhatsApp
    Web no PC), PNG do QR (1024 px) e PNG do cartaz A5 (874 x 1240, 150 ppp).
-   O texto editado fica neste aparelho até a barbearia ganhar o campo próprio
-   (textoLink, com o Beto). */
+   O texto editado é salvo na barbearia (textoLink, POST /painel/link/texto),
+   e copiar/compartilhar marca o passo 4 dos Primeiros passos
+   (POST /painel/primeiros-passos, acao=link). */
 (function () {
   'use strict';
   var doc = document, C = window.Cortavo;
@@ -14,23 +15,34 @@
   var D = { url: base.dataset.link, curto: base.dataset.curto, slug: base.dataset.slug, padrao: base.dataset.textoPadrao || '' };
 
   /* ---- Mensagem pronta --------------------------------------------------- */
-  var tx = $('#lk-texto'), CHAVE = 'cvLinkTexto:' + D.slug;
+  var tx = $('#lk-texto'), CHAVE = 'cvLinkTexto:' + D.slug, espera = null;
+  function postar(url, dados) {
+    return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).catch(function () {});
+  }
   function guardado() { try { return localStorage.getItem(CHAVE); } catch (e) { return null; } }
-  function guardar(v) { try { if (v === D.padrao) localStorage.removeItem(CHAVE); else localStorage.setItem(CHAVE, v); } catch (e) {} }
+  /* Salva no servidor (meio segundo depois de parar de digitar). O texto antigo
+     que ficou no aparelho sobe uma vez e sai do localStorage. */
+  function guardar(v) {
+    clearTimeout(espera);
+    espera = setTimeout(function () { postar('/painel/link/texto', { texto: v }); }, 600);
+    try { localStorage.removeItem(CHAVE); } catch (e) {}
+  }
+  function marcarLink() { postar('/painel/primeiros-passos', { acao: 'link' }); }
   function textoFinal() { var t = tx.value.trim(); return t.indexOf(D.url) >= 0 || t.indexOf(D.curto) >= 0 ? t : (t ? t + '\n' : '') + D.url; }
   if (tx) {
-    var g = guardado(); if (g) tx.value = g;
+    var g = guardado(); if (g && tx.value === D.padrao) { tx.value = g; guardar(g); }
     tx.addEventListener('input', function () { guardar(tx.value); });
     $('#lk-restaurar').addEventListener('click', function () { tx.value = D.padrao; guardar(D.padrao); aviso({ titulo: 'Texto restaurado' }); });
     var copiarTexto = $('[data-copiar="texto"]');
     if (copiarTexto) copiarTexto.addEventListener('click', function () {
-      window.cvCopiar(textoFinal()).then(function () { aviso({ titulo: 'Texto copiado', sub: 'Cole na conversa do WhatsApp.' }); });
+      window.cvCopiar(textoFinal()).then(function () { marcarLink(); aviso({ titulo: 'Texto copiado', sub: 'Cole na conversa do WhatsApp.' }); });
     });
     var podeNativo = !!navigator.share && matchMedia('(pointer: coarse)').matches;
     var bc = $('#lk-compartilhar');
     if (!podeNativo) $('.rot-b', bc).textContent = 'Enviar pelo WhatsApp Web';
     bc.addEventListener('click', function () {
       var t = textoFinal();
+      marcarLink();
       if (podeNativo) { navigator.share({ text: t }).catch(function () {}); return; }
       // wa.me sem número: o WhatsApp abre com o texto pronto e o dono escolhe a conversa.
       window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');

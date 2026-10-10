@@ -206,6 +206,9 @@ router.get('/logo', exigeAdmin, logoController.ver);
 router.get('/link', exigeAdmin, linkController.ver);
 router.get('/link/cartaz', exigeAdmin, linkController.cartaz);
 router.get('/link/qr.svg', exigeAdmin, linkController.qrSvg);
+router.post('/link/texto', exigeAdmin, linkController.salvarTexto);
+// Primeiros passos (spec 11): estado do próprio usuário (esconder, link, visto).
+router.post('/primeiros-passos', require('../controllers/primeirosPassosController').registrar);
 router.post('/logo', exigeAdmin, uploadLogo, logoController.salvar);
 router.post('/logo/remover', exigeAdmin, logoController.remover);
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);

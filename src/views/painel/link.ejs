@@ -35,7 +35,7 @@
       <section class="cv-cartao lk-msg" aria-labelledby="lk-msg-t">
         <div class="cv-cartao-cab"><h3 id="lk-msg-t">Mensagem pronta</h3><button class="cv-btn cv-btn--texto lk-mini" type="button" id="lk-restaurar">Restaurar</button></div>
         <label class="cv-oculto" for="lk-texto">Texto para mandar no WhatsApp</label>
-        <textarea class="cv-entrada lk-texto" id="lk-texto" rows="5" spellcheck="true"><%= textoPadrao %></textarea>
+        <textarea class="cv-entrada lk-texto" id="lk-texto" rows="5" spellcheck="true" maxlength="1000"><%= typeof textoAtual !== 'undefined' ? textoAtual : textoPadrao %></textarea>
         <p class="cv-ajuda">Mude o que quiser. O link vai junto no fim, se você apagar.</p>
         <button class="cv-btn cv-btn--largo" type="button" id="lk-compartilhar"><svg class="cv-ic cv-ic--20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M8 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2"/></svg><span class="rot-b">Compartilhar</span></button>
         <button class="cv-btn cv-btn--texto cv-btn--largo" type="button" data-copiar="texto">Copiar texto</button>

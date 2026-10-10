@@ -4,9 +4,9 @@
 // de uma pessoa, jornada definida, agendamento feito, lançamento no caixa,
 // comissão paga e WhatsApp conectado. O passo 4 (compartilhar o link) conta
 // como feito quando a barbearia já recebeu um agendamento.
-// TODO(Beto, spec 11): quando existir onboardingEstado (POST
-// /painel/primeiros-passos), ler "link compartilhado" e "esconder" de lá; hoje
-// o "Esconder" fica no aparelho (localStorage).
+// O passo 4 também conta como feito quando a pessoa copiou ou compartilhou o
+// link (onboardingEstado.link, gravado por POST /painel/primeiros-passos). O
+// "Esconder" fica no banco (onboardingOcultoEm): quem chama confere antes.
 const prisma = require('../config/db');
 const planoCortavo = require('./planoCortavo');
 
@@ -14,7 +14,8 @@ async function contar(fn) {
   try { return await fn(); } catch (e) { return 0; }
 }
 
-async function montar({ barbeariaId, planoChave }) {
+async function montar({ barbeariaId, planoChave, estado = null }) {
+  const linkCompartilhado = !!(estado && estado.link);
   const plano = planoCortavo.planoDe(planoChave);
   const comComissoes = planoCortavo.libera(plano, 'comissoes');
   const comSecretaria = !(plano.tetos && plano.tetos.secretaria === 0);
@@ -34,7 +35,7 @@ async function montar({ barbeariaId, planoChave }) {
     { chave: 'servicos', t: 'Cadastre seus serviços', s: 'Corte, barba, sobrancelha. Coloque preço e quanto tempo leva.', href: '/painel/servicos', acao: 'Cadastrar serviços', feito: servicos > 0 },
     { chave: 'equipe', t: 'Monte sua equipe', s: 'Cada barbeiro recebe um acesso próprio.', href: '/painel/equipe', acao: 'Adicionar', feito: equipe > 1 },
     { chave: 'horarios', t: 'Defina os horários', s: 'A agenda só oferece os horários que você abrir.', href: '/painel/horarios', acao: 'Definir', feito: jornadas > 0 },
-    { chave: 'link', t: 'Compartilhe seu link', s: 'Seus clientes marcam sozinhos por ele.', href: '/painel/link?novo=1', acao: 'Abrir', feito: agendamentos > 0 },
+    { chave: 'link', t: 'Compartilhe seu link', s: 'Seus clientes marcam sozinhos por ele.', href: '/painel/link?novo=1', acao: 'Abrir', feito: agendamentos > 0 || linkCompartilhado },
     { chave: 'agenda', t: 'Conheça a agenda', s: 'Marque um cliente que chegou pelo balcão.', href: '/painel/agenda', acao: 'Abrir', feito: agendamentos > 0 },
     { chave: 'caixa', t: 'Feche um atendimento no caixa', s: 'O caixa do dia soma tudo.', href: '/painel/caixa', acao: 'Abrir', feito: caixa > 0 },
     comComissoes ? { chave: 'comissoes', t: 'Veja as comissões', s: 'Calculadas pelo percentual que você define.', href: '/painel/comissoes', acao: 'Ver', feito: comissoes > 0 } : null,
