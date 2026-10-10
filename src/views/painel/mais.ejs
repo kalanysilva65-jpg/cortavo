@@ -69,9 +69,30 @@
         <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
       </a></li>
     <% }) %>
+    <% if (ehAdmin) { %>
+    <%/* Primeiros passos de volta na Início (POST /painel/primeiros-passos,
+         acao=mostrar, Beto). A rota responde JSON: o JS manda e abre a Início. */%>
+    <li><button class="cv-linha" type="button" id="mais-passos">
+      <%- include('../partials/icone', { cvIc: 'check' }) %>
+      <span class="corpo"><span class="t">Ver o passo a passo de novo</span><span class="s">Os Primeiros passos voltam para a Início</span></span>
+    </button></li>
+    <% } %>
     <li><form method="POST" action="/logout"><button class="cv-linha" type="submit">
       <%- include('../partials/icone', { cvIc: 'sair' }) %>
       <span class="corpo"><span class="t">Sair</span></span>
     </button></form></li>
   </ul>
 </section>
+
+<script>
+  (function () {
+    var b = document.getElementById('mais-passos');
+    if (!b) return;
+    b.addEventListener('click', function () {
+      b.disabled = true;
+      fetch('/painel/primeiros-passos', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ acao: 'mostrar' }) })
+        .then(function () { location.href = '/painel#primeiros-passos'; })
+        .catch(function () { b.disabled = false; });
+    });
+  })();
+</script>
